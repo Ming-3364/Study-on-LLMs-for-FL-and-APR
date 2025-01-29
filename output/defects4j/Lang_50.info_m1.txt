@@ -1,0 +1,145 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/lang/time/FastDateFormat.java
+================== buggy_method ==================
+{'method_name': 'getDateTimeInstance', 'method_body': 'public static synchronized FastDateFormat getDateTimeInstance(int dateStyle, int timeStyle, TimeZone timeZone,\n            Locale locale) {\n\n        Object key = new Pair(new Integer(dateStyle), new Integer(timeStyle));\n        if (timeZone != null) {\n            key = new Pair(key, timeZone);\n        }\n        if (locale != null) {\n            key = new Pair(key, locale);\n        }\n\n        FastDateFormat format = (FastDateFormat) cDateTimeInstanceCache.get(key);\n        if (format == null) {\n            if (locale == null) {\n                locale = Locale.getDefault();\n            }\n            try {\n                SimpleDateFormat formatter = (SimpleDateFormat) DateFormat.getDateTimeInstance(dateStyle, timeStyle,\n                        locale);\n                String pattern = formatter.toPattern();\n                format = getInstance(pattern, timeZone, locale);\n                cDateTimeInstanceCache.put(key, format);\n\n            } catch (ClassCastException ex) {\n                throw new IllegalArgumentException("No date time pattern for locale: " + locale);\n            }\n        }\n        return format;\n    }', 'start_line': 458, 'end_line': 486, 'buggy_lines': [465, 466, 471, 472, 473]}
+================== buggy_method_src ==================
+public static synchronized FastDateFormat getDateTimeInstance(int dateStyle, int timeStyle, TimeZone timeZone,
+            Locale locale) {
+
+        Object key = new Pair(new Integer(dateStyle), new Integer(timeStyle));
+        if (timeZone != null) {
+            key = new Pair(key, timeZone);
+        }
+        if (locale != null) {
+            key = new Pair(key, locale);
+        }
+
+        FastDateFormat format = (FastDateFormat) cDateTimeInstanceCache.get(key);
+        if (format == null) {
+            if (locale == null) {
+                locale = Locale.getDefault();
+            }
+            try {
+                SimpleDateFormat formatter = (SimpleDateFormat) DateFormat.getDateTimeInstance(dateStyle, timeStyle,
+                        locale);
+                String pattern = formatter.toPattern();
+                format = getInstance(pattern, timeZone, locale);
+                cDateTimeInstanceCache.put(key, format);
+
+            } catch (ClassCastException ex) {
+                throw new IllegalArgumentException("No date time pattern for locale: " + locale);
+            }
+        }
+        return format;
+    }
+================== test_stack ==================
+org.apache.commons.lang.time.FastDateFormatTest::test_changeDefault_Locale_DateInstance
+junit.framework.AssertionFailedError: expected same:<de_DE> was not:<en_US>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotSame(Assert.java:325)
+	at junit.framework.Assert.assertSame(Assert.java:288)
+	at junit.framework.Assert.assertSame(Assert.java:296)
+	at junit.framework.TestCase.assertSame(TestCase.java:465)
+	at org.apache.commons.lang.time.FastDateFormatTest.test_changeDefault_Locale_DateInstance(FastDateFormatTest.java:146)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.apache.commons.lang.time.FastDateFormatTest::test_changeDefault_Locale_DateTimeInstance
+junit.framework.AssertionFailedError: expected same:<de_DE> was not:<en_US>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotSame(Assert.java:325)
+	at junit.framework.Assert.assertSame(Assert.java:288)
+	at junit.framework.Assert.assertSame(Assert.java:296)
+	at junit.framework.TestCase.assertSame(TestCase.java:465)
+	at org.apache.commons.lang.time.FastDateFormatTest.test_changeDefault_Locale_DateTimeInstance(FastDateFormatTest.java:166)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertSame(Locale.GERMANY, format3.getLocale());
+
+================== buggy_lines_in_method ==================
+[8, 9, 14, 15, 16]
+================== buggy_statements ==================
+['        if (locale != null) {', '            key = new Pair(key, locale);', '            if (locale == null) {', '                locale = Locale.getDefault();', '            }']
+================== buggy_method_src_endswith_buggy_statement ==================
+public static synchronized FastDateFormat getDateTimeInstance(int dateStyle, int timeStyle, TimeZone timeZone,
+            Locale locale) {
+
+        Object key = new Pair(new Integer(dateStyle), new Integer(timeStyle));
+        if (timeZone != null) {
+            key = new Pair(key, timeZone);
+        }
+        if (locale != null) {
+            key = new Pair(key, locale);
+        }
+
+        FastDateFormat format = (FastDateFormat) cDateTimeInstanceCache.get(key);
+        if (format == null) {
+            if (locale == null) {
+                locale = Locale.getDefault();
+            }

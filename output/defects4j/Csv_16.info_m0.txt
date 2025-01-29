@@ -1,0 +1,115 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/csv/CSVParser.java
+================== buggy_method ==================
+{'method_name': 'iterator', 'method_body': '@Override\n    public Iterator<CSVRecord> iterator() {\n        return new Iterator<CSVRecord>() {\n        private CSVRecord current;\n  \n        private CSVRecord getNextRecord() {\n            try {\n                return CSVParser.this.nextRecord();\n            } catch (final IOException e) {\n                throw new IllegalStateException(\n                        e.getClass().getSimpleName() + " reading next record: " + e.toString(), e);\n            }\n        }\n  \n        @Override\n        public boolean hasNext() {\n            if (CSVParser.this.isClosed()) {\n                return false;\n            }\n            if (this.current == null) {\n                this.current = this.getNextRecord();\n            }\n  \n            return this.current != null;\n        }\n  \n        @Override\n        public CSVRecord next() {\n            if (CSVParser.this.isClosed()) {\n                throw new NoSuchElementException("CSVParser has been closed");\n            }\n            CSVRecord next = this.current;\n            this.current = null;\n  \n            if (next == null) {\n                // hasNext() wasn\'t called before\n                next = this.getNextRecord();\n                if (next == null) {\n                    throw new NoSuchElementException("No more CSV records available");\n                }\n            }\n  \n            return next;\n        }\n  \n        @Override\n        public void remove() {\n            throw new UnsupportedOperationException();\n        }\n    };\n    }', 'start_line': 521, 'end_line': 571, 'buggy_lines': [523]}
+================== buggy_method_src ==================
+@Override
+    public Iterator<CSVRecord> iterator() {
+        return new Iterator<CSVRecord>() {
+        private CSVRecord current;
+  
+        private CSVRecord getNextRecord() {
+            try {
+                return CSVParser.this.nextRecord();
+            } catch (final IOException e) {
+                throw new IllegalStateException(
+                        e.getClass().getSimpleName() + " reading next record: " + e.toString(), e);
+            }
+        }
+  
+        @Override
+        public boolean hasNext() {
+            if (CSVParser.this.isClosed()) {
+                return false;
+            }
+            if (this.current == null) {
+                this.current = this.getNextRecord();
+            }
+  
+            return this.current != null;
+        }
+  
+        @Override
+        public CSVRecord next() {
+            if (CSVParser.this.isClosed()) {
+                throw new NoSuchElementException("CSVParser has been closed");
+            }
+            CSVRecord next = this.current;
+            this.current = null;
+  
+            if (next == null) {
+                // hasNext() wasn't called before
+                next = this.getNextRecord();
+                if (next == null) {
+                    throw new NoSuchElementException("No more CSV records available");
+                }
+            }
+  
+            return next;
+        }
+  
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    };
+    }
+================== test_stack ==================
+org.apache.commons.csv.CSVParserTest::testIteratorSequenceBreaking
+junit.framework.AssertionFailedError: expected:<[3]> but was:<[4]>
+	at org.junit.Assert.assertEquals(Assert.java:115)
+	at org.junit.Assert.assertEquals(Assert.java:144)
+	at org.apache.commons.csv.CSVParserTest.testIteratorSequenceBreaking(CSVParserTest.java:1053)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals(String.valueOf(recordNumber), record.get(0));
+
+================== buggy_lines_in_method ==================
+[3]
+================== buggy_statements ==================
+['        return new Iterator<CSVRecord>() {']
+================== buggy_method_src_endswith_buggy_statement ==================
+@Override
+    public Iterator<CSVRecord> iterator() {
+        return new Iterator<CSVRecord>() {

@@ -1,0 +1,212 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/TypedScopeCreator.java
+================== buggy_method ==================
+{'method_name': 'defineSlot', 'method_body': 'void defineSlot(Node n, Node parent, JSType type, boolean inferred) {\n      Preconditions.checkArgument(inferred || type != null);\n\n      // Only allow declarations of NAMEs and qualfied names.\n      boolean shouldDeclareOnGlobalThis = false;\n      if (n.getType() == Token.NAME) {\n        Preconditions.checkArgument(\n            parent.getType() == Token.FUNCTION ||\n            parent.getType() == Token.VAR ||\n            parent.getType() == Token.LP ||\n            parent.getType() == Token.CATCH);\n        shouldDeclareOnGlobalThis = scope.isGlobal() &&\n            (parent.getType() == Token.VAR ||\n             parent.getType() == Token.FUNCTION);\n      } else {\n        Preconditions.checkArgument(\n            n.getType() == Token.GETPROP &&\n            (parent.getType() == Token.ASSIGN ||\n             parent.getType() == Token.EXPR_RESULT));\n      }\n      String variableName = n.getQualifiedName();\n      Preconditions.checkArgument(!variableName.isEmpty());\n\n      // If n is a property, then we should really declare it in the\n      // scope where the root object appears. This helps out people\n      // who declare "global" names in an anonymous namespace.\n      Scope scopeToDeclareIn = scope;\n\n        // don\'t try to declare in the global scope if there\'s\n        // already a symbol there with this name.\n\n      // declared in closest scope?\n      if (scopeToDeclareIn.isDeclared(variableName, false)) {\n        Var oldVar = scopeToDeclareIn.getVar(variableName);\n        validator.expectUndeclaredVariable(\n            sourceName, n, parent, oldVar, variableName, type);\n      } else {\n        if (!inferred) {\n          setDeferredType(n, type);\n        }\n        CompilerInput input = compiler.getInput(sourceName);\n        scopeToDeclareIn.declare(variableName, n, type, input, inferred);\n\n        if (shouldDeclareOnGlobalThis) {\n          ObjectType globalThis =\n              typeRegistry.getNativeObjectType(JSTypeNative.GLOBAL_THIS);\n          boolean isExtern = input.isExtern();\n          if (inferred) {\n            globalThis.defineInferredProperty(variableName,\n                type == null ?\n                    getNativeType(JSTypeNative.NO_TYPE) :\n                    type,\n                isExtern);\n          } else {\n            globalThis.defineDeclaredProperty(variableName, type, isExtern);\n          }\n        }\n\n        // If we\'re in the global scope, also declare var.prototype\n        // in the scope chain.\n        if (scopeToDeclareIn.isGlobal() && type instanceof FunctionType) {\n          FunctionType fnType = (FunctionType) type;\n          if (fnType.isConstructor() || fnType.isInterface()) {\n            FunctionType superClassCtor = fnType.getSuperClassConstructor();\n            scopeToDeclareIn.declare(variableName + ".prototype", n,\n                fnType.getPrototype(), compiler.getInput(sourceName),\n                /* declared iff there\'s an explicit supertype */\n                superClassCtor == null ||\n                superClassCtor.getInstanceType().equals(\n                    getNativeType(OBJECT_TYPE)));\n          }\n        }\n      }\n    }', 'start_line': 872, 'end_line': 945, 'buggy_lines': [901, 908]}
+================== buggy_method_src ==================
+void defineSlot(Node n, Node parent, JSType type, boolean inferred) {
+      Preconditions.checkArgument(inferred || type != null);
+
+      // Only allow declarations of NAMEs and qualfied names.
+      boolean shouldDeclareOnGlobalThis = false;
+      if (n.getType() == Token.NAME) {
+        Preconditions.checkArgument(
+            parent.getType() == Token.FUNCTION ||
+            parent.getType() == Token.VAR ||
+            parent.getType() == Token.LP ||
+            parent.getType() == Token.CATCH);
+        shouldDeclareOnGlobalThis = scope.isGlobal() &&
+            (parent.getType() == Token.VAR ||
+             parent.getType() == Token.FUNCTION);
+      } else {
+        Preconditions.checkArgument(
+            n.getType() == Token.GETPROP &&
+            (parent.getType() == Token.ASSIGN ||
+             parent.getType() == Token.EXPR_RESULT));
+      }
+      String variableName = n.getQualifiedName();
+      Preconditions.checkArgument(!variableName.isEmpty());
+
+      // If n is a property, then we should really declare it in the
+      // scope where the root object appears. This helps out people
+      // who declare "global" names in an anonymous namespace.
+      Scope scopeToDeclareIn = scope;
+
+        // don't try to declare in the global scope if there's
+        // already a symbol there with this name.
+
+      // declared in closest scope?
+      if (scopeToDeclareIn.isDeclared(variableName, false)) {
+        Var oldVar = scopeToDeclareIn.getVar(variableName);
+        validator.expectUndeclaredVariable(
+            sourceName, n, parent, oldVar, variableName, type);
+      } else {
+        if (!inferred) {
+          setDeferredType(n, type);
+        }
+        CompilerInput input = compiler.getInput(sourceName);
+        scopeToDeclareIn.declare(variableName, n, type, input, inferred);
+
+        if (shouldDeclareOnGlobalThis) {
+          ObjectType globalThis =
+              typeRegistry.getNativeObjectType(JSTypeNative.GLOBAL_THIS);
+          boolean isExtern = input.isExtern();
+          if (inferred) {
+            globalThis.defineInferredProperty(variableName,
+                type == null ?
+                    getNativeType(JSTypeNative.NO_TYPE) :
+                    type,
+                isExtern);
+          } else {
+            globalThis.defineDeclaredProperty(variableName, type, isExtern);
+          }
+        }
+
+        // If we're in the global scope, also declare var.prototype
+        // in the scope chain.
+        if (scopeToDeclareIn.isGlobal() && type instanceof FunctionType) {
+          FunctionType fnType = (FunctionType) type;
+          if (fnType.isConstructor() || fnType.isInterface()) {
+            FunctionType superClassCtor = fnType.getSuperClassConstructor();
+            scopeToDeclareIn.declare(variableName + ".prototype", n,
+                fnType.getPrototype(), compiler.getInput(sourceName),
+                /* declared iff there's an explicit supertype */
+                superClassCtor == null ||
+                superClassCtor.getInstanceType().equals(
+                    getNativeType(OBJECT_TYPE)));
+          }
+        }
+      }
+    }
+================== test_stack ==================
+com.google.javascript.jscomp.TypeCheckTest::testQualifiedNameInference5
+junit.framework.AssertionFailedError: expected a warning
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.TestCase.assertTrue(TestCase.java:192)
+	at com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:7365)
+	at com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:7345)
+	at com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:7298)
+	at com.google.javascript.jscomp.TypeCheckTest.testQualifiedNameInference5(TypeCheckTest.java:4761)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.TypedScopeCreatorTest::testGlobalQualifiedNameInLocalScope
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNotNull(Assert.java:256)
+	at junit.framework.Assert.assertNotNull(Assert.java:248)
+	at junit.framework.TestCase.assertNotNull(TestCase.java:417)
+	at com.google.javascript.jscomp.TypedScopeCreatorTest.testGlobalQualifiedNameInLocalScope(TypedScopeCreatorTest.java:781)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+testTypes(
+
+================== buggy_lines_in_method ==================
+[30, 37]
+================== buggy_statements ==================
+['        // already a symbol there with this name.', '      } else {']
+================== buggy_method_src_endswith_buggy_statement ==================
+void defineSlot(Node n, Node parent, JSType type, boolean inferred) {
+      Preconditions.checkArgument(inferred || type != null);
+
+      // Only allow declarations of NAMEs and qualfied names.
+      boolean shouldDeclareOnGlobalThis = false;
+      if (n.getType() == Token.NAME) {
+        Preconditions.checkArgument(
+            parent.getType() == Token.FUNCTION ||
+            parent.getType() == Token.VAR ||
+            parent.getType() == Token.LP ||
+            parent.getType() == Token.CATCH);
+        shouldDeclareOnGlobalThis = scope.isGlobal() &&
+            (parent.getType() == Token.VAR ||
+             parent.getType() == Token.FUNCTION);
+      } else {
+        Preconditions.checkArgument(
+            n.getType() == Token.GETPROP &&
+            (parent.getType() == Token.ASSIGN ||
+             parent.getType() == Token.EXPR_RESULT));
+      }
+      String variableName = n.getQualifiedName();
+      Preconditions.checkArgument(!variableName.isEmpty());
+
+      // If n is a property, then we should really declare it in the
+      // scope where the root object appears. This helps out people
+      // who declare "global" names in an anonymous namespace.
+      Scope scopeToDeclareIn = scope;
+
+        // don't try to declare in the global scope if there's
+        // already a symbol there with this name.
+
+      // declared in closest scope?
+      if (scopeToDeclareIn.isDeclared(variableName, false)) {
+        Var oldVar = scopeToDeclareIn.getVar(variableName);
+        validator.expectUndeclaredVariable(
+            sourceName, n, parent, oldVar, variableName, type);
+      } else {

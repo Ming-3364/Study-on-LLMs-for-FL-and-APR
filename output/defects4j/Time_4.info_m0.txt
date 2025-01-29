@@ -1,0 +1,144 @@
+
+================== buggy_file ==================
+src/main/java/org/joda/time/Partial.java
+================== buggy_method ==================
+{'method_name': 'with', 'method_body': 'public Partial with(DateTimeFieldType fieldType, int value) {\n        if (fieldType == null) {\n            throw new IllegalArgumentException("The field type must not be null");\n        }\n        int index = indexOf(fieldType);\n        if (index == -1) {\n            DateTimeFieldType[] newTypes = new DateTimeFieldType[iTypes.length + 1];\n            int[] newValues = new int[newTypes.length];\n            \n            // find correct insertion point to keep largest-smallest order\n            int i = 0;\n            DurationField unitField = fieldType.getDurationType().getField(iChronology);\n            if (unitField.isSupported()) {\n                for (; i < iTypes.length; i++) {\n                    DateTimeFieldType loopType = iTypes[i];\n                    DurationField loopUnitField = loopType.getDurationType().getField(iChronology);\n                    if (loopUnitField.isSupported()) {\n                        int compare = unitField.compareTo(loopUnitField);\n                        if (compare > 0) {\n                            break;\n                        } else if (compare == 0) {\n                            DurationField rangeField = fieldType.getRangeDurationType().getField(iChronology);\n                            DurationField loopRangeField = loopType.getRangeDurationType().getField(iChronology);\n                            if (rangeField.compareTo(loopRangeField) > 0) {\n                                break;\n                            }\n                        }\n                    }\n                }\n            }\n            System.arraycopy(iTypes, 0, newTypes, 0, i);\n            System.arraycopy(iValues, 0, newValues, 0, i);\n            newTypes[i] = fieldType;\n            newValues[i] = value;\n            System.arraycopy(iTypes, i, newTypes, i + 1, newTypes.length - i - 1);\n            System.arraycopy(iValues, i, newValues, i + 1, newValues.length - i - 1);\n            // use public constructor to ensure full validation\n            // this isn\'t overly efficient, but is safe\n            Partial newPartial = new Partial(iChronology, newTypes, newValues);\n            iChronology.validate(newPartial, newValues);\n            return newPartial;\n        }\n        if (value == getValue(index)) {\n            return this;\n        }\n        int[] newValues = getValues();\n        newValues = getField(index).set(this, index, newValues, value);\n        return new Partial(this, newValues);\n    }', 'start_line': 426, 'end_line': 474, 'buggy_lines': [464]}
+================== buggy_method_src ==================
+public Partial with(DateTimeFieldType fieldType, int value) {
+        if (fieldType == null) {
+            throw new IllegalArgumentException("The field type must not be null");
+        }
+        int index = indexOf(fieldType);
+        if (index == -1) {
+            DateTimeFieldType[] newTypes = new DateTimeFieldType[iTypes.length + 1];
+            int[] newValues = new int[newTypes.length];
+            
+            // find correct insertion point to keep largest-smallest order
+            int i = 0;
+            DurationField unitField = fieldType.getDurationType().getField(iChronology);
+            if (unitField.isSupported()) {
+                for (; i < iTypes.length; i++) {
+                    DateTimeFieldType loopType = iTypes[i];
+                    DurationField loopUnitField = loopType.getDurationType().getField(iChronology);
+                    if (loopUnitField.isSupported()) {
+                        int compare = unitField.compareTo(loopUnitField);
+                        if (compare > 0) {
+                            break;
+                        } else if (compare == 0) {
+                            DurationField rangeField = fieldType.getRangeDurationType().getField(iChronology);
+                            DurationField loopRangeField = loopType.getRangeDurationType().getField(iChronology);
+                            if (rangeField.compareTo(loopRangeField) > 0) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            System.arraycopy(iTypes, 0, newTypes, 0, i);
+            System.arraycopy(iValues, 0, newValues, 0, i);
+            newTypes[i] = fieldType;
+            newValues[i] = value;
+            System.arraycopy(iTypes, i, newTypes, i + 1, newTypes.length - i - 1);
+            System.arraycopy(iValues, i, newValues, i + 1, newValues.length - i - 1);
+            // use public constructor to ensure full validation
+            // this isn't overly efficient, but is safe
+            Partial newPartial = new Partial(iChronology, newTypes, newValues);
+            iChronology.validate(newPartial, newValues);
+            return newPartial;
+        }
+        if (value == getValue(index)) {
+            return this;
+        }
+        int[] newValues = getValues();
+        newValues = getField(index).set(this, index, newValues, value);
+        return new Partial(this, newValues);
+    }
+================== test_stack ==================
+org.joda.time.TestPartial_Basics::testWith3
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.fail(Assert.java:64)
+	at junit.framework.TestCase.fail(TestCase.java:235)
+	at org.joda.time.TestPartial_Basics.testWith3(TestPartial_Basics.java:364)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+fail();
+
+================== buggy_lines_in_method ==================
+[39]
+================== buggy_statements ==================
+['            Partial newPartial = new Partial(iChronology, newTypes, newValues);']
+================== buggy_method_src_endswith_buggy_statement ==================
+public Partial with(DateTimeFieldType fieldType, int value) {
+        if (fieldType == null) {
+            throw new IllegalArgumentException("The field type must not be null");
+        }
+        int index = indexOf(fieldType);
+        if (index == -1) {
+            DateTimeFieldType[] newTypes = new DateTimeFieldType[iTypes.length + 1];
+            int[] newValues = new int[newTypes.length];
+            
+            // find correct insertion point to keep largest-smallest order
+            int i = 0;
+            DurationField unitField = fieldType.getDurationType().getField(iChronology);
+            if (unitField.isSupported()) {
+                for (; i < iTypes.length; i++) {
+                    DateTimeFieldType loopType = iTypes[i];
+                    DurationField loopUnitField = loopType.getDurationType().getField(iChronology);
+                    if (loopUnitField.isSupported()) {
+                        int compare = unitField.compareTo(loopUnitField);
+                        if (compare > 0) {
+                            break;
+                        } else if (compare == 0) {
+                            DurationField rangeField = fieldType.getRangeDurationType().getField(iChronology);
+                            DurationField loopRangeField = loopType.getRangeDurationType().getField(iChronology);
+                            if (rangeField.compareTo(loopRangeField) > 0) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            System.arraycopy(iTypes, 0, newTypes, 0, i);
+            System.arraycopy(iValues, 0, newValues, 0, i);
+            newTypes[i] = fieldType;
+            newValues[i] = value;
+            System.arraycopy(iTypes, i, newTypes, i + 1, newTypes.length - i - 1);
+            System.arraycopy(iValues, i, newValues, i + 1, newValues.length - i - 1);
+            // use public constructor to ensure full validation
+            // this isn't overly efficient, but is safe
+            Partial newPartial = new Partial(iChronology, newTypes, newValues);

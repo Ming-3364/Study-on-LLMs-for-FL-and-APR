@@ -1,0 +1,141 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/ser/std/DateTimeSerializerBase.java
+================== buggy_method ==================
+{'method_name': 'createContextual', 'method_body': '@Override\n    public JsonSerializer<?> createContextual(SerializerProvider serializers,\n            BeanProperty property) throws JsonMappingException\n    {\n        // Note! Should not skip if `property` null since that\'d skip check\n        // for config overrides, in case of root value\n        if (property == null) {\n            return this;\n        }\n        JsonFormat.Value format = findFormatOverrides(serializers, property, handledType());\n        if (format == null) {\n            return this;\n        }\n        // Simple case first: serialize as numeric timestamp?\n        JsonFormat.Shape shape = format.getShape();\n        if (shape.isNumeric()) {\n            return withFormat(Boolean.TRUE, null);\n        }\n\n        // 08-Jun-2017, tatu: With [databind#1648], this gets bit tricky..\n        // First: custom pattern will override things\n        if (format.hasPattern()) {\n            final Locale loc = format.hasLocale()\n                            ? format.getLocale()\n                            : serializers.getLocale();\n            SimpleDateFormat df = new SimpleDateFormat(format.getPattern(), loc);\n            TimeZone tz = format.hasTimeZone() ? format.getTimeZone()\n                    : serializers.getTimeZone();\n            df.setTimeZone(tz);\n            return withFormat(Boolean.FALSE, df);\n        }\n\n        // Otherwise, need one of these changes:\n        final boolean hasLocale = format.hasLocale();\n        final boolean hasTZ = format.hasTimeZone();\n        final boolean asString = (shape == JsonFormat.Shape.STRING);\n\n        if (!hasLocale && !hasTZ && !asString) {\n            return this;\n        }\n\n        DateFormat df0 = serializers.getConfig().getDateFormat();\n        // Jackson\'s own `StdDateFormat` is quite easy to deal with...\n        if (df0 instanceof StdDateFormat) {\n            StdDateFormat std = (StdDateFormat) df0;\n            if (format.hasLocale()) {\n                std = std.withLocale(format.getLocale());\n            }\n            if (format.hasTimeZone()) {\n                std = std.withTimeZone(format.getTimeZone());\n            }\n            return withFormat(Boolean.FALSE, std);\n        }\n\n        // 08-Jun-2017, tatu: Unfortunately there\'s no generally usable\n        //    mechanism for changing `DateFormat` instances (or even clone()ing)\n        //    So: require it be `SimpleDateFormat`; can\'t config other types\n        if (!(df0 instanceof SimpleDateFormat)) {\n            serializers.reportBadDefinition(handledType(), String.format(\n"Configured `DateFormat` (%s) not a `SimpleDateFormat`; cannot configure `Locale` or `TimeZone`",\ndf0.getClass().getName()));\n        }\n        SimpleDateFormat df = (SimpleDateFormat) df0;\n        if (hasLocale) {\n            // Ugh. No way to change `Locale`, create copy; must re-crete completely:\n            df = new SimpleDateFormat(df.toPattern(), format.getLocale());\n        } else {\n            df = (SimpleDateFormat) df.clone();\n        }\n        TimeZone newTz = format.getTimeZone();\n        boolean changeTZ = (newTz != null) && !newTz.equals(df.getTimeZone());\n        if (changeTZ) {\n            df.setTimeZone(newTz);\n        }\n        return withFormat(Boolean.FALSE, df);\n    }', 'start_line': 61, 'end_line': 136, 'buggy_lines': [67, 68, 69]}
+================== buggy_method_src ==================
+@Override
+    public JsonSerializer<?> createContextual(SerializerProvider serializers,
+            BeanProperty property) throws JsonMappingException
+    {
+        // Note! Should not skip if `property` null since that'd skip check
+        // for config overrides, in case of root value
+        if (property == null) {
+            return this;
+        }
+        JsonFormat.Value format = findFormatOverrides(serializers, property, handledType());
+        if (format == null) {
+            return this;
+        }
+        // Simple case first: serialize as numeric timestamp?
+        JsonFormat.Shape shape = format.getShape();
+        if (shape.isNumeric()) {
+            return withFormat(Boolean.TRUE, null);
+        }
+
+        // 08-Jun-2017, tatu: With [databind#1648], this gets bit tricky..
+        // First: custom pattern will override things
+        if (format.hasPattern()) {
+            final Locale loc = format.hasLocale()
+                            ? format.getLocale()
+                            : serializers.getLocale();
+            SimpleDateFormat df = new SimpleDateFormat(format.getPattern(), loc);
+            TimeZone tz = format.hasTimeZone() ? format.getTimeZone()
+                    : serializers.getTimeZone();
+            df.setTimeZone(tz);
+            return withFormat(Boolean.FALSE, df);
+        }
+
+        // Otherwise, need one of these changes:
+        final boolean hasLocale = format.hasLocale();
+        final boolean hasTZ = format.hasTimeZone();
+        final boolean asString = (shape == JsonFormat.Shape.STRING);
+
+        if (!hasLocale && !hasTZ && !asString) {
+            return this;
+        }
+
+        DateFormat df0 = serializers.getConfig().getDateFormat();
+        // Jackson's own `StdDateFormat` is quite easy to deal with...
+        if (df0 instanceof StdDateFormat) {
+            StdDateFormat std = (StdDateFormat) df0;
+            if (format.hasLocale()) {
+                std = std.withLocale(format.getLocale());
+            }
+            if (format.hasTimeZone()) {
+                std = std.withTimeZone(format.getTimeZone());
+            }
+            return withFormat(Boolean.FALSE, std);
+        }
+
+        // 08-Jun-2017, tatu: Unfortunately there's no generally usable
+        //    mechanism for changing `DateFormat` instances (or even clone()ing)
+        //    So: require it be `SimpleDateFormat`; can't config other types
+        if (!(df0 instanceof SimpleDateFormat)) {
+            serializers.reportBadDefinition(handledType(), String.format(
+"Configured `DateFormat` (%s) not a `SimpleDateFormat`; cannot configure `Locale` or `TimeZone`",
+df0.getClass().getName()));
+        }
+        SimpleDateFormat df = (SimpleDateFormat) df0;
+        if (hasLocale) {
+            // Ugh. No way to change `Locale`, create copy; must re-crete completely:
+            df = new SimpleDateFormat(df.toPattern(), format.getLocale());
+        } else {
+            df = (SimpleDateFormat) df.clone();
+        }
+        TimeZone newTz = format.getTimeZone();
+        boolean changeTZ = (newTz != null) && !newTz.equals(df.getTimeZone());
+        if (changeTZ) {
+            df.setTimeZone(newTz);
+        }
+        return withFormat(Boolean.FALSE, df);
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.ser.jdk.SqlDateSerializationTest::testSqlDateConfigOverride
+junit.framework.ComparisonFailure: expected:<["1980+04+14"]> but was:<[324547200000]>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.Assert.assertEquals(Assert.java:107)
+	at junit.framework.TestCase.assertEquals(TestCase.java:269)
+	at com.fasterxml.jackson.databind.ser.jdk.SqlDateSerializationTest.testSqlDateConfigOverride(SqlDateSerializationTest.java:104)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals("\"1980+04+14\"",
+
+================== buggy_lines_in_method ==================
+[7, 8, 9]
+================== buggy_statements ==================
+['        if (property == null) {', '            return this;', '        }']
+================== buggy_method_src_endswith_buggy_statement ==================
+@Override
+    public JsonSerializer<?> createContextual(SerializerProvider serializers,
+            BeanProperty property) throws JsonMappingException
+    {
+        // Note! Should not skip if `property` null since that'd skip check
+        // for config overrides, in case of root value
+        if (property == null) {
+            return this;
+        }

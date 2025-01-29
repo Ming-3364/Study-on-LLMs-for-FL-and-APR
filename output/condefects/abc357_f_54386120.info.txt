@@ -1,0 +1,146 @@
+
+================== buggy_file ==================
+faultyVersion.java
+================== buggy_method ==================
+{'method_name': 'solve', 'method_body': 'private void solve(final FastIO io, final String[] args) {\n\t\tio.setAutoFlush(false);\n\t\tio.setAutoOutFlush(false);\n\t\t/*\n\t\t * author: 31536000\n\t\t * AtCoder Beginner Contest 357 F問題\n\t\t * 考察メモ\n\t\t * 明らかに遅延セグ木に乗せると書いてあるのでそれをやるとして\n\t\t * ΣABの寄与について考える\n\t\t * xをAに加えた時、答えにはxΣB追加される\n\t\t * 逆も同様\n\t\t * ということは、(ΣA, ΣB, ΣAB, len)を持てば足りるかな\n\t\t *\n\t\t * 多項式で持ってると思えば、まぁいつもので\n\t\t * 和と積なので近半環になることも明らか、じゃ乗るね\n\t\t */\n\t\tint N = io.nextInt(), Q = io.nextInt();\n\t\tint[] A = io.nextInt(N), B = io.nextInt(N);\n\t\tfinal ModUtility mod = new ModUtility(new Prime(998_244_353), 1_000_000);\n\t\tclass Query {\n\t\t\tint ax, bx;\n\t\t\tQuery(int ax, int bx) {\n\t\t\t\tthis.ax = ax;\n\t\t\t\tthis.bx = bx;\n\t\t\t}\n\t\t\tQuery(Query l, Query r) {\n\t\t\t\tax = mod.add(l.ax, r.ax);\n\t\t\t\tbx = mod.add(l.bx, r.bx);\n\t\t\t}\n\t\t}\n\t\tclass Data {\n\t\t\tint sumA, sumB, sumAB, len;\n\t\t\tData(int i) {\n\t\t\t\tsumA = A[i];\n\t\t\t\tsumB = B[i];\n\t\t\t\tsumAB = mod.multiply(sumA, sumB);\n\t\t\t\tlen = 1;\n\t\t\t}\n\t\t\tData(Data l, Data r) {\n\t\t\t\tsumA = mod.add(l.sumA, r.sumA);\n\t\t\t\tsumB = mod.add(l.sumB, r.sumB);\n\t\t\t\tsumAB = mod.add(l.sumAB, r.sumAB);\n\t\t\t\tlen = l.len + r.len;\n\t\t\t}\n\t\t\tData(Query x, Data d) {\n\t\t\t\tsumA = mod.add(d.sumA, mod.multiply(x.ax, d.len));\n\t\t\t\tsumB = mod.add(d.sumB, mod.multiply(x.bx, d.len));\n\t\t\t\tsumAB = mod.add(d.sumAB, mod.add(mod.multiply(x.ax, x.bx), mod.add(mod.multiply(x.ax, d.sumB), mod.multiply(x.bx, d.sumA))));\n\t\t\t\tlen = d.len;\n\t\t\t}\n\t\t\tData() {\n\t\t\t\tsumA = sumB = sumAB = len = 0;\n\t\t\t}\n\t\t\t@Override\n\t\t\tpublic String toString() {\n\t\t\t\treturn "(" + sumA + ", " + sumB + ", " + sumAB + ", " + len + ")";\n\t\t\t}\n\t\t}\n\t\tACL.LazySegTree<Data, Query> segTree = new ACL.LazySegTree<>(N, Data::new, new Data(), Data::new, Query::new, new Query(0, 0));\n\t\tfor (int i = 0;i < N;++ i) segTree.set(i, new Data(i));\n\t\twhile(Q --> 0) {\n\t\t\tint query = io.nextInt(), l = io.nextInt() - 1, r = io.nextInt();\n\t\t\tif (query == 1) {\n\t\t\t\tQuery q = new Query(io.nextInt(), 0);\n\t\t\t\tsegTree.apply(l, r, q);\n\t\t\t} else if (query == 2) {\n\t\t\t\tQuery q = new Query(0, io.nextInt());\n\t\t\t\tsegTree.apply(l, r, q);\n\t\t\t} else {\n\t\t\t\tio.println(segTree.prod(l, r).sumAB);\n\t\t\t}\n\t\t}\n\t}\n\n\t/** デバッグ用コードのお供に */\n\tprivate static boolean DEBUG = false;\n\t/** 確保するメモリの大きさ(単位: MB) */\n\tprivate static final long MEMORY = 64;\n\tprivate final FastIO io;\n\tprivate final String[] args;\n\n\tpublic static void main(final String[] args) {\n\t\tThread.setDefaultU', 'start_line': 23, 'end_line': 95}
+================== buggy_method_src ==================
+private void solve(final FastIO io, final String[] args) {
+		io.setAutoFlush(false);
+		io.setAutoOutFlush(false);
+		/*
+		 * author: 31536000
+		 * AtCoder Beginner Contest 357 F問題
+		 * 考察メモ
+		 * 明らかに遅延セグ木に乗せると書いてあるのでそれをやるとして
+		 * ΣABの寄与について考える
+		 * xをAに加えた時、答えにはxΣB追加される
+		 * 逆も同様
+		 * ということは、(ΣA, ΣB, ΣAB, len)を持てば足りるかな
+		 *
+		 * 多項式で持ってると思えば、まぁいつもので
+		 * 和と積なので近半環になることも明らか、じゃ乗るね
+		 */
+		int N = io.nextInt(), Q = io.nextInt();
+		int[] A = io.nextInt(N), B = io.nextInt(N);
+		final ModUtility mod = new ModUtility(new Prime(998_244_353), 1_000_000);
+		class Query {
+			int ax, bx;
+			Query(int ax, int bx) {
+				this.ax = ax;
+				this.bx = bx;
+			}
+			Query(Query l, Query r) {
+				ax = mod.add(l.ax, r.ax);
+				bx = mod.add(l.bx, r.bx);
+			}
+		}
+		class Data {
+			int sumA, sumB, sumAB, len;
+			Data(int i) {
+				sumA = A[i];
+				sumB = B[i];
+				sumAB = mod.multiply(sumA, sumB);
+				len = 1;
+			}
+			Data(Data l, Data r) {
+				sumA = mod.add(l.sumA, r.sumA);
+				sumB = mod.add(l.sumB, r.sumB);
+				sumAB = mod.add(l.sumAB, r.sumAB);
+				len = l.len + r.len;
+			}
+			Data(Query x, Data d) {
+				sumA = mod.add(d.sumA, mod.multiply(x.ax, d.len));
+				sumB = mod.add(d.sumB, mod.multiply(x.bx, d.len));
+				sumAB = mod.add(d.sumAB, mod.add(mod.multiply(x.ax, x.bx), mod.add(mod.multiply(x.ax, d.sumB), mod.multiply(x.bx, d.sumA))));
+				len = d.len;
+			}
+			Data() {
+				sumA = sumB = sumAB = len = 0;
+			}
+			@Override
+			public String toString() {
+				return "(" + sumA + ", " + sumB + ", " + sumAB + ", " + len + ")";
+			}
+		}
+		ACL.LazySegTree<Data, Query> segTree = new ACL.LazySegTree<>(N, Data::new, new Data(), Data::new, Query::new, new Query(0, 0));
+		for (int i = 0;i < N;++ i) segTree.set(i, new Data(i));
+		while(Q --> 0) {
+			int query = io.nextInt(), l = io.nextInt() - 1, r = io.nextInt();
+			if (query == 1) {
+				Query q = new Query(io.nextInt(), 0);
+				segTree.apply(l, r, q);
+			} else if (query == 2) {
+				Query q = new Query(0, io.nextInt());
+				segTree.apply(l, r, q);
+			} else {
+				io.println(segTree.prod(l, r).sumAB);
+			}
+		}
+	}
+
+	/** デバッグ用コードのお供に */
+	private static boolean DEBUG = false;
+	/** 確保するメモリの大きさ(単位: MB) */
+	private static final long MEMORY = 64;
+	private final FastIO io;
+	private final String[] args;
+
+	public static void main(final String[] args) {
+		Thread.setDefaultU
+================== test_stack ==================
+None
+================== test_assert ==================
+None
+================== buggy_lines_in_method ==================
+[48]
+================== buggy_statements ==================
+['\t\t\t\tsumAB = mod.add(d.sumAB, mod.add(mod.multiply(x.ax, x.bx), mod.add(mod.multiply(x.ax, d.sumB), mod.multiply(x.bx, d.sumA))));']
+================== buggy_method_src_endswith_buggy_statement ==================
+private void solve(final FastIO io, final String[] args) {
+		io.setAutoFlush(false);
+		io.setAutoOutFlush(false);
+		/*
+		 * author: 31536000
+		 * AtCoder Beginner Contest 357 F問題
+		 * 考察メモ
+		 * 明らかに遅延セグ木に乗せると書いてあるのでそれをやるとして
+		 * ΣABの寄与について考える
+		 * xをAに加えた時、答えにはxΣB追加される
+		 * 逆も同様
+		 * ということは、(ΣA, ΣB, ΣAB, len)を持てば足りるかな
+		 *
+		 * 多項式で持ってると思えば、まぁいつもので
+		 * 和と積なので近半環になることも明らか、じゃ乗るね
+		 */
+		int N = io.nextInt(), Q = io.nextInt();
+		int[] A = io.nextInt(N), B = io.nextInt(N);
+		final ModUtility mod = new ModUtility(new Prime(998_244_353), 1_000_000);
+		class Query {
+			int ax, bx;
+			Query(int ax, int bx) {
+				this.ax = ax;
+				this.bx = bx;
+			}
+			Query(Query l, Query r) {
+				ax = mod.add(l.ax, r.ax);
+				bx = mod.add(l.bx, r.bx);
+			}
+		}
+		class Data {
+			int sumA, sumB, sumAB, len;
+			Data(int i) {
+				sumA = A[i];
+				sumB = B[i];
+				sumAB = mod.multiply(sumA, sumB);
+				len = 1;
+			}
+			Data(Data l, Data r) {
+				sumA = mod.add(l.sumA, r.sumA);
+				sumB = mod.add(l.sumB, r.sumB);
+				sumAB = mod.add(l.sumAB, r.sumAB);
+				len = l.len + r.len;
+			}
+			Data(Query x, Data d) {
+				sumA = mod.add(d.sumA, mod.multiply(x.ax, d.len));
+				sumB = mod.add(d.sumB, mod.multiply(x.bx, d.len));
+				sumAB = mod.add(d.sumAB, mod.add(mod.multiply(x.ax, x.bx), mod.add(mod.multiply(x.ax, d.sumB), mod.multiply(x.bx, d.sumA))));

@@ -1,0 +1,1898 @@
+
+================== prompt_fl_1 ==================
+
+source code:
+protected BeanPropertyWriter buildWriter(SerializerProvider prov,
+            BeanPropertyDefinition propDef, JavaType declaredType, JsonSerializer<?> ser,
+            TypeSerializer typeSer, TypeSerializer contentTypeSer,
+            AnnotatedMember am, boolean defaultUseStaticTyping)
+        throws JsonMappingException
+    {
+        // do we have annotation that forces type to use (to declared type or its super type)?
+        JavaType serializationType;
+        try {
+            serializationType = findSerializationType(am, defaultUseStaticTyping, declaredType);
+        } catch (JsonMappingException e) {
+            if (propDef == null) {
+                return prov.reportBadDefinition(declaredType, e.getMessage());
+            }
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef, e.getMessage());
+        }
+
+        // Container types can have separate type serializers for content (value / element) type
+        if (contentTypeSer != null) {
+            // 04-Feb-2010, tatu: Let's force static typing for collection, if there is
+            //    type information for contents. Should work well (for JAXB case); can be
+            //    revisited if this causes problems.
+            if (serializationType == null) {
+//                serializationType = TypeFactory.type(am.getGenericType(), _beanDesc.getType());
+                serializationType = declaredType;
+            }
+            JavaType ct = serializationType.getContentType();
+            // Not exactly sure why, but this used to occur; better check explicitly:
+            if (ct == null) {
+                prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                        "serialization type "+serializationType+" has no content");
+            }
+            serializationType = serializationType.withContentTypeHandler(contentTypeSer);
+            ct = serializationType.getContentType();
+        }
+
+        Object valueToSuppress = null;
+        boolean suppressNulls = false;
+
+        // 12-Jul-2016, tatu: [databind#1256] Need to make sure we consider type refinement
+        JavaType actualType = (serializationType == null) ? declaredType : serializationType;
+        
+        // 17-Mar-2017: [databind#1522] Allow config override per property type
+        AnnotatedMember accessor = propDef.getAccessor();
+        if (accessor == null) {
+            // neither Setter nor ConstructorParameter are expected here
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                    "could not determine property type");
+        }
+        Class<?> rawPropertyType = accessor.getRawType();
+
+        // 17-Aug-2016, tatu: Default inclusion covers global default (for all types), as well
+        //   as type-default for enclosing POJO. What we need, then, is per-type default (if any)
+        //   for declared property type... and finally property annotation overrides
+        JsonInclude.Value inclV = _config.getDefaultInclusion(actualType.getRawClass(),
+                rawPropertyType, _defaultInclusion);
+
+        // property annotation override
+        
+        inclV = inclV.withOverrides(propDef.findInclusion());
+
+        JsonInclude.Include inclusion = inclV.getValueInclusion();
+        if (inclusion == JsonInclude.Include.USE_DEFAULTS) { // should not occur but...
+            inclusion = JsonInclude.Include.ALWAYS;
+        }
+        switch (inclusion) {
+        case NON_DEFAULT:
+            // 11-Nov-2015, tatu: This is tricky because semantics differ between cases,
+            //    so that if enclosing class has this, we may need to access values of property,
+            //    whereas for global defaults OR per-property overrides, we have more
+            //    static definition. Sigh.
+            // First: case of class/type specifying it; try to find POJO property defaults
+            Object defaultBean;
+
+            // 16-Oct-2016, tatu: Note: if we cannot for some reason create "default instance",
+            //    revert logic to the case of general/per-property handling, so both
+            //    type-default AND null are to be excluded.
+            //    (as per [databind#1417]
+            if (_useRealPropertyDefaults && (defaultBean = getDefaultBean()) != null) {
+                // 07-Sep-2016, tatu: may also need to front-load access forcing now
+                if (prov.isEnabled(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS)) {
+                    am.fixAccess(_config.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
+                }
+                try {
+                    valueToSuppress = am.getValue(defaultBean);
+                } catch (Exception e) {
+                    _throwWrapped(e, propDef.getName(), defaultBean);
+                }
+            } else {
+                valueToSuppress = BeanUtil.getDefaultValue(actualType);
+                suppressNulls = true;
+            }
+            if (valueToSuppress == null) {
+                suppressNulls = true;
+            } else {
+                if (valueToSuppress.getClass().isArray()) {
+                    valueToSuppress = ArrayBuilders.getArrayComparator(valueToSuppress);
+                }
+            }
+            break;
+        case NON_ABSENT: // new with 2.6, to support Guava/JDK8 Optionals
+            // always suppress nulls
+            suppressNulls = true;
+            // and for referential types, also "empty", which in their case means "absent"
+            if (actualType.isReferenceType()) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        case NON_EMPTY:
+            // always suppress nulls
+            suppressNulls = true;
+            // but possibly also 'empty' values:
+            valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            break;
+        case CUSTOM: // new with 2.9
+            valueToSuppress = prov.includeFilterInstance(propDef, inclV.getValueFilter());
+            if (valueToSuppress == null) { // is this legal?
+                suppressNulls = true;
+            } else {
+                suppressNulls = prov.includeFilterSuppressNulls(valueToSuppress);
+            }
+            break;
+        case NON_NULL:
+            suppressNulls = true;
+            // fall through
+        case ALWAYS: // default
+        default:
+            // we may still want to suppress empty collections
+            if (actualType.isContainerType()
+                    && !_config.isEnabled(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS)) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        }
+        Class<?>[] views = propDef.findViews();
+        if (views == null) {
+            views = _beanDesc.findDefaultViews();
+        }
+        BeanPropertyWriter bpw = new BeanPropertyWriter(propDef,
+                am, _beanDesc.getClassAnnotations(), declaredType,
+                ser, typeSer, serializationType, suppressNulls, valueToSuppress, views);
+
+        // How about custom null serializer?
+        Object serDef = _annotationIntrospector.findNullSerializer(am);
+        if (serDef != null) {
+            bpw.assignNullSerializer(prov.serializerInstance(am, serDef));
+        }
+        // And then, handling of unwrapping
+        NameTransformer unwrapper = _annotationIntrospector.findUnwrappingNameTransformer(am);
+        if (unwrapper != null) {
+            bpw = bpw.unwrappingWriter(unwrapper);
+        }
+        return bpw;
+    }
+
+There is a bug in the above code, please help me locate it.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_2 ==================
+
+source code:
+protected BeanPropertyWriter buildWriter(SerializerProvider prov,
+            BeanPropertyDefinition propDef, JavaType declaredType, JsonSerializer<?> ser,
+            TypeSerializer typeSer, TypeSerializer contentTypeSer,
+            AnnotatedMember am, boolean defaultUseStaticTyping)
+        throws JsonMappingException
+    {
+        // do we have annotation that forces type to use (to declared type or its super type)?
+        JavaType serializationType;
+        try {
+            serializationType = findSerializationType(am, defaultUseStaticTyping, declaredType);
+        } catch (JsonMappingException e) {
+            if (propDef == null) {
+                return prov.reportBadDefinition(declaredType, e.getMessage());
+            }
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef, e.getMessage());
+        }
+
+        // Container types can have separate type serializers for content (value / element) type
+        if (contentTypeSer != null) {
+            // 04-Feb-2010, tatu: Let's force static typing for collection, if there is
+            //    type information for contents. Should work well (for JAXB case); can be
+            //    revisited if this causes problems.
+            if (serializationType == null) {
+//                serializationType = TypeFactory.type(am.getGenericType(), _beanDesc.getType());
+                serializationType = declaredType;
+            }
+            JavaType ct = serializationType.getContentType();
+            // Not exactly sure why, but this used to occur; better check explicitly:
+            if (ct == null) {
+                prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                        "serialization type "+serializationType+" has no content");
+            }
+            serializationType = serializationType.withContentTypeHandler(contentTypeSer);
+            ct = serializationType.getContentType();
+        }
+
+        Object valueToSuppress = null;
+        boolean suppressNulls = false;
+
+        // 12-Jul-2016, tatu: [databind#1256] Need to make sure we consider type refinement
+        JavaType actualType = (serializationType == null) ? declaredType : serializationType;
+        
+        // 17-Mar-2017: [databind#1522] Allow config override per property type
+        AnnotatedMember accessor = propDef.getAccessor();
+        if (accessor == null) {
+            // neither Setter nor ConstructorParameter are expected here
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                    "could not determine property type");
+        }
+        Class<?> rawPropertyType = accessor.getRawType();
+
+        // 17-Aug-2016, tatu: Default inclusion covers global default (for all types), as well
+        //   as type-default for enclosing POJO. What we need, then, is per-type default (if any)
+        //   for declared property type... and finally property annotation overrides
+        JsonInclude.Value inclV = _config.getDefaultInclusion(actualType.getRawClass(),
+                rawPropertyType, _defaultInclusion);
+
+        // property annotation override
+        
+        inclV = inclV.withOverrides(propDef.findInclusion());
+
+        JsonInclude.Include inclusion = inclV.getValueInclusion();
+        if (inclusion == JsonInclude.Include.USE_DEFAULTS) { // should not occur but...
+            inclusion = JsonInclude.Include.ALWAYS;
+        }
+        switch (inclusion) {
+        case NON_DEFAULT:
+            // 11-Nov-2015, tatu: This is tricky because semantics differ between cases,
+            //    so that if enclosing class has this, we may need to access values of property,
+            //    whereas for global defaults OR per-property overrides, we have more
+            //    static definition. Sigh.
+            // First: case of class/type specifying it; try to find POJO property defaults
+            Object defaultBean;
+
+            // 16-Oct-2016, tatu: Note: if we cannot for some reason create "default instance",
+            //    revert logic to the case of general/per-property handling, so both
+            //    type-default AND null are to be excluded.
+            //    (as per [databind#1417]
+            if (_useRealPropertyDefaults && (defaultBean = getDefaultBean()) != null) {
+                // 07-Sep-2016, tatu: may also need to front-load access forcing now
+                if (prov.isEnabled(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS)) {
+                    am.fixAccess(_config.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
+                }
+                try {
+                    valueToSuppress = am.getValue(defaultBean);
+                } catch (Exception e) {
+                    _throwWrapped(e, propDef.getName(), defaultBean);
+                }
+            } else {
+                valueToSuppress = BeanUtil.getDefaultValue(actualType);
+                suppressNulls = true;
+            }
+            if (valueToSuppress == null) {
+                suppressNulls = true;
+            } else {
+                if (valueToSuppress.getClass().isArray()) {
+                    valueToSuppress = ArrayBuilders.getArrayComparator(valueToSuppress);
+                }
+            }
+            break;
+        case NON_ABSENT: // new with 2.6, to support Guava/JDK8 Optionals
+            // always suppress nulls
+            suppressNulls = true;
+            // and for referential types, also "empty", which in their case means "absent"
+            if (actualType.isReferenceType()) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        case NON_EMPTY:
+            // always suppress nulls
+            suppressNulls = true;
+            // but possibly also 'empty' values:
+            valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            break;
+        case CUSTOM: // new with 2.9
+            valueToSuppress = prov.includeFilterInstance(propDef, inclV.getValueFilter());
+            if (valueToSuppress == null) { // is this legal?
+                suppressNulls = true;
+            } else {
+                suppressNulls = prov.includeFilterSuppressNulls(valueToSuppress);
+            }
+            break;
+        case NON_NULL:
+            suppressNulls = true;
+            // fall through
+        case ALWAYS: // default
+        default:
+            // we may still want to suppress empty collections
+            if (actualType.isContainerType()
+                    && !_config.isEnabled(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS)) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        }
+        Class<?>[] views = propDef.findViews();
+        if (views == null) {
+            views = _beanDesc.findDefaultViews();
+        }
+        BeanPropertyWriter bpw = new BeanPropertyWriter(propDef,
+                am, _beanDesc.getClassAnnotations(), declaredType,
+                ser, typeSer, serializationType, suppressNulls, valueToSuppress, views);
+
+        // How about custom null serializer?
+        Object serDef = _annotationIntrospector.findNullSerializer(am);
+        if (serDef != null) {
+            bpw.assignNullSerializer(prov.serializerInstance(am, serDef));
+        }
+        // And then, handling of unwrapping
+        NameTransformer unwrapper = _annotationIntrospector.findUnwrappingNameTransformer(am);
+        if (unwrapper != null) {
+            bpw = bpw.unwrappingWriter(unwrapper);
+        }
+        return bpw;
+    }
+
+stack trace:
+com.fasterxml.jackson.databind.exc.BasicExceptionTest::testLocationAddition
+junit.framework.AssertionFailedError: Should only get one 'at [' marker, got 2, source: Cannot deserialize Map key of type `com.fasterxml.jackson.databind.BaseMapTest$ABC` from String "value": not a valid representation, problem: (com.fasterxml.jackson.databind.exc.InvalidFormatException) Cannot deserialize Map key of type `com.fasterxml.jackson.databind.BaseMapTest$ABC` from String "value": not one of values excepted for Enum class: [A, B, C]
+ at [Source: (String)"{"value":"foo"}"; line: 1, column: 2]
+ at [Source: (String)"{"value":"foo"}"; line: 1, column: 2]
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.TestCase.fail(TestCase.java:227)
+	at com.fasterxml.jackson.databind.exc.BasicExceptionTest.testLocationAddition(BasicExceptionTest.java:127)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_3 ==================
+
+source code:
+protected BeanPropertyWriter buildWriter(SerializerProvider prov,
+            BeanPropertyDefinition propDef, JavaType declaredType, JsonSerializer<?> ser,
+            TypeSerializer typeSer, TypeSerializer contentTypeSer,
+            AnnotatedMember am, boolean defaultUseStaticTyping)
+        throws JsonMappingException
+    {
+        // do we have annotation that forces type to use (to declared type or its super type)?
+        JavaType serializationType;
+        try {
+            serializationType = findSerializationType(am, defaultUseStaticTyping, declaredType);
+        } catch (JsonMappingException e) {
+            if (propDef == null) {
+                return prov.reportBadDefinition(declaredType, e.getMessage());
+            }
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef, e.getMessage());
+        }
+
+        // Container types can have separate type serializers for content (value / element) type
+        if (contentTypeSer != null) {
+            // 04-Feb-2010, tatu: Let's force static typing for collection, if there is
+            //    type information for contents. Should work well (for JAXB case); can be
+            //    revisited if this causes problems.
+            if (serializationType == null) {
+//                serializationType = TypeFactory.type(am.getGenericType(), _beanDesc.getType());
+                serializationType = declaredType;
+            }
+            JavaType ct = serializationType.getContentType();
+            // Not exactly sure why, but this used to occur; better check explicitly:
+            if (ct == null) {
+                prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                        "serialization type "+serializationType+" has no content");
+            }
+            serializationType = serializationType.withContentTypeHandler(contentTypeSer);
+            ct = serializationType.getContentType();
+        }
+
+        Object valueToSuppress = null;
+        boolean suppressNulls = false;
+
+        // 12-Jul-2016, tatu: [databind#1256] Need to make sure we consider type refinement
+        JavaType actualType = (serializationType == null) ? declaredType : serializationType;
+        
+        // 17-Mar-2017: [databind#1522] Allow config override per property type
+        AnnotatedMember accessor = propDef.getAccessor();
+        if (accessor == null) {
+            // neither Setter nor ConstructorParameter are expected here
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                    "could not determine property type");
+        }
+        Class<?> rawPropertyType = accessor.getRawType();
+
+        // 17-Aug-2016, tatu: Default inclusion covers global default (for all types), as well
+        //   as type-default for enclosing POJO. What we need, then, is per-type default (if any)
+        //   for declared property type... and finally property annotation overrides
+        JsonInclude.Value inclV = _config.getDefaultInclusion(actualType.getRawClass(),
+                rawPropertyType, _defaultInclusion);
+
+        // property annotation override
+        
+        inclV = inclV.withOverrides(propDef.findInclusion());
+
+        JsonInclude.Include inclusion = inclV.getValueInclusion();
+        if (inclusion == JsonInclude.Include.USE_DEFAULTS) { // should not occur but...
+            inclusion = JsonInclude.Include.ALWAYS;
+        }
+        switch (inclusion) {
+        case NON_DEFAULT:
+            // 11-Nov-2015, tatu: This is tricky because semantics differ between cases,
+            //    so that if enclosing class has this, we may need to access values of property,
+            //    whereas for global defaults OR per-property overrides, we have more
+            //    static definition. Sigh.
+            // First: case of class/type specifying it; try to find POJO property defaults
+            Object defaultBean;
+
+            // 16-Oct-2016, tatu: Note: if we cannot for some reason create "default instance",
+            //    revert logic to the case of general/per-property handling, so both
+            //    type-default AND null are to be excluded.
+            //    (as per [databind#1417]
+            if (_useRealPropertyDefaults && (defaultBean = getDefaultBean()) != null) {
+                // 07-Sep-2016, tatu: may also need to front-load access forcing now
+                if (prov.isEnabled(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS)) {
+                    am.fixAccess(_config.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
+                }
+                try {
+                    valueToSuppress = am.getValue(defaultBean);
+                } catch (Exception e) {
+                    _throwWrapped(e, propDef.getName(), defaultBean);
+                }
+            } else {
+                valueToSuppress = BeanUtil.getDefaultValue(actualType);
+                suppressNulls = true;
+            }
+            if (valueToSuppress == null) {
+                suppressNulls = true;
+            } else {
+                if (valueToSuppress.getClass().isArray()) {
+                    valueToSuppress = ArrayBuilders.getArrayComparator(valueToSuppress);
+                }
+            }
+            break;
+        case NON_ABSENT: // new with 2.6, to support Guava/JDK8 Optionals
+            // always suppress nulls
+            suppressNulls = true;
+            // and for referential types, also "empty", which in their case means "absent"
+            if (actualType.isReferenceType()) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        case NON_EMPTY:
+            // always suppress nulls
+            suppressNulls = true;
+            // but possibly also 'empty' values:
+            valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            break;
+        case CUSTOM: // new with 2.9
+            valueToSuppress = prov.includeFilterInstance(propDef, inclV.getValueFilter());
+            if (valueToSuppress == null) { // is this legal?
+                suppressNulls = true;
+            } else {
+                suppressNulls = prov.includeFilterSuppressNulls(valueToSuppress);
+            }
+            break;
+        case NON_NULL:
+            suppressNulls = true;
+            // fall through
+        case ALWAYS: // default
+        default:
+            // we may still want to suppress empty collections
+            if (actualType.isContainerType()
+                    && !_config.isEnabled(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS)) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        }
+        Class<?>[] views = propDef.findViews();
+        if (views == null) {
+            views = _beanDesc.findDefaultViews();
+        }
+        BeanPropertyWriter bpw = new BeanPropertyWriter(propDef,
+                am, _beanDesc.getClassAnnotations(), declaredType,
+                ser, typeSer, serializationType, suppressNulls, valueToSuppress, views);
+
+        // How about custom null serializer?
+        Object serDef = _annotationIntrospector.findNullSerializer(am);
+        if (serDef != null) {
+            bpw.assignNullSerializer(prov.serializerInstance(am, serDef));
+        }
+        // And then, handling of unwrapping
+        NameTransformer unwrapper = _annotationIntrospector.findUnwrappingNameTransformer(am);
+        if (unwrapper != null) {
+            bpw = bpw.unwrappingWriter(unwrapper);
+        }
+        return bpw;
+    }
+
+stack trace:
+com.fasterxml.jackson.databind.exc.BasicExceptionTest::testLocationAddition
+junit.framework.AssertionFailedError: Should only get one 'at [' marker, got 2, source: Cannot deserialize Map key of type `com.fasterxml.jackson.databind.BaseMapTest$ABC` from String "value": not a valid representation, problem: (com.fasterxml.jackson.databind.exc.InvalidFormatException) Cannot deserialize Map key of type `com.fasterxml.jackson.databind.BaseMapTest$ABC` from String "value": not one of values excepted for Enum class: [A, B, C]
+ at [Source: (String)"{"value":"foo"}"; line: 1, column: 2]
+ at [Source: (String)"{"value":"foo"}"; line: 1, column: 2]
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.TestCase.fail(TestCase.java:227)
+	at com.fasterxml.jackson.databind.exc.BasicExceptionTest.testLocationAddition(BasicExceptionTest.java:127)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+failure assertion code:
+fail("Should only get one 'at [' marker, got "+(str.length-1)+", source: "+msg);
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_4 ==================
+
+source code:
+protected BeanPropertyWriter buildWriter(SerializerProvider prov,
+            BeanPropertyDefinition propDef, JavaType declaredType, JsonSerializer<?> ser,
+            TypeSerializer typeSer, TypeSerializer contentTypeSer,
+            AnnotatedMember am, boolean defaultUseStaticTyping)
+        throws JsonMappingException
+    {
+        // do we have annotation that forces type to use (to declared type or its super type)?
+        JavaType serializationType;
+        try {
+            serializationType = findSerializationType(am, defaultUseStaticTyping, declaredType);
+        } catch (JsonMappingException e) {
+            if (propDef == null) {
+                return prov.reportBadDefinition(declaredType, e.getMessage());
+            }
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef, e.getMessage());
+        }
+
+        // Container types can have separate type serializers for content (value / element) type
+        if (contentTypeSer != null) {
+            // 04-Feb-2010, tatu: Let's force static typing for collection, if there is
+            //    type information for contents. Should work well (for JAXB case); can be
+            //    revisited if this causes problems.
+            if (serializationType == null) {
+//                serializationType = TypeFactory.type(am.getGenericType(), _beanDesc.getType());
+                serializationType = declaredType;
+            }
+            JavaType ct = serializationType.getContentType();
+            // Not exactly sure why, but this used to occur; better check explicitly:
+            if (ct == null) {
+                prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                        "serialization type "+serializationType+" has no content");
+            }
+            serializationType = serializationType.withContentTypeHandler(contentTypeSer);
+            ct = serializationType.getContentType();
+        }
+
+        Object valueToSuppress = null;
+        boolean suppressNulls = false;
+
+        // 12-Jul-2016, tatu: [databind#1256] Need to make sure we consider type refinement
+        JavaType actualType = (serializationType == null) ? declaredType : serializationType;
+        
+        // 17-Mar-2017: [databind#1522] Allow config override per property type
+        AnnotatedMember accessor = propDef.getAccessor();
+        if (accessor == null) {
+            // neither Setter nor ConstructorParameter are expected here
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                    "could not determine property type");
+        }
+        Class<?> rawPropertyType = accessor.getRawType();
+
+        // 17-Aug-2016, tatu: Default inclusion covers global default (for all types), as well
+        //   as type-default for enclosing POJO. What we need, then, is per-type default (if any)
+        //   for declared property type... and finally property annotation overrides
+        JsonInclude.Value inclV = _config.getDefaultInclusion(actualType.getRawClass(),
+                rawPropertyType, _defaultInclusion);
+
+        // property annotation override
+        
+        inclV = inclV.withOverrides(propDef.findInclusion());
+
+        JsonInclude.Include inclusion = inclV.getValueInclusion();
+        if (inclusion == JsonInclude.Include.USE_DEFAULTS) { // should not occur but...
+            inclusion = JsonInclude.Include.ALWAYS;
+        }
+        switch (inclusion) {
+        case NON_DEFAULT:
+            // 11-Nov-2015, tatu: This is tricky because semantics differ between cases,
+            //    so that if enclosing class has this, we may need to access values of property,
+            //    whereas for global defaults OR per-property overrides, we have more
+            //    static definition. Sigh.
+            // First: case of class/type specifying it; try to find POJO property defaults
+            Object defaultBean;
+
+            // 16-Oct-2016, tatu: Note: if we cannot for some reason create "default instance",
+            //    revert logic to the case of general/per-property handling, so both
+            //    type-default AND null are to be excluded.
+            //    (as per [databind#1417]
+            if (_useRealPropertyDefaults && (defaultBean = getDefaultBean()) != null) {
+                // 07-Sep-2016, tatu: may also need to front-load access forcing now
+                if (prov.isEnabled(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS)) {
+                    am.fixAccess(_config.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
+                }
+                try {
+                    valueToSuppress = am.getValue(defaultBean);
+                } catch (Exception e) {
+                    _throwWrapped(e, propDef.getName(), defaultBean);
+                }
+            } else {
+                valueToSuppress = BeanUtil.getDefaultValue(actualType);
+                suppressNulls = true;
+            }
+            if (valueToSuppress == null) {
+                suppressNulls = true;
+            } else {
+                if (valueToSuppress.getClass().isArray()) {
+                    valueToSuppress = ArrayBuilders.getArrayComparator(valueToSuppress);
+                }
+            }
+            break;
+        case NON_ABSENT: // new with 2.6, to support Guava/JDK8 Optionals
+            // always suppress nulls
+            suppressNulls = true;
+            // and for referential types, also "empty", which in their case means "absent"
+            if (actualType.isReferenceType()) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        case NON_EMPTY:
+            // always suppress nulls
+            suppressNulls = true;
+            // but possibly also 'empty' values:
+            valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            break;
+        case CUSTOM: // new with 2.9
+            valueToSuppress = prov.includeFilterInstance(propDef, inclV.getValueFilter());
+            if (valueToSuppress == null) { // is this legal?
+                suppressNulls = true;
+            } else {
+                suppressNulls = prov.includeFilterSuppressNulls(valueToSuppress);
+            }
+            break;
+        case NON_NULL:
+            suppressNulls = true;
+            // fall through
+        case ALWAYS: // default
+        default:
+            // we may still want to suppress empty collections
+            if (actualType.isContainerType()
+                    && !_config.isEnabled(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS)) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        }
+        Class<?>[] views = propDef.findViews();
+        if (views == null) {
+            views = _beanDesc.findDefaultViews();
+        }
+        BeanPropertyWriter bpw = new BeanPropertyWriter(propDef,
+                am, _beanDesc.getClassAnnotations(), declaredType,
+                ser, typeSer, serializationType, suppressNulls, valueToSuppress, views);
+
+        // How about custom null serializer?
+        Object serDef = _annotationIntrospector.findNullSerializer(am);
+        if (serDef != null) {
+            bpw.assignNullSerializer(prov.serializerInstance(am, serDef));
+        }
+        // And then, handling of unwrapping
+        NameTransformer unwrapper = _annotationIntrospector.findUnwrappingNameTransformer(am);
+        if (unwrapper != null) {
+            bpw = bpw.unwrappingWriter(unwrapper);
+        }
+        return bpw;
+    }
+
+There is a bug in the above code, please help me locate it.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_5 ==================
+
+source code:
+protected BeanPropertyWriter buildWriter(SerializerProvider prov,
+            BeanPropertyDefinition propDef, JavaType declaredType, JsonSerializer<?> ser,
+            TypeSerializer typeSer, TypeSerializer contentTypeSer,
+            AnnotatedMember am, boolean defaultUseStaticTyping)
+        throws JsonMappingException
+    {
+        // do we have annotation that forces type to use (to declared type or its super type)?
+        JavaType serializationType;
+        try {
+            serializationType = findSerializationType(am, defaultUseStaticTyping, declaredType);
+        } catch (JsonMappingException e) {
+            if (propDef == null) {
+                return prov.reportBadDefinition(declaredType, e.getMessage());
+            }
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef, e.getMessage());
+        }
+
+        // Container types can have separate type serializers for content (value / element) type
+        if (contentTypeSer != null) {
+            // 04-Feb-2010, tatu: Let's force static typing for collection, if there is
+            //    type information for contents. Should work well (for JAXB case); can be
+            //    revisited if this causes problems.
+            if (serializationType == null) {
+//                serializationType = TypeFactory.type(am.getGenericType(), _beanDesc.getType());
+                serializationType = declaredType;
+            }
+            JavaType ct = serializationType.getContentType();
+            // Not exactly sure why, but this used to occur; better check explicitly:
+            if (ct == null) {
+                prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                        "serialization type "+serializationType+" has no content");
+            }
+            serializationType = serializationType.withContentTypeHandler(contentTypeSer);
+            ct = serializationType.getContentType();
+        }
+
+        Object valueToSuppress = null;
+        boolean suppressNulls = false;
+
+        // 12-Jul-2016, tatu: [databind#1256] Need to make sure we consider type refinement
+        JavaType actualType = (serializationType == null) ? declaredType : serializationType;
+        
+        // 17-Mar-2017: [databind#1522] Allow config override per property type
+        AnnotatedMember accessor = propDef.getAccessor();
+        if (accessor == null) {
+            // neither Setter nor ConstructorParameter are expected here
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                    "could not determine property type");
+        }
+        Class<?> rawPropertyType = accessor.getRawType();
+
+        // 17-Aug-2016, tatu: Default inclusion covers global default (for all types), as well
+        //   as type-default for enclosing POJO. What we need, then, is per-type default (if any)
+        //   for declared property type... and finally property annotation overrides
+        JsonInclude.Value inclV = _config.getDefaultInclusion(actualType.getRawClass(),
+                rawPropertyType, _defaultInclusion);
+
+        // property annotation override
+        
+        inclV = inclV.withOverrides(propDef.findInclusion());
+
+        JsonInclude.Include inclusion = inclV.getValueInclusion();
+        if (inclusion == JsonInclude.Include.USE_DEFAULTS) { // should not occur but...
+            inclusion = JsonInclude.Include.ALWAYS;
+        }
+        switch (inclusion) {
+        case NON_DEFAULT:
+            // 11-Nov-2015, tatu: This is tricky because semantics differ between cases,
+            //    so that if enclosing class has this, we may need to access values of property,
+            //    whereas for global defaults OR per-property overrides, we have more
+            //    static definition. Sigh.
+            // First: case of class/type specifying it; try to find POJO property defaults
+            Object defaultBean;
+
+            // 16-Oct-2016, tatu: Note: if we cannot for some reason create "default instance",
+            //    revert logic to the case of general/per-property handling, so both
+            //    type-default AND null are to be excluded.
+            //    (as per [databind#1417]
+            if (_useRealPropertyDefaults && (defaultBean = getDefaultBean()) != null) {
+                // 07-Sep-2016, tatu: may also need to front-load access forcing now
+                if (prov.isEnabled(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS)) {
+                    am.fixAccess(_config.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
+                }
+                try {
+                    valueToSuppress = am.getValue(defaultBean);
+                } catch (Exception e) {
+                    _throwWrapped(e, propDef.getName(), defaultBean);
+                }
+            } else {
+                valueToSuppress = BeanUtil.getDefaultValue(actualType);
+                suppressNulls = true;
+            }
+            if (valueToSuppress == null) {
+                suppressNulls = true;
+            } else {
+                if (valueToSuppress.getClass().isArray()) {
+                    valueToSuppress = ArrayBuilders.getArrayComparator(valueToSuppress);
+                }
+            }
+            break;
+        case NON_ABSENT: // new with 2.6, to support Guava/JDK8 Optionals
+            // always suppress nulls
+            suppressNulls = true;
+            // and for referential types, also "empty", which in their case means "absent"
+            if (actualType.isReferenceType()) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        case NON_EMPTY:
+            // always suppress nulls
+            suppressNulls = true;
+            // but possibly also 'empty' values:
+            valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            break;
+        case CUSTOM: // new with 2.9
+            valueToSuppress = prov.includeFilterInstance(propDef, inclV.getValueFilter());
+            if (valueToSuppress == null) { // is this legal?
+                suppressNulls = true;
+            } else {
+                suppressNulls = prov.includeFilterSuppressNulls(valueToSuppress);
+            }
+            break;
+        case NON_NULL:
+            suppressNulls = true;
+            // fall through
+        case ALWAYS: // default
+        default:
+            // we may still want to suppress empty collections
+            if (actualType.isContainerType()
+                    && !_config.isEnabled(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS)) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        }
+        Class<?>[] views = propDef.findViews();
+        if (views == null) {
+            views = _beanDesc.findDefaultViews();
+        }
+        BeanPropertyWriter bpw = new BeanPropertyWriter(propDef,
+                am, _beanDesc.getClassAnnotations(), declaredType,
+                ser, typeSer, serializationType, suppressNulls, valueToSuppress, views);
+
+        // How about custom null serializer?
+        Object serDef = _annotationIntrospector.findNullSerializer(am);
+        if (serDef != null) {
+            bpw.assignNullSerializer(prov.serializerInstance(am, serDef));
+        }
+        // And then, handling of unwrapping
+        NameTransformer unwrapper = _annotationIntrospector.findUnwrappingNameTransformer(am);
+        if (unwrapper != null) {
+            bpw = bpw.unwrappingWriter(unwrapper);
+        }
+        return bpw;
+    }
+
+stack trace:
+com.fasterxml.jackson.databind.exc.BasicExceptionTest::testLocationAddition
+junit.framework.AssertionFailedError: Should only get one 'at [' marker, got 2, source: Cannot deserialize Map key of type `com.fasterxml.jackson.databind.BaseMapTest$ABC` from String "value": not a valid representation, problem: (com.fasterxml.jackson.databind.exc.InvalidFormatException) Cannot deserialize Map key of type `com.fasterxml.jackson.databind.BaseMapTest$ABC` from String "value": not one of values excepted for Enum class: [A, B, C]
+ at [Source: (String)"{"value":"foo"}"; line: 1, column: 2]
+ at [Source: (String)"{"value":"foo"}"; line: 1, column: 2]
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.TestCase.fail(TestCase.java:227)
+	at com.fasterxml.jackson.databind.exc.BasicExceptionTest.testLocationAddition(BasicExceptionTest.java:127)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_6 ==================
+
+source code:
+protected BeanPropertyWriter buildWriter(SerializerProvider prov,
+            BeanPropertyDefinition propDef, JavaType declaredType, JsonSerializer<?> ser,
+            TypeSerializer typeSer, TypeSerializer contentTypeSer,
+            AnnotatedMember am, boolean defaultUseStaticTyping)
+        throws JsonMappingException
+    {
+        // do we have annotation that forces type to use (to declared type or its super type)?
+        JavaType serializationType;
+        try {
+            serializationType = findSerializationType(am, defaultUseStaticTyping, declaredType);
+        } catch (JsonMappingException e) {
+            if (propDef == null) {
+                return prov.reportBadDefinition(declaredType, e.getMessage());
+            }
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef, e.getMessage());
+        }
+
+        // Container types can have separate type serializers for content (value / element) type
+        if (contentTypeSer != null) {
+            // 04-Feb-2010, tatu: Let's force static typing for collection, if there is
+            //    type information for contents. Should work well (for JAXB case); can be
+            //    revisited if this causes problems.
+            if (serializationType == null) {
+//                serializationType = TypeFactory.type(am.getGenericType(), _beanDesc.getType());
+                serializationType = declaredType;
+            }
+            JavaType ct = serializationType.getContentType();
+            // Not exactly sure why, but this used to occur; better check explicitly:
+            if (ct == null) {
+                prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                        "serialization type "+serializationType+" has no content");
+            }
+            serializationType = serializationType.withContentTypeHandler(contentTypeSer);
+            ct = serializationType.getContentType();
+        }
+
+        Object valueToSuppress = null;
+        boolean suppressNulls = false;
+
+        // 12-Jul-2016, tatu: [databind#1256] Need to make sure we consider type refinement
+        JavaType actualType = (serializationType == null) ? declaredType : serializationType;
+        
+        // 17-Mar-2017: [databind#1522] Allow config override per property type
+        AnnotatedMember accessor = propDef.getAccessor();
+        if (accessor == null) {
+            // neither Setter nor ConstructorParameter are expected here
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                    "could not determine property type");
+        }
+        Class<?> rawPropertyType = accessor.getRawType();
+
+        // 17-Aug-2016, tatu: Default inclusion covers global default (for all types), as well
+        //   as type-default for enclosing POJO. What we need, then, is per-type default (if any)
+        //   for declared property type... and finally property annotation overrides
+        JsonInclude.Value inclV = _config.getDefaultInclusion(actualType.getRawClass(),
+                rawPropertyType, _defaultInclusion);
+
+        // property annotation override
+        
+        inclV = inclV.withOverrides(propDef.findInclusion());
+
+        JsonInclude.Include inclusion = inclV.getValueInclusion();
+        if (inclusion == JsonInclude.Include.USE_DEFAULTS) { // should not occur but...
+            inclusion = JsonInclude.Include.ALWAYS;
+        }
+        switch (inclusion) {
+        case NON_DEFAULT:
+            // 11-Nov-2015, tatu: This is tricky because semantics differ between cases,
+            //    so that if enclosing class has this, we may need to access values of property,
+            //    whereas for global defaults OR per-property overrides, we have more
+            //    static definition. Sigh.
+            // First: case of class/type specifying it; try to find POJO property defaults
+            Object defaultBean;
+
+            // 16-Oct-2016, tatu: Note: if we cannot for some reason create "default instance",
+            //    revert logic to the case of general/per-property handling, so both
+            //    type-default AND null are to be excluded.
+            //    (as per [databind#1417]
+            if (_useRealPropertyDefaults && (defaultBean = getDefaultBean()) != null) {
+                // 07-Sep-2016, tatu: may also need to front-load access forcing now
+                if (prov.isEnabled(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS)) {
+                    am.fixAccess(_config.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
+                }
+                try {
+                    valueToSuppress = am.getValue(defaultBean);
+                } catch (Exception e) {
+                    _throwWrapped(e, propDef.getName(), defaultBean);
+                }
+            } else {
+                valueToSuppress = BeanUtil.getDefaultValue(actualType);
+                suppressNulls = true;
+            }
+            if (valueToSuppress == null) {
+                suppressNulls = true;
+            } else {
+                if (valueToSuppress.getClass().isArray()) {
+                    valueToSuppress = ArrayBuilders.getArrayComparator(valueToSuppress);
+                }
+            }
+            break;
+        case NON_ABSENT: // new with 2.6, to support Guava/JDK8 Optionals
+            // always suppress nulls
+            suppressNulls = true;
+            // and for referential types, also "empty", which in their case means "absent"
+            if (actualType.isReferenceType()) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        case NON_EMPTY:
+            // always suppress nulls
+            suppressNulls = true;
+            // but possibly also 'empty' values:
+            valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            break;
+        case CUSTOM: // new with 2.9
+            valueToSuppress = prov.includeFilterInstance(propDef, inclV.getValueFilter());
+            if (valueToSuppress == null) { // is this legal?
+                suppressNulls = true;
+            } else {
+                suppressNulls = prov.includeFilterSuppressNulls(valueToSuppress);
+            }
+            break;
+        case NON_NULL:
+            suppressNulls = true;
+            // fall through
+        case ALWAYS: // default
+        default:
+            // we may still want to suppress empty collections
+            if (actualType.isContainerType()
+                    && !_config.isEnabled(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS)) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        }
+        Class<?>[] views = propDef.findViews();
+        if (views == null) {
+            views = _beanDesc.findDefaultViews();
+        }
+        BeanPropertyWriter bpw = new BeanPropertyWriter(propDef,
+                am, _beanDesc.getClassAnnotations(), declaredType,
+                ser, typeSer, serializationType, suppressNulls, valueToSuppress, views);
+
+        // How about custom null serializer?
+        Object serDef = _annotationIntrospector.findNullSerializer(am);
+        if (serDef != null) {
+            bpw.assignNullSerializer(prov.serializerInstance(am, serDef));
+        }
+        // And then, handling of unwrapping
+        NameTransformer unwrapper = _annotationIntrospector.findUnwrappingNameTransformer(am);
+        if (unwrapper != null) {
+            bpw = bpw.unwrappingWriter(unwrapper);
+        }
+        return bpw;
+    }
+
+stack trace:
+com.fasterxml.jackson.databind.exc.BasicExceptionTest::testLocationAddition
+junit.framework.AssertionFailedError: Should only get one 'at [' marker, got 2, source: Cannot deserialize Map key of type `com.fasterxml.jackson.databind.BaseMapTest$ABC` from String "value": not a valid representation, problem: (com.fasterxml.jackson.databind.exc.InvalidFormatException) Cannot deserialize Map key of type `com.fasterxml.jackson.databind.BaseMapTest$ABC` from String "value": not one of values excepted for Enum class: [A, B, C]
+ at [Source: (String)"{"value":"foo"}"; line: 1, column: 2]
+ at [Source: (String)"{"value":"foo"}"; line: 1, column: 2]
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.TestCase.fail(TestCase.java:227)
+	at com.fasterxml.jackson.databind.exc.BasicExceptionTest.testLocationAddition(BasicExceptionTest.java:127)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+failure assertion code:
+fail("Should only get one 'at [' marker, got "+(str.length-1)+", source: "+msg);
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_1 ==================
+
+protected BeanPropertyWriter buildWriter(SerializerProvider prov,
+            BeanPropertyDefinition propDef, JavaType declaredType, JsonSerializer<?> ser,
+            TypeSerializer typeSer, TypeSerializer contentTypeSer,
+            AnnotatedMember am, boolean defaultUseStaticTyping)
+        throws JsonMappingException
+    {
+        // do we have annotation that forces type to use (to declared type or its super type)?
+        JavaType serializationType;
+        try {
+            serializationType = findSerializationType(am, defaultUseStaticTyping, declaredType);
+        } catch (JsonMappingException e) {
+            if (propDef == null) {
+                return prov.reportBadDefinition(declaredType, e.getMessage());
+            }
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef, e.getMessage());
+        }
+
+        // Container types can have separate type serializers for content (value / element) type
+        if (contentTypeSer != null) {
+            // 04-Feb-2010, tatu: Let's force static typing for collection, if there is
+            //    type information for contents. Should work well (for JAXB case); can be
+            //    revisited if this causes problems.
+            if (serializationType == null) {
+//                serializationType = TypeFactory.type(am.getGenericType(), _beanDesc.getType());
+                serializationType = declaredType;
+            }
+            JavaType ct = serializationType.getContentType();
+            // Not exactly sure why, but this used to occur; better check explicitly:
+            if (ct == null) {
+                prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                        "serialization type "+serializationType+" has no content");
+            }
+            serializationType = serializationType.withContentTypeHandler(contentTypeSer);
+            ct = serializationType.getContentType();
+        }
+
+        Object valueToSuppress = null;
+        boolean suppressNulls = false;
+
+        // 12-Jul-2016, tatu: [databind#1256] Need to make sure we consider type refinement
+        JavaType actualType = (serializationType == null) ? declaredType : serializationType;
+        
+        // 17-Mar-2017: [databind#1522] Allow config override per property type
+        AnnotatedMember accessor = propDef.getAccessor();
+        if (accessor == null) {
+            // neither Setter nor ConstructorParameter are expected here
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                    "could not determine property type");
+        }
+        Class<?> rawPropertyType = accessor.getRawType();
+
+        // 17-Aug-2016, tatu: Default inclusion covers global default (for all types), as well
+        //   as type-default for enclosing POJO. What we need, then, is per-type default (if any)
+        //   for declared property type... and finally property annotation overrides
+        JsonInclude.Value inclV = _config.getDefaultInclusion(actualType.getRawClass(),
+                rawPropertyType, _defaultInclusion);
+
+        // property annotation override
+        
+        inclV = inclV.withOverrides(propDef.findInclusion());
+
+        JsonInclude.Include inclusion = inclV.getValueInclusion();
+        if (inclusion == JsonInclude.Include.USE_DEFAULTS) { // should not occur but...
+            inclusion = JsonInclude.Include.ALWAYS;
+        }
+        switch (inclusion) {
+        case NON_DEFAULT:
+            // 11-Nov-2015, tatu: This is tricky because semantics differ between cases,
+            //    so that if enclosing class has this, we may need to access values of property,
+            //    whereas for global defaults OR per-property overrides, we have more
+            //    static definition. Sigh.
+            // First: case of class/type specifying it; try to find POJO property defaults
+            Object defaultBean;
+
+            // 16-Oct-2016, tatu: Note: if we cannot for some reason create "default instance",
+            //    revert logic to the case of general/per-property handling, so both
+            //    type-default AND null are to be excluded.
+            //    (as per [databind#1417]
+            if (_useRealPropertyDefaults && (defaultBean = getDefaultBean()) != null) {
+                // 07-Sep-2016, tatu: may also need to front-load access forcing now
+                if (prov.isEnabled(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS)) {
+                    am.fixAccess(_config.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
+                }
+                try {
+                    valueToSuppress = am.getValue(defaultBean);
+                } catch (Exception e) {
+                    _throwWrapped(e, propDef.getName(), defaultBean);
+                }
+            } else {
+                valueToSuppress = BeanUtil.getDefaultValue(actualType);
+                suppressNulls = true;
+            }
+            if (valueToSuppress == null) {
+                suppressNulls = true;
+            } else {
+                if (valueToSuppress.getClass().isArray()) {
+                    valueToSuppress = ArrayBuilders.getArrayComparator(valueToSuppress);
+                }
+            }
+            break;
+        case NON_ABSENT: // new with 2.6, to support Guava/JDK8 Optionals
+            // always suppress nulls
+            suppressNulls = true;
+            // and for referential types, also "empty", which in their case means "absent"
+            if (actualType.isReferenceType()) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        case NON_EMPTY:
+            // always suppress nulls
+            suppressNulls = true;
+            // but possibly also 'empty' values:
+            valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            break;
+        case CUSTOM: // new with 2.9
+            valueToSuppress = prov.includeFilterInstance(propDef, inclV.getValueFilter());
+            if (valueToSuppress == null) { // is this legal?
+                suppressNulls = true;
+            } else {
+                suppressNulls = prov.includeFilterSuppressNulls(valueToSuppress);
+            }
+            break;
+        case NON_NULL:
+            suppressNulls = true;
+            // fall through
+        case ALWAYS: // default
+        default:
+            // we may still want to suppress empty collections
+            if (actualType.isContainerType()
+                    && !_config.isEnabled(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS)) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        }
+        Class<?>[] views = propDef.findViews();
+        if (views == null) {
+            views = _beanDesc.findDefaultViews();
+        }
+        BeanPropertyWriter bpw = new BeanPropertyWriter(propDef,
+                am, _beanDesc.getClassAnnotations(), declaredType,
+                ser, typeSer, serializationType, suppressNulls, valueToSuppress, views);
+
+        // How about custom null serializer?
+        Object serDef = _annotationIntrospector.findNullSerializer(am);
+        if (serDef != null) {
+            bpw.assignNullSerializer(prov.serializerInstance(am, serDef));
+        }
+        // And then, handling of unwrapping
+        NameTransformer unwrapper = _annotationIntrospector.findUnwrappingNameTransformer(am);
+        if (unwrapper != null) {
+            bpw = bpw.unwrappingWriter(unwrapper);
+        }
+        return bpw;
+    }
+
+There is a bug in line [13, 15] of the code, please help me fix it.
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_2 ==================
+
+protected BeanPropertyWriter buildWriter(SerializerProvider prov,
+            BeanPropertyDefinition propDef, JavaType declaredType, JsonSerializer<?> ser,
+            TypeSerializer typeSer, TypeSerializer contentTypeSer,
+            AnnotatedMember am, boolean defaultUseStaticTyping)
+        throws JsonMappingException
+    {
+        // do we have annotation that forces type to use (to declared type or its super type)?
+        JavaType serializationType;
+        try {
+            serializationType = findSerializationType(am, defaultUseStaticTyping, declaredType);
+        } catch (JsonMappingException e) {
+            if (propDef == null) {
+                return prov.reportBadDefinition(declaredType, e.getMessage());
+            }
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef, e.getMessage());
+        }
+
+        // Container types can have separate type serializers for content (value / element) type
+        if (contentTypeSer != null) {
+            // 04-Feb-2010, tatu: Let's force static typing for collection, if there is
+            //    type information for contents. Should work well (for JAXB case); can be
+            //    revisited if this causes problems.
+            if (serializationType == null) {
+//                serializationType = TypeFactory.type(am.getGenericType(), _beanDesc.getType());
+                serializationType = declaredType;
+            }
+            JavaType ct = serializationType.getContentType();
+            // Not exactly sure why, but this used to occur; better check explicitly:
+            if (ct == null) {
+                prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                        "serialization type "+serializationType+" has no content");
+            }
+            serializationType = serializationType.withContentTypeHandler(contentTypeSer);
+            ct = serializationType.getContentType();
+        }
+
+        Object valueToSuppress = null;
+        boolean suppressNulls = false;
+
+        // 12-Jul-2016, tatu: [databind#1256] Need to make sure we consider type refinement
+        JavaType actualType = (serializationType == null) ? declaredType : serializationType;
+        
+        // 17-Mar-2017: [databind#1522] Allow config override per property type
+        AnnotatedMember accessor = propDef.getAccessor();
+        if (accessor == null) {
+            // neither Setter nor ConstructorParameter are expected here
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                    "could not determine property type");
+        }
+        Class<?> rawPropertyType = accessor.getRawType();
+
+        // 17-Aug-2016, tatu: Default inclusion covers global default (for all types), as well
+        //   as type-default for enclosing POJO. What we need, then, is per-type default (if any)
+        //   for declared property type... and finally property annotation overrides
+        JsonInclude.Value inclV = _config.getDefaultInclusion(actualType.getRawClass(),
+                rawPropertyType, _defaultInclusion);
+
+        // property annotation override
+        
+        inclV = inclV.withOverrides(propDef.findInclusion());
+
+        JsonInclude.Include inclusion = inclV.getValueInclusion();
+        if (inclusion == JsonInclude.Include.USE_DEFAULTS) { // should not occur but...
+            inclusion = JsonInclude.Include.ALWAYS;
+        }
+        switch (inclusion) {
+        case NON_DEFAULT:
+            // 11-Nov-2015, tatu: This is tricky because semantics differ between cases,
+            //    so that if enclosing class has this, we may need to access values of property,
+            //    whereas for global defaults OR per-property overrides, we have more
+            //    static definition. Sigh.
+            // First: case of class/type specifying it; try to find POJO property defaults
+            Object defaultBean;
+
+            // 16-Oct-2016, tatu: Note: if we cannot for some reason create "default instance",
+            //    revert logic to the case of general/per-property handling, so both
+            //    type-default AND null are to be excluded.
+            //    (as per [databind#1417]
+            if (_useRealPropertyDefaults && (defaultBean = getDefaultBean()) != null) {
+                // 07-Sep-2016, tatu: may also need to front-load access forcing now
+                if (prov.isEnabled(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS)) {
+                    am.fixAccess(_config.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
+                }
+                try {
+                    valueToSuppress = am.getValue(defaultBean);
+                } catch (Exception e) {
+                    _throwWrapped(e, propDef.getName(), defaultBean);
+                }
+            } else {
+                valueToSuppress = BeanUtil.getDefaultValue(actualType);
+                suppressNulls = true;
+            }
+            if (valueToSuppress == null) {
+                suppressNulls = true;
+            } else {
+                if (valueToSuppress.getClass().isArray()) {
+                    valueToSuppress = ArrayBuilders.getArrayComparator(valueToSuppress);
+                }
+            }
+            break;
+        case NON_ABSENT: // new with 2.6, to support Guava/JDK8 Optionals
+            // always suppress nulls
+            suppressNulls = true;
+            // and for referential types, also "empty", which in their case means "absent"
+            if (actualType.isReferenceType()) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        case NON_EMPTY:
+            // always suppress nulls
+            suppressNulls = true;
+            // but possibly also 'empty' values:
+            valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            break;
+        case CUSTOM: // new with 2.9
+            valueToSuppress = prov.includeFilterInstance(propDef, inclV.getValueFilter());
+            if (valueToSuppress == null) { // is this legal?
+                suppressNulls = true;
+            } else {
+                suppressNulls = prov.includeFilterSuppressNulls(valueToSuppress);
+            }
+            break;
+        case NON_NULL:
+            suppressNulls = true;
+            // fall through
+        case ALWAYS: // default
+        default:
+            // we may still want to suppress empty collections
+            if (actualType.isContainerType()
+                    && !_config.isEnabled(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS)) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        }
+        Class<?>[] views = propDef.findViews();
+        if (views == null) {
+            views = _beanDesc.findDefaultViews();
+        }
+        BeanPropertyWriter bpw = new BeanPropertyWriter(propDef,
+                am, _beanDesc.getClassAnnotations(), declaredType,
+                ser, typeSer, serializationType, suppressNulls, valueToSuppress, views);
+
+        // How about custom null serializer?
+        Object serDef = _annotationIntrospector.findNullSerializer(am);
+        if (serDef != null) {
+            bpw.assignNullSerializer(prov.serializerInstance(am, serDef));
+        }
+        // And then, handling of unwrapping
+        NameTransformer unwrapper = _annotationIntrospector.findUnwrappingNameTransformer(am);
+        if (unwrapper != null) {
+            bpw = bpw.unwrappingWriter(unwrapper);
+        }
+        return bpw;
+    }
+
+There is a bug in ['                return prov.reportBadDefinition(declaredType, e.getMessage());', '            return prov.reportBadPropertyDefinition(_beanDesc, propDef, e.getMessage());'] , please help me fix it. 
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_3 ==================
+
+protected BeanPropertyWriter buildWriter(SerializerProvider prov,
+            BeanPropertyDefinition propDef, JavaType declaredType, JsonSerializer<?> ser,
+            TypeSerializer typeSer, TypeSerializer contentTypeSer,
+            AnnotatedMember am, boolean defaultUseStaticTyping)
+        throws JsonMappingException
+    {
+        // do we have annotation that forces type to use (to declared type or its super type)?
+        JavaType serializationType;
+        try {
+            serializationType = findSerializationType(am, defaultUseStaticTyping, declaredType);
+        } catch (JsonMappingException e) {
+            if (propDef == null) {
+                return prov.reportBadDefinition(declaredType, e.getMessage());
+            }
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef, e.getMessage());
+
+There is a bug in the last statement, please help me fix it.
+
+Return the code **only from the method declaration to the fixed statement**, without completing or adding additional code. Do not modify anything beyond fixing the bug, and do not complete the `if` statement or other unfinished parts. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_4 ==================
+
+protected BeanPropertyWriter buildWriter(SerializerProvider prov,
+            BeanPropertyDefinition propDef, JavaType declaredType, JsonSerializer<?> ser,
+            TypeSerializer typeSer, TypeSerializer contentTypeSer,
+            AnnotatedMember am, boolean defaultUseStaticTyping)
+        throws JsonMappingException
+    {
+        // do we have annotation that forces type to use (to declared type or its super type)?
+        JavaType serializationType;
+        try {
+            serializationType = findSerializationType(am, defaultUseStaticTyping, declaredType);
+        } catch (JsonMappingException e) {
+            if (propDef == null) {
+                return prov.reportBadDefinition(declaredType, e.getMessage());
+            }
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef, e.getMessage());
+        }
+
+        // Container types can have separate type serializers for content (value / element) type
+        if (contentTypeSer != null) {
+            // 04-Feb-2010, tatu: Let's force static typing for collection, if there is
+            //    type information for contents. Should work well (for JAXB case); can be
+            //    revisited if this causes problems.
+            if (serializationType == null) {
+//                serializationType = TypeFactory.type(am.getGenericType(), _beanDesc.getType());
+                serializationType = declaredType;
+            }
+            JavaType ct = serializationType.getContentType();
+            // Not exactly sure why, but this used to occur; better check explicitly:
+            if (ct == null) {
+                prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                        "serialization type "+serializationType+" has no content");
+            }
+            serializationType = serializationType.withContentTypeHandler(contentTypeSer);
+            ct = serializationType.getContentType();
+        }
+
+        Object valueToSuppress = null;
+        boolean suppressNulls = false;
+
+        // 12-Jul-2016, tatu: [databind#1256] Need to make sure we consider type refinement
+        JavaType actualType = (serializationType == null) ? declaredType : serializationType;
+        
+        // 17-Mar-2017: [databind#1522] Allow config override per property type
+        AnnotatedMember accessor = propDef.getAccessor();
+        if (accessor == null) {
+            // neither Setter nor ConstructorParameter are expected here
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                    "could not determine property type");
+        }
+        Class<?> rawPropertyType = accessor.getRawType();
+
+        // 17-Aug-2016, tatu: Default inclusion covers global default (for all types), as well
+        //   as type-default for enclosing POJO. What we need, then, is per-type default (if any)
+        //   for declared property type... and finally property annotation overrides
+        JsonInclude.Value inclV = _config.getDefaultInclusion(actualType.getRawClass(),
+                rawPropertyType, _defaultInclusion);
+
+        // property annotation override
+        
+        inclV = inclV.withOverrides(propDef.findInclusion());
+
+        JsonInclude.Include inclusion = inclV.getValueInclusion();
+        if (inclusion == JsonInclude.Include.USE_DEFAULTS) { // should not occur but...
+            inclusion = JsonInclude.Include.ALWAYS;
+        }
+        switch (inclusion) {
+        case NON_DEFAULT:
+            // 11-Nov-2015, tatu: This is tricky because semantics differ between cases,
+            //    so that if enclosing class has this, we may need to access values of property,
+            //    whereas for global defaults OR per-property overrides, we have more
+            //    static definition. Sigh.
+            // First: case of class/type specifying it; try to find POJO property defaults
+            Object defaultBean;
+
+            // 16-Oct-2016, tatu: Note: if we cannot for some reason create "default instance",
+            //    revert logic to the case of general/per-property handling, so both
+            //    type-default AND null are to be excluded.
+            //    (as per [databind#1417]
+            if (_useRealPropertyDefaults && (defaultBean = getDefaultBean()) != null) {
+                // 07-Sep-2016, tatu: may also need to front-load access forcing now
+                if (prov.isEnabled(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS)) {
+                    am.fixAccess(_config.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
+                }
+                try {
+                    valueToSuppress = am.getValue(defaultBean);
+                } catch (Exception e) {
+                    _throwWrapped(e, propDef.getName(), defaultBean);
+                }
+            } else {
+                valueToSuppress = BeanUtil.getDefaultValue(actualType);
+                suppressNulls = true;
+            }
+            if (valueToSuppress == null) {
+                suppressNulls = true;
+            } else {
+                if (valueToSuppress.getClass().isArray()) {
+                    valueToSuppress = ArrayBuilders.getArrayComparator(valueToSuppress);
+                }
+            }
+            break;
+        case NON_ABSENT: // new with 2.6, to support Guava/JDK8 Optionals
+            // always suppress nulls
+            suppressNulls = true;
+            // and for referential types, also "empty", which in their case means "absent"
+            if (actualType.isReferenceType()) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        case NON_EMPTY:
+            // always suppress nulls
+            suppressNulls = true;
+            // but possibly also 'empty' values:
+            valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            break;
+        case CUSTOM: // new with 2.9
+            valueToSuppress = prov.includeFilterInstance(propDef, inclV.getValueFilter());
+            if (valueToSuppress == null) { // is this legal?
+                suppressNulls = true;
+            } else {
+                suppressNulls = prov.includeFilterSuppressNulls(valueToSuppress);
+            }
+            break;
+        case NON_NULL:
+            suppressNulls = true;
+            // fall through
+        case ALWAYS: // default
+        default:
+            // we may still want to suppress empty collections
+            if (actualType.isContainerType()
+                    && !_config.isEnabled(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS)) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        }
+        Class<?>[] views = propDef.findViews();
+        if (views == null) {
+            views = _beanDesc.findDefaultViews();
+        }
+        BeanPropertyWriter bpw = new BeanPropertyWriter(propDef,
+                am, _beanDesc.getClassAnnotations(), declaredType,
+                ser, typeSer, serializationType, suppressNulls, valueToSuppress, views);
+
+        // How about custom null serializer?
+        Object serDef = _annotationIntrospector.findNullSerializer(am);
+        if (serDef != null) {
+            bpw.assignNullSerializer(prov.serializerInstance(am, serDef));
+        }
+        // And then, handling of unwrapping
+        NameTransformer unwrapper = _annotationIntrospector.findUnwrappingNameTransformer(am);
+        if (unwrapper != null) {
+            bpw = bpw.unwrappingWriter(unwrapper);
+        }
+        return bpw;
+    }
+
+There is a bug in line [13, 15] of the code, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_5 ==================
+
+protected BeanPropertyWriter buildWriter(SerializerProvider prov,
+            BeanPropertyDefinition propDef, JavaType declaredType, JsonSerializer<?> ser,
+            TypeSerializer typeSer, TypeSerializer contentTypeSer,
+            AnnotatedMember am, boolean defaultUseStaticTyping)
+        throws JsonMappingException
+    {
+        // do we have annotation that forces type to use (to declared type or its super type)?
+        JavaType serializationType;
+        try {
+            serializationType = findSerializationType(am, defaultUseStaticTyping, declaredType);
+        } catch (JsonMappingException e) {
+            if (propDef == null) {
+                return prov.reportBadDefinition(declaredType, e.getMessage());
+            }
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef, e.getMessage());
+        }
+
+        // Container types can have separate type serializers for content (value / element) type
+        if (contentTypeSer != null) {
+            // 04-Feb-2010, tatu: Let's force static typing for collection, if there is
+            //    type information for contents. Should work well (for JAXB case); can be
+            //    revisited if this causes problems.
+            if (serializationType == null) {
+//                serializationType = TypeFactory.type(am.getGenericType(), _beanDesc.getType());
+                serializationType = declaredType;
+            }
+            JavaType ct = serializationType.getContentType();
+            // Not exactly sure why, but this used to occur; better check explicitly:
+            if (ct == null) {
+                prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                        "serialization type "+serializationType+" has no content");
+            }
+            serializationType = serializationType.withContentTypeHandler(contentTypeSer);
+            ct = serializationType.getContentType();
+        }
+
+        Object valueToSuppress = null;
+        boolean suppressNulls = false;
+
+        // 12-Jul-2016, tatu: [databind#1256] Need to make sure we consider type refinement
+        JavaType actualType = (serializationType == null) ? declaredType : serializationType;
+        
+        // 17-Mar-2017: [databind#1522] Allow config override per property type
+        AnnotatedMember accessor = propDef.getAccessor();
+        if (accessor == null) {
+            // neither Setter nor ConstructorParameter are expected here
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef,
+                    "could not determine property type");
+        }
+        Class<?> rawPropertyType = accessor.getRawType();
+
+        // 17-Aug-2016, tatu: Default inclusion covers global default (for all types), as well
+        //   as type-default for enclosing POJO. What we need, then, is per-type default (if any)
+        //   for declared property type... and finally property annotation overrides
+        JsonInclude.Value inclV = _config.getDefaultInclusion(actualType.getRawClass(),
+                rawPropertyType, _defaultInclusion);
+
+        // property annotation override
+        
+        inclV = inclV.withOverrides(propDef.findInclusion());
+
+        JsonInclude.Include inclusion = inclV.getValueInclusion();
+        if (inclusion == JsonInclude.Include.USE_DEFAULTS) { // should not occur but...
+            inclusion = JsonInclude.Include.ALWAYS;
+        }
+        switch (inclusion) {
+        case NON_DEFAULT:
+            // 11-Nov-2015, tatu: This is tricky because semantics differ between cases,
+            //    so that if enclosing class has this, we may need to access values of property,
+            //    whereas for global defaults OR per-property overrides, we have more
+            //    static definition. Sigh.
+            // First: case of class/type specifying it; try to find POJO property defaults
+            Object defaultBean;
+
+            // 16-Oct-2016, tatu: Note: if we cannot for some reason create "default instance",
+            //    revert logic to the case of general/per-property handling, so both
+            //    type-default AND null are to be excluded.
+            //    (as per [databind#1417]
+            if (_useRealPropertyDefaults && (defaultBean = getDefaultBean()) != null) {
+                // 07-Sep-2016, tatu: may also need to front-load access forcing now
+                if (prov.isEnabled(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS)) {
+                    am.fixAccess(_config.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
+                }
+                try {
+                    valueToSuppress = am.getValue(defaultBean);
+                } catch (Exception e) {
+                    _throwWrapped(e, propDef.getName(), defaultBean);
+                }
+            } else {
+                valueToSuppress = BeanUtil.getDefaultValue(actualType);
+                suppressNulls = true;
+            }
+            if (valueToSuppress == null) {
+                suppressNulls = true;
+            } else {
+                if (valueToSuppress.getClass().isArray()) {
+                    valueToSuppress = ArrayBuilders.getArrayComparator(valueToSuppress);
+                }
+            }
+            break;
+        case NON_ABSENT: // new with 2.6, to support Guava/JDK8 Optionals
+            // always suppress nulls
+            suppressNulls = true;
+            // and for referential types, also "empty", which in their case means "absent"
+            if (actualType.isReferenceType()) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        case NON_EMPTY:
+            // always suppress nulls
+            suppressNulls = true;
+            // but possibly also 'empty' values:
+            valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            break;
+        case CUSTOM: // new with 2.9
+            valueToSuppress = prov.includeFilterInstance(propDef, inclV.getValueFilter());
+            if (valueToSuppress == null) { // is this legal?
+                suppressNulls = true;
+            } else {
+                suppressNulls = prov.includeFilterSuppressNulls(valueToSuppress);
+            }
+            break;
+        case NON_NULL:
+            suppressNulls = true;
+            // fall through
+        case ALWAYS: // default
+        default:
+            // we may still want to suppress empty collections
+            if (actualType.isContainerType()
+                    && !_config.isEnabled(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS)) {
+                valueToSuppress = BeanPropertyWriter.MARKER_FOR_EMPTY;
+            }
+            break;
+        }
+        Class<?>[] views = propDef.findViews();
+        if (views == null) {
+            views = _beanDesc.findDefaultViews();
+        }
+        BeanPropertyWriter bpw = new BeanPropertyWriter(propDef,
+                am, _beanDesc.getClassAnnotations(), declaredType,
+                ser, typeSer, serializationType, suppressNulls, valueToSuppress, views);
+
+        // How about custom null serializer?
+        Object serDef = _annotationIntrospector.findNullSerializer(am);
+        if (serDef != null) {
+            bpw.assignNullSerializer(prov.serializerInstance(am, serDef));
+        }
+        // And then, handling of unwrapping
+        NameTransformer unwrapper = _annotationIntrospector.findUnwrappingNameTransformer(am);
+        if (unwrapper != null) {
+            bpw = bpw.unwrappingWriter(unwrapper);
+        }
+        return bpw;
+    }
+
+There is a bug in ['                return prov.reportBadDefinition(declaredType, e.getMessage());', '            return prov.reportBadPropertyDefinition(_beanDesc, propDef, e.getMessage());'] , please help me fix it. 
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_6 ==================
+
+protected BeanPropertyWriter buildWriter(SerializerProvider prov,
+            BeanPropertyDefinition propDef, JavaType declaredType, JsonSerializer<?> ser,
+            TypeSerializer typeSer, TypeSerializer contentTypeSer,
+            AnnotatedMember am, boolean defaultUseStaticTyping)
+        throws JsonMappingException
+    {
+        // do we have annotation that forces type to use (to declared type or its super type)?
+        JavaType serializationType;
+        try {
+            serializationType = findSerializationType(am, defaultUseStaticTyping, declaredType);
+        } catch (JsonMappingException e) {
+            if (propDef == null) {
+                return prov.reportBadDefinition(declaredType, e.getMessage());
+            }
+            return prov.reportBadPropertyDefinition(_beanDesc, propDef, e.getMessage());
+
+There is a bug in the last statement, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.

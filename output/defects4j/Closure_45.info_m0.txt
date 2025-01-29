@@ -1,0 +1,237 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/RemoveUnusedVars.java
+================== buggy_method ==================
+{'method_name': 'interpretAssigns', 'method_body': "private void interpretAssigns() {\n    boolean changes = false;\n    do {\n      changes = false;\n\n      // We can't use traditional iterators and iterables for this list,\n      // because our lazily-evaluated continuations will modify it while\n      // we traverse it.\n      for (int current = 0; current < maybeUnreferenced.size(); current++) {\n        Var var = maybeUnreferenced.get(current);\n        if (referenced.contains(var)) {\n          maybeUnreferenced.remove(current);\n          current--;\n        } else {\n          boolean assignedToUnknownValue = false;\n          boolean hasPropertyAssign = false;\n\n          if (var.getParentNode().isVar() &&\n              !NodeUtil.isForIn(var.getParentNode().getParent())) {\n            Node value = var.getInitialValue();\n            assignedToUnknownValue = value != null &&\n                !NodeUtil.isLiteralValue(value, true);\n          } else {\n            // This was initialized to a function arg or a catch param\n            // or a for...in variable.\n            assignedToUnknownValue = true;\n          }\n\n          for (Assign assign : assignsByVar.get(var)) {\n            if (assign.isPropertyAssign) {\n              hasPropertyAssign = true;\n            } else if (!NodeUtil.isLiteralValue(\n                assign.assignNode.getLastChild(), true)) {\n              assignedToUnknownValue = true;\n            }\n          }\n\n          if (assignedToUnknownValue && hasPropertyAssign) {\n            changes = markReferencedVar(var) || changes;\n            maybeUnreferenced.remove(current);\n            current--;\n          }\n        }\n      }\n    } while (changes);\n  }", 'start_line': 704, 'end_line': 749, 'buggy_lines': [741]}
+================== buggy_method_src ==================
+private void interpretAssigns() {
+    boolean changes = false;
+    do {
+      changes = false;
+
+      // We can't use traditional iterators and iterables for this list,
+      // because our lazily-evaluated continuations will modify it while
+      // we traverse it.
+      for (int current = 0; current < maybeUnreferenced.size(); current++) {
+        Var var = maybeUnreferenced.get(current);
+        if (referenced.contains(var)) {
+          maybeUnreferenced.remove(current);
+          current--;
+        } else {
+          boolean assignedToUnknownValue = false;
+          boolean hasPropertyAssign = false;
+
+          if (var.getParentNode().isVar() &&
+              !NodeUtil.isForIn(var.getParentNode().getParent())) {
+            Node value = var.getInitialValue();
+            assignedToUnknownValue = value != null &&
+                !NodeUtil.isLiteralValue(value, true);
+          } else {
+            // This was initialized to a function arg or a catch param
+            // or a for...in variable.
+            assignedToUnknownValue = true;
+          }
+
+          for (Assign assign : assignsByVar.get(var)) {
+            if (assign.isPropertyAssign) {
+              hasPropertyAssign = true;
+            } else if (!NodeUtil.isLiteralValue(
+                assign.assignNode.getLastChild(), true)) {
+              assignedToUnknownValue = true;
+            }
+          }
+
+          if (assignedToUnknownValue && hasPropertyAssign) {
+            changes = markReferencedVar(var) || changes;
+            maybeUnreferenced.remove(current);
+            current--;
+          }
+        }
+      }
+    } while (changes);
+  }
+================== test_stack ==================
+com.google.javascript.jscomp.RemoveUnusedVarsTest::testIssue618_1
+junit.framework.AssertionFailedError:
+Expected: function f(){var a=[];var b;a.push(b=[]);b[0]=1;return a}
+Result: function f(){var a=[];a.push([]);return a}
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        FUNCTION f 1 [source_file: expected0]
+            NAME f 1 [source_file: expected0]
+            PARAM_LIST 1 [source_file: expected0]
+            BLOCK 1 [source_file: expected0]
+                VAR 1 [source_file: expected0]
+                    NAME a 2 [source_file: expected0]
+                        ARRAYLIT 2 [source_file: expected0]
+                VAR 2 [source_file: expected0]
+                    NAME b 2 [source_file: expected0]
+                EXPR_RESULT 3 [source_file: expected0]
+                    CALL 3 [source_file: expected0]
+                        GETPROP 3 [source_file: expected0]
+                            NAME a 3 [source_file: expected0]
+                            STRING push 3 [source_file: expected0]
+                        ASSIGN 3 [source_file: expected0]
+                            NAME b 3 [source_file: expected0]
+                            ARRAYLIT 3 [source_file: expected0]
+                EXPR_RESULT 4 [source_file: expected0]
+                    ASSIGN 4 [source_file: expected0]
+                        GETELEM 4 [source_file: expected0]
+                            NAME b 4 [source_file: expected0]
+                            NUMBER 0.0 4 [source_file: expected0]
+                        NUMBER 1.0 4 [source_file: expected0]
+                RETURN 5 [source_file: expected0]
+                    NAME a 5 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        FUNCTION f 1 [source_file: testcode]
+            NAME f 1 [source_file: testcode]
+            PARAM_LIST 1 [source_file: testcode]
+            BLOCK 1 [source_file: testcode]
+                VAR 1 [source_file: testcode]
+                    NAME a 2 [source_file: testcode]
+                        ARRAYLIT 2 [source_file: testcode]
+                EXPR_RESULT 3 [source_file: testcode]
+                    CALL 3 [source_file: testcode]
+                        GETPROP 3 [source_file: testcode]
+                            NAME a 3 [source_file: testcode]
+                            STRING push 3 [source_file: testcode]
+                        ARRAYLIT 3 [source_file: testcode]
+                RETURN 5 [source_file: testcode]
+                    NAME a 5 [source_file: testcode]
+
+
+Subtree1: BLOCK 1 [source_file: expected0]
+    VAR 1 [source_file: expected0]
+        NAME a 2 [source_file: expected0]
+            ARRAYLIT 2 [source_file: expected0]
+    VAR 2 [source_file: expected0]
+        NAME b 2 [source_file: expected0]
+    EXPR_RESULT 3 [source_file: expected0]
+        CALL 3 [source_file: expected0]
+            GETPROP 3 [source_file: expected0]
+                NAME a 3 [source_file: expected0]
+                STRING push 3 [source_file: expected0]
+            ASSIGN 3 [source_file: expected0]
+                NAME b 3 [source_file: expected0]
+                ARRAYLIT 3 [source_file: expected0]
+    EXPR_RESULT 4 [source_file: expected0]
+        ASSIGN 4 [source_file: expected0]
+            GETELEM 4 [source_file: expected0]
+                NAME b 4 [source_file: expected0]
+                NUMBER 0.0 4 [source_file: expected0]
+            NUMBER 1.0 4 [source_file: expected0]
+    RETURN 5 [source_file: expected0]
+        NAME a 5 [source_file: expected0]
+
+
+Subtree2: BLOCK 1 [source_file: testcode]
+    VAR 1 [source_file: testcode]
+        NAME a 2 [source_file: testcode]
+            ARRAYLIT 2 [source_file: testcode]
+    EXPR_RESULT 3 [source_file: testcode]
+        CALL 3 [source_file: testcode]
+            GETPROP 3 [source_file: testcode]
+                NAME a 3 [source_file: testcode]
+                STRING push 3 [source_file: testcode]
+            ARRAYLIT 3 [source_file: testcode]
+    RETURN 5 [source_file: testcode]
+        NAME a 5 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:866)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:427)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:352)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:321)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:309)
+	at com.google.javascript.jscomp.CompilerTestCase.testSame(CompilerTestCase.java:541)
+	at com.google.javascript.jscomp.RemoveUnusedVarsTest.testIssue618_1(RemoveUnusedVarsTest.java:741)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+testSame(
+
+================== buggy_lines_in_method ==================
+[38]
+================== buggy_statements ==================
+['          if (assignedToUnknownValue && hasPropertyAssign) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+private void interpretAssigns() {
+    boolean changes = false;
+    do {
+      changes = false;
+
+      // We can't use traditional iterators and iterables for this list,
+      // because our lazily-evaluated continuations will modify it while
+      // we traverse it.
+      for (int current = 0; current < maybeUnreferenced.size(); current++) {
+        Var var = maybeUnreferenced.get(current);
+        if (referenced.contains(var)) {
+          maybeUnreferenced.remove(current);
+          current--;
+        } else {
+          boolean assignedToUnknownValue = false;
+          boolean hasPropertyAssign = false;
+
+          if (var.getParentNode().isVar() &&
+              !NodeUtil.isForIn(var.getParentNode().getParent())) {
+            Node value = var.getInitialValue();
+            assignedToUnknownValue = value != null &&
+                !NodeUtil.isLiteralValue(value, true);
+          } else {
+            // This was initialized to a function arg or a catch param
+            // or a for...in variable.
+            assignedToUnknownValue = true;
+          }
+
+          for (Assign assign : assignsByVar.get(var)) {
+            if (assign.isPropertyAssign) {
+              hasPropertyAssign = true;
+            } else if (!NodeUtil.isLiteralValue(
+                assign.assignNode.getLastChild(), true)) {
+              assignedToUnknownValue = true;
+            }
+          }
+
+          if (assignedToUnknownValue && hasPropertyAssign) {

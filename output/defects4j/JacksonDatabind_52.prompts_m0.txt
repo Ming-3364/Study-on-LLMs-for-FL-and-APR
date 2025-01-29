@@ -1,0 +1,2328 @@
+
+================== prompt_fl_1 ==================
+
+source code:
+@Override
+    public void resolve(DeserializationContext ctxt)
+        throws JsonMappingException
+    {
+        ExternalTypeHandler.Builder extTypes = null;
+        // if ValueInstantiator can use "creator" approach, need to resolve it here...
+        SettableBeanProperty[] creatorProps;
+
+        if (_valueInstantiator.canCreateFromObjectWith()) {
+            creatorProps = _valueInstantiator.getFromObjectArguments(ctxt.getConfig());
+
+            // 21-Jun-2015, tatu: This resolution was duplicated later on and seems like
+            //    it really should be only done at a later point. So commented out in 2.8.
+            //   However, just in case there was a reason for it, leaving commented out
+            //   here instead of immediately removing.
+
+            /*
+            // also: need to try to resolve 'external' type ids...
+            for (SettableBeanProperty prop : creatorProps) {
+                if (prop.hasValueTypeDeserializer()) {
+                    TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                    if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                        if (extTypes == null) {
+                            extTypes = new ExternalTypeHandler.Builder();
+                        }
+                        extTypes.addExternal(prop, typeDeser);
+                    }
+                }
+            }
+            */
+        } else {
+            creatorProps = null;
+        }
+
+        UnwrappedPropertyHandler unwrapped = null;
+
+        for (SettableBeanProperty origProp : _beanProperties) {
+            SettableBeanProperty prop = origProp;
+
+            // May already have deserializer from annotations, if so, skip:
+            if (!prop.hasValueDeserializer()) {
+                // [databind#125]: allow use of converters
+                JsonDeserializer<?> deser = findConvertingDeserializer(ctxt, prop);
+                if (deser == null) {
+                    deser = findDeserializer(ctxt, prop.getType(), prop);
+                }
+                prop = prop.withValueDeserializer(deser);
+            } else { // may need contextual version
+                JsonDeserializer<Object> deser = prop.getValueDeserializer();
+                /* Important! This is the only place where actually handle "primary"
+                 * property deserializers -- call is different from other places.
+                 */
+                JsonDeserializer<?> cd = ctxt.handlePrimaryContextualization(deser, prop,
+                        prop.getType());
+                if (cd != deser) {
+                    prop = prop.withValueDeserializer(cd);
+                }
+            }
+
+            // Need to link managed references with matching back references
+            prop = _resolveManagedReferenceProperty(ctxt, prop);
+
+            // [databind#351[: need to wrap properties that require object id resolution.
+            if (!(prop instanceof ManagedReferenceProperty)) {
+                prop = _resolvedObjectIdProperty(ctxt, prop);
+            }
+            // Support unwrapped values (via @JsonUnwrapped)
+            SettableBeanProperty u = _resolveUnwrappedProperty(ctxt, prop);
+            if (u != null) {
+                prop = u;
+                if (unwrapped == null) {
+                    unwrapped = new UnwrappedPropertyHandler();
+                }
+                unwrapped.addProperty(prop);
+                /* 12-Dec-2014, tatu: As per [databind#647], we will have problems if
+                 *    the original property is left in place. So let's remove it now.
+                 */
+                _beanProperties.remove(prop);
+                continue;
+            }
+            // non-static inner classes too:
+            prop = _resolveInnerClassValuedProperty(ctxt, prop);
+            if (prop != origProp) {
+                _beanProperties.replace(prop);
+                // [databind#795]: Make sure PropertyBasedCreator's properties stay in sync
+                if (creatorProps != null) {
+                    // 18-May-2015, tatu: _Should_ start with consistent set. But can we really
+                    //   fully count on this? May need to revisit in future; seems to hold for now.
+                    for (int i = 0, len = creatorProps.length; i < len; ++i) {
+                        if (creatorProps[i] == origProp) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        // ... as per above, it is possible we'd need to add this as fallback
+                        // if (but only if) identity check fails?
+                        /*
+                        if (creatorProps[i].getName().equals(prop.getName())) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        */
+                    }
+                }
+            }
+            // one more thing: if this property uses "external property" type inclusion,
+            // it needs different handling altogether
+            if (prop.hasValueTypeDeserializer()) {
+                TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                    if (extTypes == null) {
+                        extTypes = new ExternalTypeHandler.Builder();
+                    }
+                    extTypes.addExternal(prop, typeDeser);
+                    // In fact, remove from list of known properties to simplify later handling
+                    _beanProperties.remove(prop);
+                    continue;
+                }
+            }
+        }
+        // "any setter" may also need to be resolved now
+        if (_anySetter != null && !_anySetter.hasValueDeserializer()) {
+            _anySetter = _anySetter.withValueDeserializer(findDeserializer(ctxt,
+                    _anySetter.getType(), _anySetter.getProperty()));
+        }
+        // as well as delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingDelegate()) {
+            JavaType delegateType = _valueInstantiator.getDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingDelegate()', but null for 'getDelegateType()'");
+            }
+            _delegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getDelegateCreator());
+        }
+
+        // and array-delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingArrayDelegate()) {
+            JavaType delegateType = _valueInstantiator.getArrayDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid array-delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingArrayDelegate()', but null for 'getArrayDelegateType()'");
+            }
+            _arrayDelegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getArrayDelegateCreator());
+        }
+
+        // And now that we know CreatorProperty instances are also resolved can finally create the creator:
+        if (creatorProps != null) {
+            _propertyBasedCreator = PropertyBasedCreator.construct(ctxt, _valueInstantiator, creatorProps);
+        }
+
+        if (extTypes != null) {
+            // 21-Jun-2016, tatu: related to [databind#999], may need to link type ids too,
+            //    so need to pass collected properties
+            _externalTypeIdHandler = extTypes.build();
+            // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+        
+        _unwrappedPropertyHandler = unwrapped;
+        if (unwrapped != null) { // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+
+        // may need to disable vanilla processing, if unwrapped handling was enabled...
+        _vanillaProcessing = _vanillaProcessing && !_nonStandardCreation;
+    }
+
+There is a bug in the above code, please help me locate it.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_2 ==================
+
+source code:
+@Override
+    public void resolve(DeserializationContext ctxt)
+        throws JsonMappingException
+    {
+        ExternalTypeHandler.Builder extTypes = null;
+        // if ValueInstantiator can use "creator" approach, need to resolve it here...
+        SettableBeanProperty[] creatorProps;
+
+        if (_valueInstantiator.canCreateFromObjectWith()) {
+            creatorProps = _valueInstantiator.getFromObjectArguments(ctxt.getConfig());
+
+            // 21-Jun-2015, tatu: This resolution was duplicated later on and seems like
+            //    it really should be only done at a later point. So commented out in 2.8.
+            //   However, just in case there was a reason for it, leaving commented out
+            //   here instead of immediately removing.
+
+            /*
+            // also: need to try to resolve 'external' type ids...
+            for (SettableBeanProperty prop : creatorProps) {
+                if (prop.hasValueTypeDeserializer()) {
+                    TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                    if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                        if (extTypes == null) {
+                            extTypes = new ExternalTypeHandler.Builder();
+                        }
+                        extTypes.addExternal(prop, typeDeser);
+                    }
+                }
+            }
+            */
+        } else {
+            creatorProps = null;
+        }
+
+        UnwrappedPropertyHandler unwrapped = null;
+
+        for (SettableBeanProperty origProp : _beanProperties) {
+            SettableBeanProperty prop = origProp;
+
+            // May already have deserializer from annotations, if so, skip:
+            if (!prop.hasValueDeserializer()) {
+                // [databind#125]: allow use of converters
+                JsonDeserializer<?> deser = findConvertingDeserializer(ctxt, prop);
+                if (deser == null) {
+                    deser = findDeserializer(ctxt, prop.getType(), prop);
+                }
+                prop = prop.withValueDeserializer(deser);
+            } else { // may need contextual version
+                JsonDeserializer<Object> deser = prop.getValueDeserializer();
+                /* Important! This is the only place where actually handle "primary"
+                 * property deserializers -- call is different from other places.
+                 */
+                JsonDeserializer<?> cd = ctxt.handlePrimaryContextualization(deser, prop,
+                        prop.getType());
+                if (cd != deser) {
+                    prop = prop.withValueDeserializer(cd);
+                }
+            }
+
+            // Need to link managed references with matching back references
+            prop = _resolveManagedReferenceProperty(ctxt, prop);
+
+            // [databind#351[: need to wrap properties that require object id resolution.
+            if (!(prop instanceof ManagedReferenceProperty)) {
+                prop = _resolvedObjectIdProperty(ctxt, prop);
+            }
+            // Support unwrapped values (via @JsonUnwrapped)
+            SettableBeanProperty u = _resolveUnwrappedProperty(ctxt, prop);
+            if (u != null) {
+                prop = u;
+                if (unwrapped == null) {
+                    unwrapped = new UnwrappedPropertyHandler();
+                }
+                unwrapped.addProperty(prop);
+                /* 12-Dec-2014, tatu: As per [databind#647], we will have problems if
+                 *    the original property is left in place. So let's remove it now.
+                 */
+                _beanProperties.remove(prop);
+                continue;
+            }
+            // non-static inner classes too:
+            prop = _resolveInnerClassValuedProperty(ctxt, prop);
+            if (prop != origProp) {
+                _beanProperties.replace(prop);
+                // [databind#795]: Make sure PropertyBasedCreator's properties stay in sync
+                if (creatorProps != null) {
+                    // 18-May-2015, tatu: _Should_ start with consistent set. But can we really
+                    //   fully count on this? May need to revisit in future; seems to hold for now.
+                    for (int i = 0, len = creatorProps.length; i < len; ++i) {
+                        if (creatorProps[i] == origProp) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        // ... as per above, it is possible we'd need to add this as fallback
+                        // if (but only if) identity check fails?
+                        /*
+                        if (creatorProps[i].getName().equals(prop.getName())) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        */
+                    }
+                }
+            }
+            // one more thing: if this property uses "external property" type inclusion,
+            // it needs different handling altogether
+            if (prop.hasValueTypeDeserializer()) {
+                TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                    if (extTypes == null) {
+                        extTypes = new ExternalTypeHandler.Builder();
+                    }
+                    extTypes.addExternal(prop, typeDeser);
+                    // In fact, remove from list of known properties to simplify later handling
+                    _beanProperties.remove(prop);
+                    continue;
+                }
+            }
+        }
+        // "any setter" may also need to be resolved now
+        if (_anySetter != null && !_anySetter.hasValueDeserializer()) {
+            _anySetter = _anySetter.withValueDeserializer(findDeserializer(ctxt,
+                    _anySetter.getType(), _anySetter.getProperty()));
+        }
+        // as well as delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingDelegate()) {
+            JavaType delegateType = _valueInstantiator.getDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingDelegate()', but null for 'getDelegateType()'");
+            }
+            _delegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getDelegateCreator());
+        }
+
+        // and array-delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingArrayDelegate()) {
+            JavaType delegateType = _valueInstantiator.getArrayDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid array-delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingArrayDelegate()', but null for 'getArrayDelegateType()'");
+            }
+            _arrayDelegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getArrayDelegateCreator());
+        }
+
+        // And now that we know CreatorProperty instances are also resolved can finally create the creator:
+        if (creatorProps != null) {
+            _propertyBasedCreator = PropertyBasedCreator.construct(ctxt, _valueInstantiator, creatorProps);
+        }
+
+        if (extTypes != null) {
+            // 21-Jun-2016, tatu: related to [databind#999], may need to link type ids too,
+            //    so need to pass collected properties
+            _externalTypeIdHandler = extTypes.build();
+            // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+        
+        _unwrappedPropertyHandler = unwrapped;
+        if (unwrapped != null) { // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+
+        // may need to disable vanilla processing, if unwrapped handling was enabled...
+        _vanillaProcessing = _vanillaProcessing && !_nonStandardCreation;
+    }
+
+stack trace:
+com.fasterxml.jackson.databind.jsontype.ext.ExternalTypeId999Test::testExternalTypeId
+junit.framework.ComparisonFailure: expected:<foo> but was:<null>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.Assert.assertEquals(Assert.java:107)
+	at junit.framework.TestCase.assertEquals(TestCase.java:269)
+	at com.fasterxml.jackson.databind.jsontype.ext.ExternalTypeId999Test.testExternalTypeId(ExternalTypeId999Test.java:47)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_3 ==================
+
+source code:
+@Override
+    public void resolve(DeserializationContext ctxt)
+        throws JsonMappingException
+    {
+        ExternalTypeHandler.Builder extTypes = null;
+        // if ValueInstantiator can use "creator" approach, need to resolve it here...
+        SettableBeanProperty[] creatorProps;
+
+        if (_valueInstantiator.canCreateFromObjectWith()) {
+            creatorProps = _valueInstantiator.getFromObjectArguments(ctxt.getConfig());
+
+            // 21-Jun-2015, tatu: This resolution was duplicated later on and seems like
+            //    it really should be only done at a later point. So commented out in 2.8.
+            //   However, just in case there was a reason for it, leaving commented out
+            //   here instead of immediately removing.
+
+            /*
+            // also: need to try to resolve 'external' type ids...
+            for (SettableBeanProperty prop : creatorProps) {
+                if (prop.hasValueTypeDeserializer()) {
+                    TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                    if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                        if (extTypes == null) {
+                            extTypes = new ExternalTypeHandler.Builder();
+                        }
+                        extTypes.addExternal(prop, typeDeser);
+                    }
+                }
+            }
+            */
+        } else {
+            creatorProps = null;
+        }
+
+        UnwrappedPropertyHandler unwrapped = null;
+
+        for (SettableBeanProperty origProp : _beanProperties) {
+            SettableBeanProperty prop = origProp;
+
+            // May already have deserializer from annotations, if so, skip:
+            if (!prop.hasValueDeserializer()) {
+                // [databind#125]: allow use of converters
+                JsonDeserializer<?> deser = findConvertingDeserializer(ctxt, prop);
+                if (deser == null) {
+                    deser = findDeserializer(ctxt, prop.getType(), prop);
+                }
+                prop = prop.withValueDeserializer(deser);
+            } else { // may need contextual version
+                JsonDeserializer<Object> deser = prop.getValueDeserializer();
+                /* Important! This is the only place where actually handle "primary"
+                 * property deserializers -- call is different from other places.
+                 */
+                JsonDeserializer<?> cd = ctxt.handlePrimaryContextualization(deser, prop,
+                        prop.getType());
+                if (cd != deser) {
+                    prop = prop.withValueDeserializer(cd);
+                }
+            }
+
+            // Need to link managed references with matching back references
+            prop = _resolveManagedReferenceProperty(ctxt, prop);
+
+            // [databind#351[: need to wrap properties that require object id resolution.
+            if (!(prop instanceof ManagedReferenceProperty)) {
+                prop = _resolvedObjectIdProperty(ctxt, prop);
+            }
+            // Support unwrapped values (via @JsonUnwrapped)
+            SettableBeanProperty u = _resolveUnwrappedProperty(ctxt, prop);
+            if (u != null) {
+                prop = u;
+                if (unwrapped == null) {
+                    unwrapped = new UnwrappedPropertyHandler();
+                }
+                unwrapped.addProperty(prop);
+                /* 12-Dec-2014, tatu: As per [databind#647], we will have problems if
+                 *    the original property is left in place. So let's remove it now.
+                 */
+                _beanProperties.remove(prop);
+                continue;
+            }
+            // non-static inner classes too:
+            prop = _resolveInnerClassValuedProperty(ctxt, prop);
+            if (prop != origProp) {
+                _beanProperties.replace(prop);
+                // [databind#795]: Make sure PropertyBasedCreator's properties stay in sync
+                if (creatorProps != null) {
+                    // 18-May-2015, tatu: _Should_ start with consistent set. But can we really
+                    //   fully count on this? May need to revisit in future; seems to hold for now.
+                    for (int i = 0, len = creatorProps.length; i < len; ++i) {
+                        if (creatorProps[i] == origProp) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        // ... as per above, it is possible we'd need to add this as fallback
+                        // if (but only if) identity check fails?
+                        /*
+                        if (creatorProps[i].getName().equals(prop.getName())) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        */
+                    }
+                }
+            }
+            // one more thing: if this property uses "external property" type inclusion,
+            // it needs different handling altogether
+            if (prop.hasValueTypeDeserializer()) {
+                TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                    if (extTypes == null) {
+                        extTypes = new ExternalTypeHandler.Builder();
+                    }
+                    extTypes.addExternal(prop, typeDeser);
+                    // In fact, remove from list of known properties to simplify later handling
+                    _beanProperties.remove(prop);
+                    continue;
+                }
+            }
+        }
+        // "any setter" may also need to be resolved now
+        if (_anySetter != null && !_anySetter.hasValueDeserializer()) {
+            _anySetter = _anySetter.withValueDeserializer(findDeserializer(ctxt,
+                    _anySetter.getType(), _anySetter.getProperty()));
+        }
+        // as well as delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingDelegate()) {
+            JavaType delegateType = _valueInstantiator.getDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingDelegate()', but null for 'getDelegateType()'");
+            }
+            _delegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getDelegateCreator());
+        }
+
+        // and array-delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingArrayDelegate()) {
+            JavaType delegateType = _valueInstantiator.getArrayDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid array-delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingArrayDelegate()', but null for 'getArrayDelegateType()'");
+            }
+            _arrayDelegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getArrayDelegateCreator());
+        }
+
+        // And now that we know CreatorProperty instances are also resolved can finally create the creator:
+        if (creatorProps != null) {
+            _propertyBasedCreator = PropertyBasedCreator.construct(ctxt, _valueInstantiator, creatorProps);
+        }
+
+        if (extTypes != null) {
+            // 21-Jun-2016, tatu: related to [databind#999], may need to link type ids too,
+            //    so need to pass collected properties
+            _externalTypeIdHandler = extTypes.build();
+            // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+        
+        _unwrappedPropertyHandler = unwrapped;
+        if (unwrapped != null) { // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+
+        // may need to disable vanilla processing, if unwrapped handling was enabled...
+        _vanillaProcessing = _vanillaProcessing && !_nonStandardCreation;
+    }
+
+stack trace:
+com.fasterxml.jackson.databind.jsontype.ext.ExternalTypeId999Test::testExternalTypeId
+junit.framework.ComparisonFailure: expected:<foo> but was:<null>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.Assert.assertEquals(Assert.java:107)
+	at junit.framework.TestCase.assertEquals(TestCase.java:269)
+	at com.fasterxml.jackson.databind.jsontype.ext.ExternalTypeId999Test.testExternalTypeId(ExternalTypeId999Test.java:47)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+failure assertion code:
+assertEquals("foo", msg.type);
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_4 ==================
+
+source code:
+@Override
+    public void resolve(DeserializationContext ctxt)
+        throws JsonMappingException
+    {
+        ExternalTypeHandler.Builder extTypes = null;
+        // if ValueInstantiator can use "creator" approach, need to resolve it here...
+        SettableBeanProperty[] creatorProps;
+
+        if (_valueInstantiator.canCreateFromObjectWith()) {
+            creatorProps = _valueInstantiator.getFromObjectArguments(ctxt.getConfig());
+
+            // 21-Jun-2015, tatu: This resolution was duplicated later on and seems like
+            //    it really should be only done at a later point. So commented out in 2.8.
+            //   However, just in case there was a reason for it, leaving commented out
+            //   here instead of immediately removing.
+
+            /*
+            // also: need to try to resolve 'external' type ids...
+            for (SettableBeanProperty prop : creatorProps) {
+                if (prop.hasValueTypeDeserializer()) {
+                    TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                    if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                        if (extTypes == null) {
+                            extTypes = new ExternalTypeHandler.Builder();
+                        }
+                        extTypes.addExternal(prop, typeDeser);
+                    }
+                }
+            }
+            */
+        } else {
+            creatorProps = null;
+        }
+
+        UnwrappedPropertyHandler unwrapped = null;
+
+        for (SettableBeanProperty origProp : _beanProperties) {
+            SettableBeanProperty prop = origProp;
+
+            // May already have deserializer from annotations, if so, skip:
+            if (!prop.hasValueDeserializer()) {
+                // [databind#125]: allow use of converters
+                JsonDeserializer<?> deser = findConvertingDeserializer(ctxt, prop);
+                if (deser == null) {
+                    deser = findDeserializer(ctxt, prop.getType(), prop);
+                }
+                prop = prop.withValueDeserializer(deser);
+            } else { // may need contextual version
+                JsonDeserializer<Object> deser = prop.getValueDeserializer();
+                /* Important! This is the only place where actually handle "primary"
+                 * property deserializers -- call is different from other places.
+                 */
+                JsonDeserializer<?> cd = ctxt.handlePrimaryContextualization(deser, prop,
+                        prop.getType());
+                if (cd != deser) {
+                    prop = prop.withValueDeserializer(cd);
+                }
+            }
+
+            // Need to link managed references with matching back references
+            prop = _resolveManagedReferenceProperty(ctxt, prop);
+
+            // [databind#351[: need to wrap properties that require object id resolution.
+            if (!(prop instanceof ManagedReferenceProperty)) {
+                prop = _resolvedObjectIdProperty(ctxt, prop);
+            }
+            // Support unwrapped values (via @JsonUnwrapped)
+            SettableBeanProperty u = _resolveUnwrappedProperty(ctxt, prop);
+            if (u != null) {
+                prop = u;
+                if (unwrapped == null) {
+                    unwrapped = new UnwrappedPropertyHandler();
+                }
+                unwrapped.addProperty(prop);
+                /* 12-Dec-2014, tatu: As per [databind#647], we will have problems if
+                 *    the original property is left in place. So let's remove it now.
+                 */
+                _beanProperties.remove(prop);
+                continue;
+            }
+            // non-static inner classes too:
+            prop = _resolveInnerClassValuedProperty(ctxt, prop);
+            if (prop != origProp) {
+                _beanProperties.replace(prop);
+                // [databind#795]: Make sure PropertyBasedCreator's properties stay in sync
+                if (creatorProps != null) {
+                    // 18-May-2015, tatu: _Should_ start with consistent set. But can we really
+                    //   fully count on this? May need to revisit in future; seems to hold for now.
+                    for (int i = 0, len = creatorProps.length; i < len; ++i) {
+                        if (creatorProps[i] == origProp) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        // ... as per above, it is possible we'd need to add this as fallback
+                        // if (but only if) identity check fails?
+                        /*
+                        if (creatorProps[i].getName().equals(prop.getName())) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        */
+                    }
+                }
+            }
+            // one more thing: if this property uses "external property" type inclusion,
+            // it needs different handling altogether
+            if (prop.hasValueTypeDeserializer()) {
+                TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                    if (extTypes == null) {
+                        extTypes = new ExternalTypeHandler.Builder();
+                    }
+                    extTypes.addExternal(prop, typeDeser);
+                    // In fact, remove from list of known properties to simplify later handling
+                    _beanProperties.remove(prop);
+                    continue;
+                }
+            }
+        }
+        // "any setter" may also need to be resolved now
+        if (_anySetter != null && !_anySetter.hasValueDeserializer()) {
+            _anySetter = _anySetter.withValueDeserializer(findDeserializer(ctxt,
+                    _anySetter.getType(), _anySetter.getProperty()));
+        }
+        // as well as delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingDelegate()) {
+            JavaType delegateType = _valueInstantiator.getDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingDelegate()', but null for 'getDelegateType()'");
+            }
+            _delegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getDelegateCreator());
+        }
+
+        // and array-delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingArrayDelegate()) {
+            JavaType delegateType = _valueInstantiator.getArrayDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid array-delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingArrayDelegate()', but null for 'getArrayDelegateType()'");
+            }
+            _arrayDelegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getArrayDelegateCreator());
+        }
+
+        // And now that we know CreatorProperty instances are also resolved can finally create the creator:
+        if (creatorProps != null) {
+            _propertyBasedCreator = PropertyBasedCreator.construct(ctxt, _valueInstantiator, creatorProps);
+        }
+
+        if (extTypes != null) {
+            // 21-Jun-2016, tatu: related to [databind#999], may need to link type ids too,
+            //    so need to pass collected properties
+            _externalTypeIdHandler = extTypes.build();
+            // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+        
+        _unwrappedPropertyHandler = unwrapped;
+        if (unwrapped != null) { // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+
+        // may need to disable vanilla processing, if unwrapped handling was enabled...
+        _vanillaProcessing = _vanillaProcessing && !_nonStandardCreation;
+    }
+
+There is a bug in the above code, please help me locate it.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_5 ==================
+
+source code:
+@Override
+    public void resolve(DeserializationContext ctxt)
+        throws JsonMappingException
+    {
+        ExternalTypeHandler.Builder extTypes = null;
+        // if ValueInstantiator can use "creator" approach, need to resolve it here...
+        SettableBeanProperty[] creatorProps;
+
+        if (_valueInstantiator.canCreateFromObjectWith()) {
+            creatorProps = _valueInstantiator.getFromObjectArguments(ctxt.getConfig());
+
+            // 21-Jun-2015, tatu: This resolution was duplicated later on and seems like
+            //    it really should be only done at a later point. So commented out in 2.8.
+            //   However, just in case there was a reason for it, leaving commented out
+            //   here instead of immediately removing.
+
+            /*
+            // also: need to try to resolve 'external' type ids...
+            for (SettableBeanProperty prop : creatorProps) {
+                if (prop.hasValueTypeDeserializer()) {
+                    TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                    if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                        if (extTypes == null) {
+                            extTypes = new ExternalTypeHandler.Builder();
+                        }
+                        extTypes.addExternal(prop, typeDeser);
+                    }
+                }
+            }
+            */
+        } else {
+            creatorProps = null;
+        }
+
+        UnwrappedPropertyHandler unwrapped = null;
+
+        for (SettableBeanProperty origProp : _beanProperties) {
+            SettableBeanProperty prop = origProp;
+
+            // May already have deserializer from annotations, if so, skip:
+            if (!prop.hasValueDeserializer()) {
+                // [databind#125]: allow use of converters
+                JsonDeserializer<?> deser = findConvertingDeserializer(ctxt, prop);
+                if (deser == null) {
+                    deser = findDeserializer(ctxt, prop.getType(), prop);
+                }
+                prop = prop.withValueDeserializer(deser);
+            } else { // may need contextual version
+                JsonDeserializer<Object> deser = prop.getValueDeserializer();
+                /* Important! This is the only place where actually handle "primary"
+                 * property deserializers -- call is different from other places.
+                 */
+                JsonDeserializer<?> cd = ctxt.handlePrimaryContextualization(deser, prop,
+                        prop.getType());
+                if (cd != deser) {
+                    prop = prop.withValueDeserializer(cd);
+                }
+            }
+
+            // Need to link managed references with matching back references
+            prop = _resolveManagedReferenceProperty(ctxt, prop);
+
+            // [databind#351[: need to wrap properties that require object id resolution.
+            if (!(prop instanceof ManagedReferenceProperty)) {
+                prop = _resolvedObjectIdProperty(ctxt, prop);
+            }
+            // Support unwrapped values (via @JsonUnwrapped)
+            SettableBeanProperty u = _resolveUnwrappedProperty(ctxt, prop);
+            if (u != null) {
+                prop = u;
+                if (unwrapped == null) {
+                    unwrapped = new UnwrappedPropertyHandler();
+                }
+                unwrapped.addProperty(prop);
+                /* 12-Dec-2014, tatu: As per [databind#647], we will have problems if
+                 *    the original property is left in place. So let's remove it now.
+                 */
+                _beanProperties.remove(prop);
+                continue;
+            }
+            // non-static inner classes too:
+            prop = _resolveInnerClassValuedProperty(ctxt, prop);
+            if (prop != origProp) {
+                _beanProperties.replace(prop);
+                // [databind#795]: Make sure PropertyBasedCreator's properties stay in sync
+                if (creatorProps != null) {
+                    // 18-May-2015, tatu: _Should_ start with consistent set. But can we really
+                    //   fully count on this? May need to revisit in future; seems to hold for now.
+                    for (int i = 0, len = creatorProps.length; i < len; ++i) {
+                        if (creatorProps[i] == origProp) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        // ... as per above, it is possible we'd need to add this as fallback
+                        // if (but only if) identity check fails?
+                        /*
+                        if (creatorProps[i].getName().equals(prop.getName())) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        */
+                    }
+                }
+            }
+            // one more thing: if this property uses "external property" type inclusion,
+            // it needs different handling altogether
+            if (prop.hasValueTypeDeserializer()) {
+                TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                    if (extTypes == null) {
+                        extTypes = new ExternalTypeHandler.Builder();
+                    }
+                    extTypes.addExternal(prop, typeDeser);
+                    // In fact, remove from list of known properties to simplify later handling
+                    _beanProperties.remove(prop);
+                    continue;
+                }
+            }
+        }
+        // "any setter" may also need to be resolved now
+        if (_anySetter != null && !_anySetter.hasValueDeserializer()) {
+            _anySetter = _anySetter.withValueDeserializer(findDeserializer(ctxt,
+                    _anySetter.getType(), _anySetter.getProperty()));
+        }
+        // as well as delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingDelegate()) {
+            JavaType delegateType = _valueInstantiator.getDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingDelegate()', but null for 'getDelegateType()'");
+            }
+            _delegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getDelegateCreator());
+        }
+
+        // and array-delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingArrayDelegate()) {
+            JavaType delegateType = _valueInstantiator.getArrayDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid array-delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingArrayDelegate()', but null for 'getArrayDelegateType()'");
+            }
+            _arrayDelegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getArrayDelegateCreator());
+        }
+
+        // And now that we know CreatorProperty instances are also resolved can finally create the creator:
+        if (creatorProps != null) {
+            _propertyBasedCreator = PropertyBasedCreator.construct(ctxt, _valueInstantiator, creatorProps);
+        }
+
+        if (extTypes != null) {
+            // 21-Jun-2016, tatu: related to [databind#999], may need to link type ids too,
+            //    so need to pass collected properties
+            _externalTypeIdHandler = extTypes.build();
+            // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+        
+        _unwrappedPropertyHandler = unwrapped;
+        if (unwrapped != null) { // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+
+        // may need to disable vanilla processing, if unwrapped handling was enabled...
+        _vanillaProcessing = _vanillaProcessing && !_nonStandardCreation;
+    }
+
+stack trace:
+com.fasterxml.jackson.databind.jsontype.ext.ExternalTypeId999Test::testExternalTypeId
+junit.framework.ComparisonFailure: expected:<foo> but was:<null>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.Assert.assertEquals(Assert.java:107)
+	at junit.framework.TestCase.assertEquals(TestCase.java:269)
+	at com.fasterxml.jackson.databind.jsontype.ext.ExternalTypeId999Test.testExternalTypeId(ExternalTypeId999Test.java:47)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_6 ==================
+
+source code:
+@Override
+    public void resolve(DeserializationContext ctxt)
+        throws JsonMappingException
+    {
+        ExternalTypeHandler.Builder extTypes = null;
+        // if ValueInstantiator can use "creator" approach, need to resolve it here...
+        SettableBeanProperty[] creatorProps;
+
+        if (_valueInstantiator.canCreateFromObjectWith()) {
+            creatorProps = _valueInstantiator.getFromObjectArguments(ctxt.getConfig());
+
+            // 21-Jun-2015, tatu: This resolution was duplicated later on and seems like
+            //    it really should be only done at a later point. So commented out in 2.8.
+            //   However, just in case there was a reason for it, leaving commented out
+            //   here instead of immediately removing.
+
+            /*
+            // also: need to try to resolve 'external' type ids...
+            for (SettableBeanProperty prop : creatorProps) {
+                if (prop.hasValueTypeDeserializer()) {
+                    TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                    if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                        if (extTypes == null) {
+                            extTypes = new ExternalTypeHandler.Builder();
+                        }
+                        extTypes.addExternal(prop, typeDeser);
+                    }
+                }
+            }
+            */
+        } else {
+            creatorProps = null;
+        }
+
+        UnwrappedPropertyHandler unwrapped = null;
+
+        for (SettableBeanProperty origProp : _beanProperties) {
+            SettableBeanProperty prop = origProp;
+
+            // May already have deserializer from annotations, if so, skip:
+            if (!prop.hasValueDeserializer()) {
+                // [databind#125]: allow use of converters
+                JsonDeserializer<?> deser = findConvertingDeserializer(ctxt, prop);
+                if (deser == null) {
+                    deser = findDeserializer(ctxt, prop.getType(), prop);
+                }
+                prop = prop.withValueDeserializer(deser);
+            } else { // may need contextual version
+                JsonDeserializer<Object> deser = prop.getValueDeserializer();
+                /* Important! This is the only place where actually handle "primary"
+                 * property deserializers -- call is different from other places.
+                 */
+                JsonDeserializer<?> cd = ctxt.handlePrimaryContextualization(deser, prop,
+                        prop.getType());
+                if (cd != deser) {
+                    prop = prop.withValueDeserializer(cd);
+                }
+            }
+
+            // Need to link managed references with matching back references
+            prop = _resolveManagedReferenceProperty(ctxt, prop);
+
+            // [databind#351[: need to wrap properties that require object id resolution.
+            if (!(prop instanceof ManagedReferenceProperty)) {
+                prop = _resolvedObjectIdProperty(ctxt, prop);
+            }
+            // Support unwrapped values (via @JsonUnwrapped)
+            SettableBeanProperty u = _resolveUnwrappedProperty(ctxt, prop);
+            if (u != null) {
+                prop = u;
+                if (unwrapped == null) {
+                    unwrapped = new UnwrappedPropertyHandler();
+                }
+                unwrapped.addProperty(prop);
+                /* 12-Dec-2014, tatu: As per [databind#647], we will have problems if
+                 *    the original property is left in place. So let's remove it now.
+                 */
+                _beanProperties.remove(prop);
+                continue;
+            }
+            // non-static inner classes too:
+            prop = _resolveInnerClassValuedProperty(ctxt, prop);
+            if (prop != origProp) {
+                _beanProperties.replace(prop);
+                // [databind#795]: Make sure PropertyBasedCreator's properties stay in sync
+                if (creatorProps != null) {
+                    // 18-May-2015, tatu: _Should_ start with consistent set. But can we really
+                    //   fully count on this? May need to revisit in future; seems to hold for now.
+                    for (int i = 0, len = creatorProps.length; i < len; ++i) {
+                        if (creatorProps[i] == origProp) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        // ... as per above, it is possible we'd need to add this as fallback
+                        // if (but only if) identity check fails?
+                        /*
+                        if (creatorProps[i].getName().equals(prop.getName())) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        */
+                    }
+                }
+            }
+            // one more thing: if this property uses "external property" type inclusion,
+            // it needs different handling altogether
+            if (prop.hasValueTypeDeserializer()) {
+                TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                    if (extTypes == null) {
+                        extTypes = new ExternalTypeHandler.Builder();
+                    }
+                    extTypes.addExternal(prop, typeDeser);
+                    // In fact, remove from list of known properties to simplify later handling
+                    _beanProperties.remove(prop);
+                    continue;
+                }
+            }
+        }
+        // "any setter" may also need to be resolved now
+        if (_anySetter != null && !_anySetter.hasValueDeserializer()) {
+            _anySetter = _anySetter.withValueDeserializer(findDeserializer(ctxt,
+                    _anySetter.getType(), _anySetter.getProperty()));
+        }
+        // as well as delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingDelegate()) {
+            JavaType delegateType = _valueInstantiator.getDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingDelegate()', but null for 'getDelegateType()'");
+            }
+            _delegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getDelegateCreator());
+        }
+
+        // and array-delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingArrayDelegate()) {
+            JavaType delegateType = _valueInstantiator.getArrayDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid array-delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingArrayDelegate()', but null for 'getArrayDelegateType()'");
+            }
+            _arrayDelegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getArrayDelegateCreator());
+        }
+
+        // And now that we know CreatorProperty instances are also resolved can finally create the creator:
+        if (creatorProps != null) {
+            _propertyBasedCreator = PropertyBasedCreator.construct(ctxt, _valueInstantiator, creatorProps);
+        }
+
+        if (extTypes != null) {
+            // 21-Jun-2016, tatu: related to [databind#999], may need to link type ids too,
+            //    so need to pass collected properties
+            _externalTypeIdHandler = extTypes.build();
+            // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+        
+        _unwrappedPropertyHandler = unwrapped;
+        if (unwrapped != null) { // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+
+        // may need to disable vanilla processing, if unwrapped handling was enabled...
+        _vanillaProcessing = _vanillaProcessing && !_nonStandardCreation;
+    }
+
+stack trace:
+com.fasterxml.jackson.databind.jsontype.ext.ExternalTypeId999Test::testExternalTypeId
+junit.framework.ComparisonFailure: expected:<foo> but was:<null>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.Assert.assertEquals(Assert.java:107)
+	at junit.framework.TestCase.assertEquals(TestCase.java:269)
+	at com.fasterxml.jackson.databind.jsontype.ext.ExternalTypeId999Test.testExternalTypeId(ExternalTypeId999Test.java:47)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+failure assertion code:
+assertEquals("foo", msg.type);
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_1 ==================
+
+@Override
+    public void resolve(DeserializationContext ctxt)
+        throws JsonMappingException
+    {
+        ExternalTypeHandler.Builder extTypes = null;
+        // if ValueInstantiator can use "creator" approach, need to resolve it here...
+        SettableBeanProperty[] creatorProps;
+
+        if (_valueInstantiator.canCreateFromObjectWith()) {
+            creatorProps = _valueInstantiator.getFromObjectArguments(ctxt.getConfig());
+
+            // 21-Jun-2015, tatu: This resolution was duplicated later on and seems like
+            //    it really should be only done at a later point. So commented out in 2.8.
+            //   However, just in case there was a reason for it, leaving commented out
+            //   here instead of immediately removing.
+
+            /*
+            // also: need to try to resolve 'external' type ids...
+            for (SettableBeanProperty prop : creatorProps) {
+                if (prop.hasValueTypeDeserializer()) {
+                    TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                    if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                        if (extTypes == null) {
+                            extTypes = new ExternalTypeHandler.Builder();
+                        }
+                        extTypes.addExternal(prop, typeDeser);
+                    }
+                }
+            }
+            */
+        } else {
+            creatorProps = null;
+        }
+
+        UnwrappedPropertyHandler unwrapped = null;
+
+        for (SettableBeanProperty origProp : _beanProperties) {
+            SettableBeanProperty prop = origProp;
+
+            // May already have deserializer from annotations, if so, skip:
+            if (!prop.hasValueDeserializer()) {
+                // [databind#125]: allow use of converters
+                JsonDeserializer<?> deser = findConvertingDeserializer(ctxt, prop);
+                if (deser == null) {
+                    deser = findDeserializer(ctxt, prop.getType(), prop);
+                }
+                prop = prop.withValueDeserializer(deser);
+            } else { // may need contextual version
+                JsonDeserializer<Object> deser = prop.getValueDeserializer();
+                /* Important! This is the only place where actually handle "primary"
+                 * property deserializers -- call is different from other places.
+                 */
+                JsonDeserializer<?> cd = ctxt.handlePrimaryContextualization(deser, prop,
+                        prop.getType());
+                if (cd != deser) {
+                    prop = prop.withValueDeserializer(cd);
+                }
+            }
+
+            // Need to link managed references with matching back references
+            prop = _resolveManagedReferenceProperty(ctxt, prop);
+
+            // [databind#351[: need to wrap properties that require object id resolution.
+            if (!(prop instanceof ManagedReferenceProperty)) {
+                prop = _resolvedObjectIdProperty(ctxt, prop);
+            }
+            // Support unwrapped values (via @JsonUnwrapped)
+            SettableBeanProperty u = _resolveUnwrappedProperty(ctxt, prop);
+            if (u != null) {
+                prop = u;
+                if (unwrapped == null) {
+                    unwrapped = new UnwrappedPropertyHandler();
+                }
+                unwrapped.addProperty(prop);
+                /* 12-Dec-2014, tatu: As per [databind#647], we will have problems if
+                 *    the original property is left in place. So let's remove it now.
+                 */
+                _beanProperties.remove(prop);
+                continue;
+            }
+            // non-static inner classes too:
+            prop = _resolveInnerClassValuedProperty(ctxt, prop);
+            if (prop != origProp) {
+                _beanProperties.replace(prop);
+                // [databind#795]: Make sure PropertyBasedCreator's properties stay in sync
+                if (creatorProps != null) {
+                    // 18-May-2015, tatu: _Should_ start with consistent set. But can we really
+                    //   fully count on this? May need to revisit in future; seems to hold for now.
+                    for (int i = 0, len = creatorProps.length; i < len; ++i) {
+                        if (creatorProps[i] == origProp) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        // ... as per above, it is possible we'd need to add this as fallback
+                        // if (but only if) identity check fails?
+                        /*
+                        if (creatorProps[i].getName().equals(prop.getName())) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        */
+                    }
+                }
+            }
+            // one more thing: if this property uses "external property" type inclusion,
+            // it needs different handling altogether
+            if (prop.hasValueTypeDeserializer()) {
+                TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                    if (extTypes == null) {
+                        extTypes = new ExternalTypeHandler.Builder();
+                    }
+                    extTypes.addExternal(prop, typeDeser);
+                    // In fact, remove from list of known properties to simplify later handling
+                    _beanProperties.remove(prop);
+                    continue;
+                }
+            }
+        }
+        // "any setter" may also need to be resolved now
+        if (_anySetter != null && !_anySetter.hasValueDeserializer()) {
+            _anySetter = _anySetter.withValueDeserializer(findDeserializer(ctxt,
+                    _anySetter.getType(), _anySetter.getProperty()));
+        }
+        // as well as delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingDelegate()) {
+            JavaType delegateType = _valueInstantiator.getDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingDelegate()', but null for 'getDelegateType()'");
+            }
+            _delegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getDelegateCreator());
+        }
+
+        // and array-delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingArrayDelegate()) {
+            JavaType delegateType = _valueInstantiator.getArrayDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid array-delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingArrayDelegate()', but null for 'getArrayDelegateType()'");
+            }
+            _arrayDelegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getArrayDelegateCreator());
+        }
+
+        // And now that we know CreatorProperty instances are also resolved can finally create the creator:
+        if (creatorProps != null) {
+            _propertyBasedCreator = PropertyBasedCreator.construct(ctxt, _valueInstantiator, creatorProps);
+        }
+
+        if (extTypes != null) {
+            // 21-Jun-2016, tatu: related to [databind#999], may need to link type ids too,
+            //    so need to pass collected properties
+            _externalTypeIdHandler = extTypes.build();
+            // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+        
+        _unwrappedPropertyHandler = unwrapped;
+        if (unwrapped != null) { // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+
+        // may need to disable vanilla processing, if unwrapped handling was enabled...
+        _vanillaProcessing = _vanillaProcessing && !_nonStandardCreation;
+    }
+
+There is a bug in line [157] of the code, please help me fix it.
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_2 ==================
+
+@Override
+    public void resolve(DeserializationContext ctxt)
+        throws JsonMappingException
+    {
+        ExternalTypeHandler.Builder extTypes = null;
+        // if ValueInstantiator can use "creator" approach, need to resolve it here...
+        SettableBeanProperty[] creatorProps;
+
+        if (_valueInstantiator.canCreateFromObjectWith()) {
+            creatorProps = _valueInstantiator.getFromObjectArguments(ctxt.getConfig());
+
+            // 21-Jun-2015, tatu: This resolution was duplicated later on and seems like
+            //    it really should be only done at a later point. So commented out in 2.8.
+            //   However, just in case there was a reason for it, leaving commented out
+            //   here instead of immediately removing.
+
+            /*
+            // also: need to try to resolve 'external' type ids...
+            for (SettableBeanProperty prop : creatorProps) {
+                if (prop.hasValueTypeDeserializer()) {
+                    TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                    if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                        if (extTypes == null) {
+                            extTypes = new ExternalTypeHandler.Builder();
+                        }
+                        extTypes.addExternal(prop, typeDeser);
+                    }
+                }
+            }
+            */
+        } else {
+            creatorProps = null;
+        }
+
+        UnwrappedPropertyHandler unwrapped = null;
+
+        for (SettableBeanProperty origProp : _beanProperties) {
+            SettableBeanProperty prop = origProp;
+
+            // May already have deserializer from annotations, if so, skip:
+            if (!prop.hasValueDeserializer()) {
+                // [databind#125]: allow use of converters
+                JsonDeserializer<?> deser = findConvertingDeserializer(ctxt, prop);
+                if (deser == null) {
+                    deser = findDeserializer(ctxt, prop.getType(), prop);
+                }
+                prop = prop.withValueDeserializer(deser);
+            } else { // may need contextual version
+                JsonDeserializer<Object> deser = prop.getValueDeserializer();
+                /* Important! This is the only place where actually handle "primary"
+                 * property deserializers -- call is different from other places.
+                 */
+                JsonDeserializer<?> cd = ctxt.handlePrimaryContextualization(deser, prop,
+                        prop.getType());
+                if (cd != deser) {
+                    prop = prop.withValueDeserializer(cd);
+                }
+            }
+
+            // Need to link managed references with matching back references
+            prop = _resolveManagedReferenceProperty(ctxt, prop);
+
+            // [databind#351[: need to wrap properties that require object id resolution.
+            if (!(prop instanceof ManagedReferenceProperty)) {
+                prop = _resolvedObjectIdProperty(ctxt, prop);
+            }
+            // Support unwrapped values (via @JsonUnwrapped)
+            SettableBeanProperty u = _resolveUnwrappedProperty(ctxt, prop);
+            if (u != null) {
+                prop = u;
+                if (unwrapped == null) {
+                    unwrapped = new UnwrappedPropertyHandler();
+                }
+                unwrapped.addProperty(prop);
+                /* 12-Dec-2014, tatu: As per [databind#647], we will have problems if
+                 *    the original property is left in place. So let's remove it now.
+                 */
+                _beanProperties.remove(prop);
+                continue;
+            }
+            // non-static inner classes too:
+            prop = _resolveInnerClassValuedProperty(ctxt, prop);
+            if (prop != origProp) {
+                _beanProperties.replace(prop);
+                // [databind#795]: Make sure PropertyBasedCreator's properties stay in sync
+                if (creatorProps != null) {
+                    // 18-May-2015, tatu: _Should_ start with consistent set. But can we really
+                    //   fully count on this? May need to revisit in future; seems to hold for now.
+                    for (int i = 0, len = creatorProps.length; i < len; ++i) {
+                        if (creatorProps[i] == origProp) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        // ... as per above, it is possible we'd need to add this as fallback
+                        // if (but only if) identity check fails?
+                        /*
+                        if (creatorProps[i].getName().equals(prop.getName())) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        */
+                    }
+                }
+            }
+            // one more thing: if this property uses "external property" type inclusion,
+            // it needs different handling altogether
+            if (prop.hasValueTypeDeserializer()) {
+                TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                    if (extTypes == null) {
+                        extTypes = new ExternalTypeHandler.Builder();
+                    }
+                    extTypes.addExternal(prop, typeDeser);
+                    // In fact, remove from list of known properties to simplify later handling
+                    _beanProperties.remove(prop);
+                    continue;
+                }
+            }
+        }
+        // "any setter" may also need to be resolved now
+        if (_anySetter != null && !_anySetter.hasValueDeserializer()) {
+            _anySetter = _anySetter.withValueDeserializer(findDeserializer(ctxt,
+                    _anySetter.getType(), _anySetter.getProperty()));
+        }
+        // as well as delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingDelegate()) {
+            JavaType delegateType = _valueInstantiator.getDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingDelegate()', but null for 'getDelegateType()'");
+            }
+            _delegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getDelegateCreator());
+        }
+
+        // and array-delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingArrayDelegate()) {
+            JavaType delegateType = _valueInstantiator.getArrayDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid array-delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingArrayDelegate()', but null for 'getArrayDelegateType()'");
+            }
+            _arrayDelegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getArrayDelegateCreator());
+        }
+
+        // And now that we know CreatorProperty instances are also resolved can finally create the creator:
+        if (creatorProps != null) {
+            _propertyBasedCreator = PropertyBasedCreator.construct(ctxt, _valueInstantiator, creatorProps);
+        }
+
+        if (extTypes != null) {
+            // 21-Jun-2016, tatu: related to [databind#999], may need to link type ids too,
+            //    so need to pass collected properties
+            _externalTypeIdHandler = extTypes.build();
+            // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+        
+        _unwrappedPropertyHandler = unwrapped;
+        if (unwrapped != null) { // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+
+        // may need to disable vanilla processing, if unwrapped handling was enabled...
+        _vanillaProcessing = _vanillaProcessing && !_nonStandardCreation;
+    }
+
+There is a bug in ['            _externalTypeIdHandler = extTypes.build();'] , please help me fix it. 
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_3 ==================
+
+@Override
+    public void resolve(DeserializationContext ctxt)
+        throws JsonMappingException
+    {
+        ExternalTypeHandler.Builder extTypes = null;
+        // if ValueInstantiator can use "creator" approach, need to resolve it here...
+        SettableBeanProperty[] creatorProps;
+
+        if (_valueInstantiator.canCreateFromObjectWith()) {
+            creatorProps = _valueInstantiator.getFromObjectArguments(ctxt.getConfig());
+
+            // 21-Jun-2015, tatu: This resolution was duplicated later on and seems like
+            //    it really should be only done at a later point. So commented out in 2.8.
+            //   However, just in case there was a reason for it, leaving commented out
+            //   here instead of immediately removing.
+
+            /*
+            // also: need to try to resolve 'external' type ids...
+            for (SettableBeanProperty prop : creatorProps) {
+                if (prop.hasValueTypeDeserializer()) {
+                    TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                    if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                        if (extTypes == null) {
+                            extTypes = new ExternalTypeHandler.Builder();
+                        }
+                        extTypes.addExternal(prop, typeDeser);
+                    }
+                }
+            }
+            */
+        } else {
+            creatorProps = null;
+        }
+
+        UnwrappedPropertyHandler unwrapped = null;
+
+        for (SettableBeanProperty origProp : _beanProperties) {
+            SettableBeanProperty prop = origProp;
+
+            // May already have deserializer from annotations, if so, skip:
+            if (!prop.hasValueDeserializer()) {
+                // [databind#125]: allow use of converters
+                JsonDeserializer<?> deser = findConvertingDeserializer(ctxt, prop);
+                if (deser == null) {
+                    deser = findDeserializer(ctxt, prop.getType(), prop);
+                }
+                prop = prop.withValueDeserializer(deser);
+            } else { // may need contextual version
+                JsonDeserializer<Object> deser = prop.getValueDeserializer();
+                /* Important! This is the only place where actually handle "primary"
+                 * property deserializers -- call is different from other places.
+                 */
+                JsonDeserializer<?> cd = ctxt.handlePrimaryContextualization(deser, prop,
+                        prop.getType());
+                if (cd != deser) {
+                    prop = prop.withValueDeserializer(cd);
+                }
+            }
+
+            // Need to link managed references with matching back references
+            prop = _resolveManagedReferenceProperty(ctxt, prop);
+
+            // [databind#351[: need to wrap properties that require object id resolution.
+            if (!(prop instanceof ManagedReferenceProperty)) {
+                prop = _resolvedObjectIdProperty(ctxt, prop);
+            }
+            // Support unwrapped values (via @JsonUnwrapped)
+            SettableBeanProperty u = _resolveUnwrappedProperty(ctxt, prop);
+            if (u != null) {
+                prop = u;
+                if (unwrapped == null) {
+                    unwrapped = new UnwrappedPropertyHandler();
+                }
+                unwrapped.addProperty(prop);
+                /* 12-Dec-2014, tatu: As per [databind#647], we will have problems if
+                 *    the original property is left in place. So let's remove it now.
+                 */
+                _beanProperties.remove(prop);
+                continue;
+            }
+            // non-static inner classes too:
+            prop = _resolveInnerClassValuedProperty(ctxt, prop);
+            if (prop != origProp) {
+                _beanProperties.replace(prop);
+                // [databind#795]: Make sure PropertyBasedCreator's properties stay in sync
+                if (creatorProps != null) {
+                    // 18-May-2015, tatu: _Should_ start with consistent set. But can we really
+                    //   fully count on this? May need to revisit in future; seems to hold for now.
+                    for (int i = 0, len = creatorProps.length; i < len; ++i) {
+                        if (creatorProps[i] == origProp) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        // ... as per above, it is possible we'd need to add this as fallback
+                        // if (but only if) identity check fails?
+                        /*
+                        if (creatorProps[i].getName().equals(prop.getName())) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        */
+                    }
+                }
+            }
+            // one more thing: if this property uses "external property" type inclusion,
+            // it needs different handling altogether
+            if (prop.hasValueTypeDeserializer()) {
+                TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                    if (extTypes == null) {
+                        extTypes = new ExternalTypeHandler.Builder();
+                    }
+                    extTypes.addExternal(prop, typeDeser);
+                    // In fact, remove from list of known properties to simplify later handling
+                    _beanProperties.remove(prop);
+                    continue;
+                }
+            }
+        }
+        // "any setter" may also need to be resolved now
+        if (_anySetter != null && !_anySetter.hasValueDeserializer()) {
+            _anySetter = _anySetter.withValueDeserializer(findDeserializer(ctxt,
+                    _anySetter.getType(), _anySetter.getProperty()));
+        }
+        // as well as delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingDelegate()) {
+            JavaType delegateType = _valueInstantiator.getDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingDelegate()', but null for 'getDelegateType()'");
+            }
+            _delegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getDelegateCreator());
+        }
+
+        // and array-delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingArrayDelegate()) {
+            JavaType delegateType = _valueInstantiator.getArrayDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid array-delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingArrayDelegate()', but null for 'getArrayDelegateType()'");
+            }
+            _arrayDelegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getArrayDelegateCreator());
+        }
+
+        // And now that we know CreatorProperty instances are also resolved can finally create the creator:
+        if (creatorProps != null) {
+            _propertyBasedCreator = PropertyBasedCreator.construct(ctxt, _valueInstantiator, creatorProps);
+        }
+
+        if (extTypes != null) {
+            // 21-Jun-2016, tatu: related to [databind#999], may need to link type ids too,
+            //    so need to pass collected properties
+            _externalTypeIdHandler = extTypes.build();
+
+There is a bug in the last statement, please help me fix it.
+
+Return the code **only from the method declaration to the fixed statement**, without completing or adding additional code. Do not modify anything beyond fixing the bug, and do not complete the `if` statement or other unfinished parts. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_4 ==================
+
+@Override
+    public void resolve(DeserializationContext ctxt)
+        throws JsonMappingException
+    {
+        ExternalTypeHandler.Builder extTypes = null;
+        // if ValueInstantiator can use "creator" approach, need to resolve it here...
+        SettableBeanProperty[] creatorProps;
+
+        if (_valueInstantiator.canCreateFromObjectWith()) {
+            creatorProps = _valueInstantiator.getFromObjectArguments(ctxt.getConfig());
+
+            // 21-Jun-2015, tatu: This resolution was duplicated later on and seems like
+            //    it really should be only done at a later point. So commented out in 2.8.
+            //   However, just in case there was a reason for it, leaving commented out
+            //   here instead of immediately removing.
+
+            /*
+            // also: need to try to resolve 'external' type ids...
+            for (SettableBeanProperty prop : creatorProps) {
+                if (prop.hasValueTypeDeserializer()) {
+                    TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                    if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                        if (extTypes == null) {
+                            extTypes = new ExternalTypeHandler.Builder();
+                        }
+                        extTypes.addExternal(prop, typeDeser);
+                    }
+                }
+            }
+            */
+        } else {
+            creatorProps = null;
+        }
+
+        UnwrappedPropertyHandler unwrapped = null;
+
+        for (SettableBeanProperty origProp : _beanProperties) {
+            SettableBeanProperty prop = origProp;
+
+            // May already have deserializer from annotations, if so, skip:
+            if (!prop.hasValueDeserializer()) {
+                // [databind#125]: allow use of converters
+                JsonDeserializer<?> deser = findConvertingDeserializer(ctxt, prop);
+                if (deser == null) {
+                    deser = findDeserializer(ctxt, prop.getType(), prop);
+                }
+                prop = prop.withValueDeserializer(deser);
+            } else { // may need contextual version
+                JsonDeserializer<Object> deser = prop.getValueDeserializer();
+                /* Important! This is the only place where actually handle "primary"
+                 * property deserializers -- call is different from other places.
+                 */
+                JsonDeserializer<?> cd = ctxt.handlePrimaryContextualization(deser, prop,
+                        prop.getType());
+                if (cd != deser) {
+                    prop = prop.withValueDeserializer(cd);
+                }
+            }
+
+            // Need to link managed references with matching back references
+            prop = _resolveManagedReferenceProperty(ctxt, prop);
+
+            // [databind#351[: need to wrap properties that require object id resolution.
+            if (!(prop instanceof ManagedReferenceProperty)) {
+                prop = _resolvedObjectIdProperty(ctxt, prop);
+            }
+            // Support unwrapped values (via @JsonUnwrapped)
+            SettableBeanProperty u = _resolveUnwrappedProperty(ctxt, prop);
+            if (u != null) {
+                prop = u;
+                if (unwrapped == null) {
+                    unwrapped = new UnwrappedPropertyHandler();
+                }
+                unwrapped.addProperty(prop);
+                /* 12-Dec-2014, tatu: As per [databind#647], we will have problems if
+                 *    the original property is left in place. So let's remove it now.
+                 */
+                _beanProperties.remove(prop);
+                continue;
+            }
+            // non-static inner classes too:
+            prop = _resolveInnerClassValuedProperty(ctxt, prop);
+            if (prop != origProp) {
+                _beanProperties.replace(prop);
+                // [databind#795]: Make sure PropertyBasedCreator's properties stay in sync
+                if (creatorProps != null) {
+                    // 18-May-2015, tatu: _Should_ start with consistent set. But can we really
+                    //   fully count on this? May need to revisit in future; seems to hold for now.
+                    for (int i = 0, len = creatorProps.length; i < len; ++i) {
+                        if (creatorProps[i] == origProp) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        // ... as per above, it is possible we'd need to add this as fallback
+                        // if (but only if) identity check fails?
+                        /*
+                        if (creatorProps[i].getName().equals(prop.getName())) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        */
+                    }
+                }
+            }
+            // one more thing: if this property uses "external property" type inclusion,
+            // it needs different handling altogether
+            if (prop.hasValueTypeDeserializer()) {
+                TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                    if (extTypes == null) {
+                        extTypes = new ExternalTypeHandler.Builder();
+                    }
+                    extTypes.addExternal(prop, typeDeser);
+                    // In fact, remove from list of known properties to simplify later handling
+                    _beanProperties.remove(prop);
+                    continue;
+                }
+            }
+        }
+        // "any setter" may also need to be resolved now
+        if (_anySetter != null && !_anySetter.hasValueDeserializer()) {
+            _anySetter = _anySetter.withValueDeserializer(findDeserializer(ctxt,
+                    _anySetter.getType(), _anySetter.getProperty()));
+        }
+        // as well as delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingDelegate()) {
+            JavaType delegateType = _valueInstantiator.getDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingDelegate()', but null for 'getDelegateType()'");
+            }
+            _delegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getDelegateCreator());
+        }
+
+        // and array-delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingArrayDelegate()) {
+            JavaType delegateType = _valueInstantiator.getArrayDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid array-delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingArrayDelegate()', but null for 'getArrayDelegateType()'");
+            }
+            _arrayDelegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getArrayDelegateCreator());
+        }
+
+        // And now that we know CreatorProperty instances are also resolved can finally create the creator:
+        if (creatorProps != null) {
+            _propertyBasedCreator = PropertyBasedCreator.construct(ctxt, _valueInstantiator, creatorProps);
+        }
+
+        if (extTypes != null) {
+            // 21-Jun-2016, tatu: related to [databind#999], may need to link type ids too,
+            //    so need to pass collected properties
+            _externalTypeIdHandler = extTypes.build();
+            // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+        
+        _unwrappedPropertyHandler = unwrapped;
+        if (unwrapped != null) { // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+
+        // may need to disable vanilla processing, if unwrapped handling was enabled...
+        _vanillaProcessing = _vanillaProcessing && !_nonStandardCreation;
+    }
+
+There is a bug in line [157] of the code, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_5 ==================
+
+@Override
+    public void resolve(DeserializationContext ctxt)
+        throws JsonMappingException
+    {
+        ExternalTypeHandler.Builder extTypes = null;
+        // if ValueInstantiator can use "creator" approach, need to resolve it here...
+        SettableBeanProperty[] creatorProps;
+
+        if (_valueInstantiator.canCreateFromObjectWith()) {
+            creatorProps = _valueInstantiator.getFromObjectArguments(ctxt.getConfig());
+
+            // 21-Jun-2015, tatu: This resolution was duplicated later on and seems like
+            //    it really should be only done at a later point. So commented out in 2.8.
+            //   However, just in case there was a reason for it, leaving commented out
+            //   here instead of immediately removing.
+
+            /*
+            // also: need to try to resolve 'external' type ids...
+            for (SettableBeanProperty prop : creatorProps) {
+                if (prop.hasValueTypeDeserializer()) {
+                    TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                    if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                        if (extTypes == null) {
+                            extTypes = new ExternalTypeHandler.Builder();
+                        }
+                        extTypes.addExternal(prop, typeDeser);
+                    }
+                }
+            }
+            */
+        } else {
+            creatorProps = null;
+        }
+
+        UnwrappedPropertyHandler unwrapped = null;
+
+        for (SettableBeanProperty origProp : _beanProperties) {
+            SettableBeanProperty prop = origProp;
+
+            // May already have deserializer from annotations, if so, skip:
+            if (!prop.hasValueDeserializer()) {
+                // [databind#125]: allow use of converters
+                JsonDeserializer<?> deser = findConvertingDeserializer(ctxt, prop);
+                if (deser == null) {
+                    deser = findDeserializer(ctxt, prop.getType(), prop);
+                }
+                prop = prop.withValueDeserializer(deser);
+            } else { // may need contextual version
+                JsonDeserializer<Object> deser = prop.getValueDeserializer();
+                /* Important! This is the only place where actually handle "primary"
+                 * property deserializers -- call is different from other places.
+                 */
+                JsonDeserializer<?> cd = ctxt.handlePrimaryContextualization(deser, prop,
+                        prop.getType());
+                if (cd != deser) {
+                    prop = prop.withValueDeserializer(cd);
+                }
+            }
+
+            // Need to link managed references with matching back references
+            prop = _resolveManagedReferenceProperty(ctxt, prop);
+
+            // [databind#351[: need to wrap properties that require object id resolution.
+            if (!(prop instanceof ManagedReferenceProperty)) {
+                prop = _resolvedObjectIdProperty(ctxt, prop);
+            }
+            // Support unwrapped values (via @JsonUnwrapped)
+            SettableBeanProperty u = _resolveUnwrappedProperty(ctxt, prop);
+            if (u != null) {
+                prop = u;
+                if (unwrapped == null) {
+                    unwrapped = new UnwrappedPropertyHandler();
+                }
+                unwrapped.addProperty(prop);
+                /* 12-Dec-2014, tatu: As per [databind#647], we will have problems if
+                 *    the original property is left in place. So let's remove it now.
+                 */
+                _beanProperties.remove(prop);
+                continue;
+            }
+            // non-static inner classes too:
+            prop = _resolveInnerClassValuedProperty(ctxt, prop);
+            if (prop != origProp) {
+                _beanProperties.replace(prop);
+                // [databind#795]: Make sure PropertyBasedCreator's properties stay in sync
+                if (creatorProps != null) {
+                    // 18-May-2015, tatu: _Should_ start with consistent set. But can we really
+                    //   fully count on this? May need to revisit in future; seems to hold for now.
+                    for (int i = 0, len = creatorProps.length; i < len; ++i) {
+                        if (creatorProps[i] == origProp) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        // ... as per above, it is possible we'd need to add this as fallback
+                        // if (but only if) identity check fails?
+                        /*
+                        if (creatorProps[i].getName().equals(prop.getName())) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        */
+                    }
+                }
+            }
+            // one more thing: if this property uses "external property" type inclusion,
+            // it needs different handling altogether
+            if (prop.hasValueTypeDeserializer()) {
+                TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                    if (extTypes == null) {
+                        extTypes = new ExternalTypeHandler.Builder();
+                    }
+                    extTypes.addExternal(prop, typeDeser);
+                    // In fact, remove from list of known properties to simplify later handling
+                    _beanProperties.remove(prop);
+                    continue;
+                }
+            }
+        }
+        // "any setter" may also need to be resolved now
+        if (_anySetter != null && !_anySetter.hasValueDeserializer()) {
+            _anySetter = _anySetter.withValueDeserializer(findDeserializer(ctxt,
+                    _anySetter.getType(), _anySetter.getProperty()));
+        }
+        // as well as delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingDelegate()) {
+            JavaType delegateType = _valueInstantiator.getDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingDelegate()', but null for 'getDelegateType()'");
+            }
+            _delegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getDelegateCreator());
+        }
+
+        // and array-delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingArrayDelegate()) {
+            JavaType delegateType = _valueInstantiator.getArrayDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid array-delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingArrayDelegate()', but null for 'getArrayDelegateType()'");
+            }
+            _arrayDelegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getArrayDelegateCreator());
+        }
+
+        // And now that we know CreatorProperty instances are also resolved can finally create the creator:
+        if (creatorProps != null) {
+            _propertyBasedCreator = PropertyBasedCreator.construct(ctxt, _valueInstantiator, creatorProps);
+        }
+
+        if (extTypes != null) {
+            // 21-Jun-2016, tatu: related to [databind#999], may need to link type ids too,
+            //    so need to pass collected properties
+            _externalTypeIdHandler = extTypes.build();
+            // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+        
+        _unwrappedPropertyHandler = unwrapped;
+        if (unwrapped != null) { // we consider this non-standard, to offline handling
+            _nonStandardCreation = true;
+        }
+
+        // may need to disable vanilla processing, if unwrapped handling was enabled...
+        _vanillaProcessing = _vanillaProcessing && !_nonStandardCreation;
+    }
+
+There is a bug in ['            _externalTypeIdHandler = extTypes.build();'] , please help me fix it. 
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_6 ==================
+
+@Override
+    public void resolve(DeserializationContext ctxt)
+        throws JsonMappingException
+    {
+        ExternalTypeHandler.Builder extTypes = null;
+        // if ValueInstantiator can use "creator" approach, need to resolve it here...
+        SettableBeanProperty[] creatorProps;
+
+        if (_valueInstantiator.canCreateFromObjectWith()) {
+            creatorProps = _valueInstantiator.getFromObjectArguments(ctxt.getConfig());
+
+            // 21-Jun-2015, tatu: This resolution was duplicated later on and seems like
+            //    it really should be only done at a later point. So commented out in 2.8.
+            //   However, just in case there was a reason for it, leaving commented out
+            //   here instead of immediately removing.
+
+            /*
+            // also: need to try to resolve 'external' type ids...
+            for (SettableBeanProperty prop : creatorProps) {
+                if (prop.hasValueTypeDeserializer()) {
+                    TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                    if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                        if (extTypes == null) {
+                            extTypes = new ExternalTypeHandler.Builder();
+                        }
+                        extTypes.addExternal(prop, typeDeser);
+                    }
+                }
+            }
+            */
+        } else {
+            creatorProps = null;
+        }
+
+        UnwrappedPropertyHandler unwrapped = null;
+
+        for (SettableBeanProperty origProp : _beanProperties) {
+            SettableBeanProperty prop = origProp;
+
+            // May already have deserializer from annotations, if so, skip:
+            if (!prop.hasValueDeserializer()) {
+                // [databind#125]: allow use of converters
+                JsonDeserializer<?> deser = findConvertingDeserializer(ctxt, prop);
+                if (deser == null) {
+                    deser = findDeserializer(ctxt, prop.getType(), prop);
+                }
+                prop = prop.withValueDeserializer(deser);
+            } else { // may need contextual version
+                JsonDeserializer<Object> deser = prop.getValueDeserializer();
+                /* Important! This is the only place where actually handle "primary"
+                 * property deserializers -- call is different from other places.
+                 */
+                JsonDeserializer<?> cd = ctxt.handlePrimaryContextualization(deser, prop,
+                        prop.getType());
+                if (cd != deser) {
+                    prop = prop.withValueDeserializer(cd);
+                }
+            }
+
+            // Need to link managed references with matching back references
+            prop = _resolveManagedReferenceProperty(ctxt, prop);
+
+            // [databind#351[: need to wrap properties that require object id resolution.
+            if (!(prop instanceof ManagedReferenceProperty)) {
+                prop = _resolvedObjectIdProperty(ctxt, prop);
+            }
+            // Support unwrapped values (via @JsonUnwrapped)
+            SettableBeanProperty u = _resolveUnwrappedProperty(ctxt, prop);
+            if (u != null) {
+                prop = u;
+                if (unwrapped == null) {
+                    unwrapped = new UnwrappedPropertyHandler();
+                }
+                unwrapped.addProperty(prop);
+                /* 12-Dec-2014, tatu: As per [databind#647], we will have problems if
+                 *    the original property is left in place. So let's remove it now.
+                 */
+                _beanProperties.remove(prop);
+                continue;
+            }
+            // non-static inner classes too:
+            prop = _resolveInnerClassValuedProperty(ctxt, prop);
+            if (prop != origProp) {
+                _beanProperties.replace(prop);
+                // [databind#795]: Make sure PropertyBasedCreator's properties stay in sync
+                if (creatorProps != null) {
+                    // 18-May-2015, tatu: _Should_ start with consistent set. But can we really
+                    //   fully count on this? May need to revisit in future; seems to hold for now.
+                    for (int i = 0, len = creatorProps.length; i < len; ++i) {
+                        if (creatorProps[i] == origProp) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        // ... as per above, it is possible we'd need to add this as fallback
+                        // if (but only if) identity check fails?
+                        /*
+                        if (creatorProps[i].getName().equals(prop.getName())) {
+                            creatorProps[i] = prop;
+                            break;
+                        }
+                        */
+                    }
+                }
+            }
+            // one more thing: if this property uses "external property" type inclusion,
+            // it needs different handling altogether
+            if (prop.hasValueTypeDeserializer()) {
+                TypeDeserializer typeDeser = prop.getValueTypeDeserializer();
+                if (typeDeser.getTypeInclusion() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                    if (extTypes == null) {
+                        extTypes = new ExternalTypeHandler.Builder();
+                    }
+                    extTypes.addExternal(prop, typeDeser);
+                    // In fact, remove from list of known properties to simplify later handling
+                    _beanProperties.remove(prop);
+                    continue;
+                }
+            }
+        }
+        // "any setter" may also need to be resolved now
+        if (_anySetter != null && !_anySetter.hasValueDeserializer()) {
+            _anySetter = _anySetter.withValueDeserializer(findDeserializer(ctxt,
+                    _anySetter.getType(), _anySetter.getProperty()));
+        }
+        // as well as delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingDelegate()) {
+            JavaType delegateType = _valueInstantiator.getDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingDelegate()', but null for 'getDelegateType()'");
+            }
+            _delegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getDelegateCreator());
+        }
+
+        // and array-delegate-based constructor:
+        if (_valueInstantiator.canCreateUsingArrayDelegate()) {
+            JavaType delegateType = _valueInstantiator.getArrayDelegateType(ctxt.getConfig());
+            if (delegateType == null) {
+                throw new IllegalArgumentException("Invalid array-delegate-creator definition for "+_beanType
+                        +": value instantiator ("+_valueInstantiator.getClass().getName()
+                        +") returned true for 'canCreateUsingArrayDelegate()', but null for 'getArrayDelegateType()'");
+            }
+            _arrayDelegateDeserializer = _findDelegateDeserializer(ctxt, delegateType,
+                    _valueInstantiator.getArrayDelegateCreator());
+        }
+
+        // And now that we know CreatorProperty instances are also resolved can finally create the creator:
+        if (creatorProps != null) {
+            _propertyBasedCreator = PropertyBasedCreator.construct(ctxt, _valueInstantiator, creatorProps);
+        }
+
+        if (extTypes != null) {
+            // 21-Jun-2016, tatu: related to [databind#999], may need to link type ids too,
+            //    so need to pass collected properties
+            _externalTypeIdHandler = extTypes.build();
+
+There is a bug in the last statement, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.

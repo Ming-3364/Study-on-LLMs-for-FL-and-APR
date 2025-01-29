@@ -1,0 +1,135 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/deser/BeanDeserializerFactory.java
+================== buggy_method ==================
+{'method_name': 'buildBeanDeserializer', 'method_body': '@SuppressWarnings("unchecked")\n    public JsonDeserializer<Object> buildBeanDeserializer(DeserializationContext ctxt,\n            JavaType type, BeanDescription beanDesc)\n        throws JsonMappingException\n    {\n        // First: check what creators we can use, if any\n        ValueInstantiator valueInstantiator;\n        /* 04-Jun-2015, tatu: To work around [databind#636], need to catch the\n         *    issue, defer; this seems like a reasonable good place for now.\n         *   Note, however, that for non-Bean types (Collections, Maps) this\n         *   probably won\'t work and needs to be added elsewhere.\n         */\n        try {\n            valueInstantiator = findValueInstantiator(ctxt, beanDesc);\n        } catch (NoClassDefFoundError error) {\n            return new ErrorThrowingDeserializer(error);\n        } catch (IllegalArgumentException e) {\n            // 05-Apr-2017, tatu: Although it might appear cleaner to require collector\n            //   to throw proper exception, it doesn\'t actually have reference to this\n            //   instance so...\n            throw InvalidDefinitionException.from(ctxt.getParser(),\n                    e.getMessage(),\n                    beanDesc, null);\n        }\n        BeanDeserializerBuilder builder = constructBeanDeserializerBuilder(ctxt, beanDesc);\n        builder.setValueInstantiator(valueInstantiator);\n         // And then setters for deserializing from JSON Object\n        addBeanProps(ctxt, beanDesc, builder);\n        addObjectIdReader(ctxt, beanDesc, builder);\n\n        // managed/back reference fields/setters need special handling... first part\n        addBackReferenceProperties(ctxt, beanDesc, builder);\n        addInjectables(ctxt, beanDesc, builder);\n        \n        final DeserializationConfig config = ctxt.getConfig();\n        if (_factoryConfig.hasDeserializerModifiers()) {\n            for (BeanDeserializerModifier mod : _factoryConfig.deserializerModifiers()) {\n                builder = mod.updateBuilder(config, beanDesc, builder);\n            }\n        }\n        JsonDeserializer<?> deserializer;\n\n        if (type.isAbstract() && !valueInstantiator.canInstantiate()) {\n            deserializer = builder.buildAbstract();\n        } else {\n            deserializer = builder.build();\n        }\n        // may have modifier(s) that wants to modify or replace serializer we just built\n        // (note that `resolve()` and `createContextual()` called later on)\n        if (_factoryConfig.hasDeserializerModifiers()) {\n            for (BeanDeserializerModifier mod : _factoryConfig.deserializerModifiers()) {\n                deserializer = mod.modifyDeserializer(config, beanDesc, deserializer);\n            }\n        }\n        return (JsonDeserializer<Object>) deserializer;\n    }', 'start_line': 201, 'end_line': 256, 'buggy_lines': [222]}
+================== buggy_method_src ==================
+@SuppressWarnings("unchecked")
+    public JsonDeserializer<Object> buildBeanDeserializer(DeserializationContext ctxt,
+            JavaType type, BeanDescription beanDesc)
+        throws JsonMappingException
+    {
+        // First: check what creators we can use, if any
+        ValueInstantiator valueInstantiator;
+        /* 04-Jun-2015, tatu: To work around [databind#636], need to catch the
+         *    issue, defer; this seems like a reasonable good place for now.
+         *   Note, however, that for non-Bean types (Collections, Maps) this
+         *   probably won't work and needs to be added elsewhere.
+         */
+        try {
+            valueInstantiator = findValueInstantiator(ctxt, beanDesc);
+        } catch (NoClassDefFoundError error) {
+            return new ErrorThrowingDeserializer(error);
+        } catch (IllegalArgumentException e) {
+            // 05-Apr-2017, tatu: Although it might appear cleaner to require collector
+            //   to throw proper exception, it doesn't actually have reference to this
+            //   instance so...
+            throw InvalidDefinitionException.from(ctxt.getParser(),
+                    e.getMessage(),
+                    beanDesc, null);
+        }
+        BeanDeserializerBuilder builder = constructBeanDeserializerBuilder(ctxt, beanDesc);
+        builder.setValueInstantiator(valueInstantiator);
+         // And then setters for deserializing from JSON Object
+        addBeanProps(ctxt, beanDesc, builder);
+        addObjectIdReader(ctxt, beanDesc, builder);
+
+        // managed/back reference fields/setters need special handling... first part
+        addBackReferenceProperties(ctxt, beanDesc, builder);
+        addInjectables(ctxt, beanDesc, builder);
+        
+        final DeserializationConfig config = ctxt.getConfig();
+        if (_factoryConfig.hasDeserializerModifiers()) {
+            for (BeanDeserializerModifier mod : _factoryConfig.deserializerModifiers()) {
+                builder = mod.updateBuilder(config, beanDesc, builder);
+            }
+        }
+        JsonDeserializer<?> deserializer;
+
+        if (type.isAbstract() && !valueInstantiator.canInstantiate()) {
+            deserializer = builder.buildAbstract();
+        } else {
+            deserializer = builder.build();
+        }
+        // may have modifier(s) that wants to modify or replace serializer we just built
+        // (note that `resolve()` and `createContextual()` called later on)
+        if (_factoryConfig.hasDeserializerModifiers()) {
+            for (BeanDeserializerModifier mod : _factoryConfig.deserializerModifiers()) {
+                deserializer = mod.modifyDeserializer(config, beanDesc, deserializer);
+            }
+        }
+        return (JsonDeserializer<Object>) deserializer;
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.exc.BasicExceptionTest::testLocationAddition
+junit.framework.AssertionFailedError: Should only get one 'at [' marker, got 2, source: Cannot deserialize Map key of type `com.fasterxml.jackson.databind.BaseMapTest$ABC` from String "value": not a valid representation, problem: (com.fasterxml.jackson.databind.exc.InvalidFormatException) Cannot deserialize Map key of type `com.fasterxml.jackson.databind.BaseMapTest$ABC` from String "value": not one of values excepted for Enum class: [A, B, C]
+ at [Source: (String)"{"value":"foo"}"; line: 1, column: 2]
+ at [Source: (String)"{"value":"foo"}"; line: 1, column: 2]
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.TestCase.fail(TestCase.java:227)
+	at com.fasterxml.jackson.databind.exc.BasicExceptionTest.testLocationAddition(BasicExceptionTest.java:127)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+fail("Should only get one 'at [' marker, got "+(str.length-1)+", source: "+msg);
+
+================== buggy_lines_in_method ==================
+[22]
+================== buggy_statements ==================
+['                    e.getMessage(),']
+================== buggy_method_src_endswith_buggy_statement ==================
+@SuppressWarnings("unchecked")
+    public JsonDeserializer<Object> buildBeanDeserializer(DeserializationContext ctxt,
+            JavaType type, BeanDescription beanDesc)
+        throws JsonMappingException
+    {
+        // First: check what creators we can use, if any
+        ValueInstantiator valueInstantiator;
+        /* 04-Jun-2015, tatu: To work around [databind#636], need to catch the
+         *    issue, defer; this seems like a reasonable good place for now.
+         *   Note, however, that for non-Bean types (Collections, Maps) this
+         *   probably won't work and needs to be added elsewhere.
+         */
+        try {
+            valueInstantiator = findValueInstantiator(ctxt, beanDesc);
+        } catch (NoClassDefFoundError error) {
+            return new ErrorThrowingDeserializer(error);
+        } catch (IllegalArgumentException e) {
+            // 05-Apr-2017, tatu: Although it might appear cleaner to require collector
+            //   to throw proper exception, it doesn't actually have reference to this
+            //   instance so...
+            throw InvalidDefinitionException.from(ctxt.getParser(),
+                    e.getMessage(),

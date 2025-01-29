@@ -1,0 +1,228 @@
+
+================== buggy_file ==================
+src/main/java/org/jsoup/parser/HtmlTreeBuilderState.java
+================== buggy_method ==================
+{'method_name': 'process', 'method_body': 'boolean process(Token t, HtmlTreeBuilder tb) {\n            switch (t.type) {\n                case Character:\n                    Token.Character c = t.asCharacter();\n                    if (c.getData().equals(nullString)) {\n                        tb.error(this);\n                        return false;\n                    } else {\n                        tb.insert(c);\n                    }\n                    break;\n                case Comment:\n                    tb.insert(t.asComment());\n                    break;\n                case Doctype:\n                    tb.error(this);\n                    return false;\n                case StartTag:\n                    Token.StartTag start = t.asStartTag();\n                    String name = start.normalName();\n                    if (name.equals("html"))\n                        return tb.process(start, InBody);\n                    else if (name.equals("option")) {\n                        if (tb.currentElement().nodeName().equals("option"))\n                            tb.processEndTag("option");\n                        tb.insert(start);\n                    } else if (name.equals("optgroup")) {\n                        if (tb.currentElement().nodeName().equals("option"))\n                            tb.processEndTag("option");\n                        else if (tb.currentElement().nodeName().equals("optgroup"))\n                            tb.processEndTag("optgroup");\n                        tb.insert(start);\n                    } else if (name.equals("select")) {\n                        tb.error(this);\n                        return tb.processEndTag("select");\n                    } else if (StringUtil.in(name, "input", "keygen", "textarea")) {\n                        tb.error(this);\n                        if (!tb.inSelectScope("select"))\n                            return false; // frag\n                        tb.processEndTag("select");\n                        return tb.process(start);\n                    } else if (name.equals("script")) {\n                        return tb.process(t, InHead);\n                    } else {\n                        return anythingElse(t, tb);\n                    }\n                    break;\n                case EndTag:\n                    Token.EndTag end = t.asEndTag();\n                    name = end.normalName();\n                    switch (name) {\n                        case "optgroup":\n                            if (tb.currentElement().nodeName().equals("option") && tb.aboveOnStack(tb.currentElement()) != null && tb.aboveOnStack(tb.currentElement()).nodeName().equals("optgroup"))\n                                tb.processEndTag("option");\n                            if (tb.currentElement().nodeName().equals("optgroup"))\n                                tb.pop();\n                            else\n                                tb.error(this);\n                            break;\n                        case "option":\n                            if (tb.currentElement().nodeName().equals("option"))\n                                tb.pop();\n                            else\n                                tb.error(this);\n                            break;\n                        case "select":\n                            if (!tb.inSelectScope(name)) {\n                                tb.error(this);\n                                return false;\n                            } else {\n                                tb.popStackToClose(name);\n                                tb.resetInsertionMode();\n                            }\n                            break;\n                        default:\n                            return anythingElse(t, tb);\n                    }\n                    break;\n                case EOF:\n                    if (!tb.currentElement().nodeName().equals("html"))\n                        tb.error(this);\n                    break;\n                default:\n                    return anythingElse(t, tb);\n            }\n            return true;\n        }', 'start_line': 1217, 'end_line': 1303, 'buggy_lines': [1240, 1244, 1246, 1269, 1271, 1277, 1296]}
+================== buggy_method_src ==================
+boolean process(Token t, HtmlTreeBuilder tb) {
+            switch (t.type) {
+                case Character:
+                    Token.Character c = t.asCharacter();
+                    if (c.getData().equals(nullString)) {
+                        tb.error(this);
+                        return false;
+                    } else {
+                        tb.insert(c);
+                    }
+                    break;
+                case Comment:
+                    tb.insert(t.asComment());
+                    break;
+                case Doctype:
+                    tb.error(this);
+                    return false;
+                case StartTag:
+                    Token.StartTag start = t.asStartTag();
+                    String name = start.normalName();
+                    if (name.equals("html"))
+                        return tb.process(start, InBody);
+                    else if (name.equals("option")) {
+                        if (tb.currentElement().nodeName().equals("option"))
+                            tb.processEndTag("option");
+                        tb.insert(start);
+                    } else if (name.equals("optgroup")) {
+                        if (tb.currentElement().nodeName().equals("option"))
+                            tb.processEndTag("option");
+                        else if (tb.currentElement().nodeName().equals("optgroup"))
+                            tb.processEndTag("optgroup");
+                        tb.insert(start);
+                    } else if (name.equals("select")) {
+                        tb.error(this);
+                        return tb.processEndTag("select");
+                    } else if (StringUtil.in(name, "input", "keygen", "textarea")) {
+                        tb.error(this);
+                        if (!tb.inSelectScope("select"))
+                            return false; // frag
+                        tb.processEndTag("select");
+                        return tb.process(start);
+                    } else if (name.equals("script")) {
+                        return tb.process(t, InHead);
+                    } else {
+                        return anythingElse(t, tb);
+                    }
+                    break;
+                case EndTag:
+                    Token.EndTag end = t.asEndTag();
+                    name = end.normalName();
+                    switch (name) {
+                        case "optgroup":
+                            if (tb.currentElement().nodeName().equals("option") && tb.aboveOnStack(tb.currentElement()) != null && tb.aboveOnStack(tb.currentElement()).nodeName().equals("optgroup"))
+                                tb.processEndTag("option");
+                            if (tb.currentElement().nodeName().equals("optgroup"))
+                                tb.pop();
+                            else
+                                tb.error(this);
+                            break;
+                        case "option":
+                            if (tb.currentElement().nodeName().equals("option"))
+                                tb.pop();
+                            else
+                                tb.error(this);
+                            break;
+                        case "select":
+                            if (!tb.inSelectScope(name)) {
+                                tb.error(this);
+                                return false;
+                            } else {
+                                tb.popStackToClose(name);
+                                tb.resetInsertionMode();
+                            }
+                            break;
+                        default:
+                            return anythingElse(t, tb);
+                    }
+                    break;
+                case EOF:
+                    if (!tb.currentElement().nodeName().equals("html"))
+                        tb.error(this);
+                    break;
+                default:
+                    return anythingElse(t, tb);
+            }
+            return true;
+        }
+================== test_stack ==================
+org.jsoup.parser.HtmlParserTest::preservedCaseLinksCantNest
+junit.framework.AssertionFailedError: expected:<<A> ONE <[/A> <A> Two] </A>> but was:<<A> ONE <[A> Two </A>] </A>>
+	at org.junit.Assert.assertEquals(Assert.java:115)
+	at org.junit.Assert.assertEquals(Assert.java:144)
+	at org.jsoup.parser.HtmlParserTest.preservedCaseLinksCantNest(HtmlParserTest.java:1135)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals("<A> ONE </A> <A> Two </A>", StringUtil.normaliseWhitespace(doc.body().html()));
+
+================== buggy_lines_in_method ==================
+[24, 28, 30, 53, 55, 61, 80]
+================== buggy_statements ==================
+['                        if (tb.currentElement().nodeName().equals("option"))', '                        if (tb.currentElement().nodeName().equals("option"))', '                        else if (tb.currentElement().nodeName().equals("optgroup"))', '                            if (tb.currentElement().nodeName().equals("option") && tb.aboveOnStack(tb.currentElement()) != null && tb.aboveOnStack(tb.currentElement()).nodeName().equals("optgroup"))', '                            if (tb.currentElement().nodeName().equals("optgroup"))', '                            if (tb.currentElement().nodeName().equals("option"))', '                    if (!tb.currentElement().nodeName().equals("html"))']
+================== buggy_method_src_endswith_buggy_statement ==================
+boolean process(Token t, HtmlTreeBuilder tb) {
+            switch (t.type) {
+                case Character:
+                    Token.Character c = t.asCharacter();
+                    if (c.getData().equals(nullString)) {
+                        tb.error(this);
+                        return false;
+                    } else {
+                        tb.insert(c);
+                    }
+                    break;
+                case Comment:
+                    tb.insert(t.asComment());
+                    break;
+                case Doctype:
+                    tb.error(this);
+                    return false;
+                case StartTag:
+                    Token.StartTag start = t.asStartTag();
+                    String name = start.normalName();
+                    if (name.equals("html"))
+                        return tb.process(start, InBody);
+                    else if (name.equals("option")) {
+                        if (tb.currentElement().nodeName().equals("option"))
+                            tb.processEndTag("option");
+                        tb.insert(start);
+                    } else if (name.equals("optgroup")) {
+                        if (tb.currentElement().nodeName().equals("option"))
+                            tb.processEndTag("option");
+                        else if (tb.currentElement().nodeName().equals("optgroup"))
+                            tb.processEndTag("optgroup");
+                        tb.insert(start);
+                    } else if (name.equals("select")) {
+                        tb.error(this);
+                        return tb.processEndTag("select");
+                    } else if (StringUtil.in(name, "input", "keygen", "textarea")) {
+                        tb.error(this);
+                        if (!tb.inSelectScope("select"))
+                            return false; // frag
+                        tb.processEndTag("select");
+                        return tb.process(start);
+                    } else if (name.equals("script")) {
+                        return tb.process(t, InHead);
+                    } else {
+                        return anythingElse(t, tb);
+                    }
+                    break;
+                case EndTag:
+                    Token.EndTag end = t.asEndTag();
+                    name = end.normalName();
+                    switch (name) {
+                        case "optgroup":
+                            if (tb.currentElement().nodeName().equals("option") && tb.aboveOnStack(tb.currentElement()) != null && tb.aboveOnStack(tb.currentElement()).nodeName().equals("optgroup"))
+                                tb.processEndTag("option");
+                            if (tb.currentElement().nodeName().equals("optgroup"))
+                                tb.pop();
+                            else
+                                tb.error(this);
+                            break;
+                        case "option":
+                            if (tb.currentElement().nodeName().equals("option"))
+                                tb.pop();
+                            else
+                                tb.error(this);
+                            break;
+                        case "select":
+                            if (!tb.inSelectScope(name)) {
+                                tb.error(this);
+                                return false;
+                            } else {
+                                tb.popStackToClose(name);
+                                tb.resetInsertionMode();
+                            }
+                            break;
+                        default:
+                            return anythingElse(t, tb);
+                    }
+                    break;
+                case EOF:
+                    if (!tb.currentElement().nodeName().equals("html"))

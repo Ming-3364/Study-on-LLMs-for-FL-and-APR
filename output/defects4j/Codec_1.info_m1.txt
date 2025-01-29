@@ -1,0 +1,452 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/codec/language/Metaphone.java
+================== buggy_method ==================
+{'method_name': 'metaphone', 'method_body': 'public String metaphone(String txt) {\n        boolean hard = false ;\n        if ((txt == null) || (txt.length() == 0)) {\n            return "" ;\n        }\n        // single character is itself\n        if (txt.length() == 1) {\n            return txt.toUpperCase() ;\n        }\n      \n        char[] inwd = txt.toUpperCase(java.util.Locale.ENGLISH).toCharArray() ;\n      \n        StringBuffer local = new StringBuffer(40); // manipulate\n        StringBuffer code = new StringBuffer(10) ; //   output\n        // handle initial 2 characters exceptions\n        switch(inwd[0]) {\n        case \'K\' : \n        case \'G\' : \n        case \'P\' : /* looking for KN, etc*/\n            if (inwd[1] == \'N\') {\n                local.append(inwd, 1, inwd.length - 1);\n            } else {\n                local.append(inwd);\n            }\n            break;\n        case \'A\': /* looking for AE */\n            if (inwd[1] == \'E\') {\n                local.append(inwd, 1, inwd.length - 1);\n            } else {\n                local.append(inwd);\n            }\n            break;\n        case \'W\' : /* looking for WR or WH */\n            if (inwd[1] == \'R\') {   // WR -> R\n                local.append(inwd, 1, inwd.length - 1); \n                break ;\n            }\n            if (inwd[1] == \'H\') {\n                local.append(inwd, 1, inwd.length - 1);\n                local.setCharAt(0, \'W\'); // WH -> W\n            } else {\n                local.append(inwd);\n            }\n            break;\n        case \'X\' : /* initial X becomes S */\n            inwd[0] = \'S\';\n            local.append(inwd);\n            break ;\n        default :\n            local.append(inwd);\n        } // now local has working string with initials fixed\n\n        int wdsz = local.length();\n        int n = 0 ;\n\n        while ((code.length() < this.getMaxCodeLen()) && \n        \t   (n < wdsz) ) { // max code size of 4 works well\n            char symb = local.charAt(n) ;\n            // remove duplicate letters except C\n            if ((symb != \'C\') && (isPreviousChar( local, n, symb )) ) {\n                n++ ;\n            } else { // not dup\n                switch(symb) {\n                case \'A\' : case \'E\' : case \'I\' : case \'O\' : case \'U\' :\n                    if (n == 0) { \n                        code.append(symb);\n                    }\n                    break ; // only use vowel if leading char\n                case \'B\' :\n                    if ( isPreviousChar(local, n, \'M\') && \n                         isLastChar(wdsz, n) ) { // B is silent if word ends in MB\n\t\t\t\t\t\tbreak;\n                    }\n                    code.append(symb);\n                    break;\n                case \'C\' : // lots of C special cases\n                    /* discard if SCI, SCE or SCY */\n                    if ( isPreviousChar(local, n, \'S\') && \n                         !isLastChar(wdsz, n) && \n                         (FRONTV.indexOf(local.charAt(n + 1)) >= 0) ) { \n                        break;\n                    }\n                    if (regionMatch(local, n, "CIA")) { // "CIA" -> X\n                        code.append(\'X\'); \n                        break;\n                    }\n                    if (!isLastChar(wdsz, n) && \n                        (FRONTV.indexOf(local.charAt(n + 1)) >= 0)) {\n                        code.append(\'S\');\n                        break; // CI,CE,CY -> S\n                    }\n                    if (isPreviousChar(local, n, \'S\') &&\n\t\t\t\t\t\tisNextChar(local, n, \'H\') ) { // SCH->sk\n                        code.append(\'K\') ; \n                        break ;\n                    }\n                    if (isNextChar(local, n, \'H\')) { // detect CH\n                        if ((n == 0) && \n                        \t(wdsz >= 3) && \n                            isVowel(local,2) ) { // CH consonant -> K consonant\n                            code.append(\'K\');\n                        } else { \n                            code.append(\'X\'); // CHvowel -> X\n                        }\n                    } else { \n                        code.append(\'K\');\n                    }\n                    break ;\n                case \'D\' :\n                    if (!isLastChar(wdsz, n + 1) && \n                        isNextChar(local, n, \'G\') && \n                        (FRONTV.indexOf(local.charAt(n + 2)) >= 0)) { // DGE DGI DGY -> J \n                        code.append(\'J\'); n += 2 ;\n                    } else { \n                        code.append(\'T\');\n                    }\n                    break ;\n                case \'G\' : // GH silent at end or before consonant\n                    if (isLastChar(wdsz, n + 1) && \n                        isNextChar(local, n, \'H\')) {\n                        break;\n                    }\n                    if (!isLastChar(wdsz, n + 1) &&  \n                        isNextChar(local,n,\'H\') && \n                        !isVowel(local,n+2)) {\n                        break;\n                    }\n                    if ((n > 0) && \n                    \t( regionMatch(local, n, "GN") ||\n\t\t\t\t\t      regionMatch(local, n, "GNED") ) ) {\n                        break; // silent G\n                    }\n                    if (isPreviousChar(local, n, \'G\')) {\n                        hard = true ;\n                    } else {\n                        hard = false ;\n                    }\n                    if (!isLastChar(wdsz, n) && \n                        (FRONTV.indexOf(local.charAt(n + 1)) >= 0) && \n                        (!hard)) {\n                        code.append(\'J\');\n                    } else {\n                        code.append(\'K\');\n                    }\n                    break ;\n                case \'H\':\n                    if (isLastChar(wdsz, n)) {\n                        break ; // terminal H\n                    }\n                    if ((n > 0) && \n                        (VARSON.indexOf(local.charAt(n - 1)) >= 0)) {\n                        break;\n                    }\n                    if (isVowel(local,n+1)) {\n                        code.append(\'H\'); // Hvowel\n                    }\n                    break;\n                case \'F\': \n                case \'J\' : \n                case \'L\' :\n                case \'M\': \n                case \'N\' : \n                case \'R\' :\n                    code.append(symb); \n                    break;\n                case \'K\' :\n                    if (n > 0) { // not initial\n                        if (!isPreviousChar(local, n, \'C\')) {\n                            code.append(symb);\n                        }\n                    } else {\n                        code.append(symb); // initial K\n                    }\n                    break ;\n                case \'P\' :\n                    if (isNextChar(local,n,\'H\')) {\n                        // PH -> F\n                        code.append(\'F\');\n                    } else {\n                        code.append(symb);\n                    }\n                    break ;\n                case \'Q\' :\n                    code.append(\'K\');\n                    break;\n                case \'S\' :\n                    if (regionMatch(local,n,"SH") || \n\t\t\t\t\t    regionMatch(local,n,"SIO") || \n\t\t\t\t\t    regionMatch(local,n,"SIA")) {\n                        code.append(\'X\');\n                    } else {\n                        code.append(\'S\');\n                    }\n                    break;\n                case \'T\' :\n                    if (regionMatch(local,n,"TIA") || \n\t\t\t\t\t\tregionMatch(local,n,"TIO")) {\n                        code.append(\'X\'); \n                        break;\n                    }\n                    if (regionMatch(local,n,"TCH")) {\n\t\t\t\t\t\t// Silent if in "TCH"\n                        break;\n                    }\n                    // substitute numeral 0 for TH (resembles theta after all)\n                    if (regionMatch(local,n,"TH")) {\n                        code.append(\'0\');\n                    } else {\n                        code.append(\'T\');\n                    }\n                    break ;\n                case \'V\' :\n                    code.append(\'F\'); break ;\n                case \'W\' : case \'Y\' : // silent if not followed by vowel\n                    if (!isLastChar(wdsz,n) && \n                    \tisVowel(local,n+1)) {\n                        code.append(symb);\n                    }\n                    break ;\n                case \'X\' :\n                    code.append(\'K\'); code.append(\'S\');\n                    break ;\n                case \'Z\' :\n                    code.append(\'S\'); break ;\n                } // end switch\n                n++ ;\n            } // end else from symb != \'C\'\n            if (code.length() > this.getMaxCodeLen()) { \n            \tcode.setLength(this.getMaxCodeLen()); \n            }\n        }\n        return code.toString();\n    }', 'start_line': 81, 'end_line': 313, 'buggy_lines': [88]}
+================== buggy_method_src ==================
+public String metaphone(String txt) {
+        boolean hard = false ;
+        if ((txt == null) || (txt.length() == 0)) {
+            return "" ;
+        }
+        // single character is itself
+        if (txt.length() == 1) {
+            return txt.toUpperCase() ;
+        }
+      
+        char[] inwd = txt.toUpperCase(java.util.Locale.ENGLISH).toCharArray() ;
+      
+        StringBuffer local = new StringBuffer(40); // manipulate
+        StringBuffer code = new StringBuffer(10) ; //   output
+        // handle initial 2 characters exceptions
+        switch(inwd[0]) {
+        case 'K' : 
+        case 'G' : 
+        case 'P' : /* looking for KN, etc*/
+            if (inwd[1] == 'N') {
+                local.append(inwd, 1, inwd.length - 1);
+            } else {
+                local.append(inwd);
+            }
+            break;
+        case 'A': /* looking for AE */
+            if (inwd[1] == 'E') {
+                local.append(inwd, 1, inwd.length - 1);
+            } else {
+                local.append(inwd);
+            }
+            break;
+        case 'W' : /* looking for WR or WH */
+            if (inwd[1] == 'R') {   // WR -> R
+                local.append(inwd, 1, inwd.length - 1); 
+                break ;
+            }
+            if (inwd[1] == 'H') {
+                local.append(inwd, 1, inwd.length - 1);
+                local.setCharAt(0, 'W'); // WH -> W
+            } else {
+                local.append(inwd);
+            }
+            break;
+        case 'X' : /* initial X becomes S */
+            inwd[0] = 'S';
+            local.append(inwd);
+            break ;
+        default :
+            local.append(inwd);
+        } // now local has working string with initials fixed
+
+        int wdsz = local.length();
+        int n = 0 ;
+
+        while ((code.length() < this.getMaxCodeLen()) && 
+        	   (n < wdsz) ) { // max code size of 4 works well
+            char symb = local.charAt(n) ;
+            // remove duplicate letters except C
+            if ((symb != 'C') && (isPreviousChar( local, n, symb )) ) {
+                n++ ;
+            } else { // not dup
+                switch(symb) {
+                case 'A' : case 'E' : case 'I' : case 'O' : case 'U' :
+                    if (n == 0) { 
+                        code.append(symb);
+                    }
+                    break ; // only use vowel if leading char
+                case 'B' :
+                    if ( isPreviousChar(local, n, 'M') && 
+                         isLastChar(wdsz, n) ) { // B is silent if word ends in MB
+						break;
+                    }
+                    code.append(symb);
+                    break;
+                case 'C' : // lots of C special cases
+                    /* discard if SCI, SCE or SCY */
+                    if ( isPreviousChar(local, n, 'S') && 
+                         !isLastChar(wdsz, n) && 
+                         (FRONTV.indexOf(local.charAt(n + 1)) >= 0) ) { 
+                        break;
+                    }
+                    if (regionMatch(local, n, "CIA")) { // "CIA" -> X
+                        code.append('X'); 
+                        break;
+                    }
+                    if (!isLastChar(wdsz, n) && 
+                        (FRONTV.indexOf(local.charAt(n + 1)) >= 0)) {
+                        code.append('S');
+                        break; // CI,CE,CY -> S
+                    }
+                    if (isPreviousChar(local, n, 'S') &&
+						isNextChar(local, n, 'H') ) { // SCH->sk
+                        code.append('K') ; 
+                        break ;
+                    }
+                    if (isNextChar(local, n, 'H')) { // detect CH
+                        if ((n == 0) && 
+                        	(wdsz >= 3) && 
+                            isVowel(local,2) ) { // CH consonant -> K consonant
+                            code.append('K');
+                        } else { 
+                            code.append('X'); // CHvowel -> X
+                        }
+                    } else { 
+                        code.append('K');
+                    }
+                    break ;
+                case 'D' :
+                    if (!isLastChar(wdsz, n + 1) && 
+                        isNextChar(local, n, 'G') && 
+                        (FRONTV.indexOf(local.charAt(n + 2)) >= 0)) { // DGE DGI DGY -> J 
+                        code.append('J'); n += 2 ;
+                    } else { 
+                        code.append('T');
+                    }
+                    break ;
+                case 'G' : // GH silent at end or before consonant
+                    if (isLastChar(wdsz, n + 1) && 
+                        isNextChar(local, n, 'H')) {
+                        break;
+                    }
+                    if (!isLastChar(wdsz, n + 1) &&  
+                        isNextChar(local,n,'H') && 
+                        !isVowel(local,n+2)) {
+                        break;
+                    }
+                    if ((n > 0) && 
+                    	( regionMatch(local, n, "GN") ||
+					      regionMatch(local, n, "GNED") ) ) {
+                        break; // silent G
+                    }
+                    if (isPreviousChar(local, n, 'G')) {
+                        hard = true ;
+                    } else {
+                        hard = false ;
+                    }
+                    if (!isLastChar(wdsz, n) && 
+                        (FRONTV.indexOf(local.charAt(n + 1)) >= 0) && 
+                        (!hard)) {
+                        code.append('J');
+                    } else {
+                        code.append('K');
+                    }
+                    break ;
+                case 'H':
+                    if (isLastChar(wdsz, n)) {
+                        break ; // terminal H
+                    }
+                    if ((n > 0) && 
+                        (VARSON.indexOf(local.charAt(n - 1)) >= 0)) {
+                        break;
+                    }
+                    if (isVowel(local,n+1)) {
+                        code.append('H'); // Hvowel
+                    }
+                    break;
+                case 'F': 
+                case 'J' : 
+                case 'L' :
+                case 'M': 
+                case 'N' : 
+                case 'R' :
+                    code.append(symb); 
+                    break;
+                case 'K' :
+                    if (n > 0) { // not initial
+                        if (!isPreviousChar(local, n, 'C')) {
+                            code.append(symb);
+                        }
+                    } else {
+                        code.append(symb); // initial K
+                    }
+                    break ;
+                case 'P' :
+                    if (isNextChar(local,n,'H')) {
+                        // PH -> F
+                        code.append('F');
+                    } else {
+                        code.append(symb);
+                    }
+                    break ;
+                case 'Q' :
+                    code.append('K');
+                    break;
+                case 'S' :
+                    if (regionMatch(local,n,"SH") || 
+					    regionMatch(local,n,"SIO") || 
+					    regionMatch(local,n,"SIA")) {
+                        code.append('X');
+                    } else {
+                        code.append('S');
+                    }
+                    break;
+                case 'T' :
+                    if (regionMatch(local,n,"TIA") || 
+						regionMatch(local,n,"TIO")) {
+                        code.append('X'); 
+                        break;
+                    }
+                    if (regionMatch(local,n,"TCH")) {
+						// Silent if in "TCH"
+                        break;
+                    }
+                    // substitute numeral 0 for TH (resembles theta after all)
+                    if (regionMatch(local,n,"TH")) {
+                        code.append('0');
+                    } else {
+                        code.append('T');
+                    }
+                    break ;
+                case 'V' :
+                    code.append('F'); break ;
+                case 'W' : case 'Y' : // silent if not followed by vowel
+                    if (!isLastChar(wdsz,n) && 
+                    	isVowel(local,n+1)) {
+                        code.append(symb);
+                    }
+                    break ;
+                case 'X' :
+                    code.append('K'); code.append('S');
+                    break ;
+                case 'Z' :
+                    code.append('S'); break ;
+                } // end switch
+                n++ ;
+            } // end else from symb != 'C'
+            if (code.length() > this.getMaxCodeLen()) { 
+            	code.setLength(this.getMaxCodeLen()); 
+            }
+        }
+        return code.toString();
+    }
+================== test_stack ==================
+org.apache.commons.codec.language.CaverphoneTest::testLocaleIndependence
+junit.framework.ComparisonFailure: tr:  expected:<[A]111111111> but was:<[1]111111111>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.TestCase.assertEquals(TestCase.java:261)
+	at org.apache.commons.codec.StringEncoderAbstractTest.testLocaleIndependence(StringEncoderAbstractTest.java:91)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.apache.commons.codec.language.DoubleMetaphoneTest::testLocaleIndependence
+junit.framework.ComparisonFailure: tr:  expected:<[I]> but was:<[İ]>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.TestCase.assertEquals(TestCase.java:261)
+	at org.apache.commons.codec.StringEncoderAbstractTest.testLocaleIndependence(StringEncoderAbstractTest.java:91)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.apache.commons.codec.language.MetaphoneTest::testLocaleIndependence
+junit.framework.ComparisonFailure: tr:  expected:<[I]> but was:<[İ]>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.TestCase.assertEquals(TestCase.java:261)
+	at org.apache.commons.codec.StringEncoderAbstractTest.testLocaleIndependence(StringEncoderAbstractTest.java:91)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.apache.commons.codec.language.RefinedSoundexTest::testLocaleIndependence
+junit.framework.AssertionFailedError: tr: 239
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.TestCase.fail(TestCase.java:227)
+	at org.apache.commons.codec.StringEncoderAbstractTest.testLocaleIndependence(StringEncoderAbstractTest.java:89)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.apache.commons.codec.language.SoundexTest::testLocaleIndependence
+junit.framework.AssertionFailedError: tr: The character is not mapped: İ
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.TestCase.fail(TestCase.java:227)
+	at org.apache.commons.codec.StringEncoderAbstractTest.testLocaleIndependence(StringEncoderAbstractTest.java:89)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals(Locale.getDefault().toString() + ": ", ref, cur);
+
+================== buggy_lines_in_method ==================
+[8]
+================== buggy_statements ==================
+['            return txt.toUpperCase() ;']
+================== buggy_method_src_endswith_buggy_statement ==================
+public String metaphone(String txt) {
+        boolean hard = false ;
+        if ((txt == null) || (txt.length() == 0)) {
+            return "" ;
+        }
+        // single character is itself
+        if (txt.length() == 1) {
+            return txt.toUpperCase() ;

@@ -1,0 +1,117 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/deser/std/StdKeyDeserializer.java
+================== buggy_method ==================
+{'method_name': 'forType', 'method_body': 'public static StdKeyDeserializer forType(Class<?> raw)\n    {\n        int kind;\n\n        // first common types:\n        if (raw == String.class || raw == Object.class) {\n            return StringKD.forType(raw);\n        } else if (raw == UUID.class) {\n            kind = TYPE_UUID;\n        } else if (raw == Integer.class) {\n            kind = TYPE_INT;\n        } else if (raw == Long.class) {\n            kind = TYPE_LONG;\n        } else if (raw == Date.class) {\n            kind = TYPE_DATE;\n        } else if (raw == Calendar.class) {\n            kind = TYPE_CALENDAR;\n        // then less common ones...\n        } else if (raw == Boolean.class) {\n            kind = TYPE_BOOLEAN;\n        } else if (raw == Byte.class) {\n            kind = TYPE_BYTE;\n        } else if (raw == Character.class) {\n            kind = TYPE_CHAR;\n        } else if (raw == Short.class) {\n            kind = TYPE_SHORT;\n        } else if (raw == Float.class) {\n            kind = TYPE_FLOAT;\n        } else if (raw == Double.class) {\n            kind = TYPE_DOUBLE;\n        } else if (raw == URI.class) {\n            kind = TYPE_URI;\n        } else if (raw == URL.class) {\n            kind = TYPE_URL;\n        } else if (raw == Class.class) {\n            kind = TYPE_CLASS;\n        } else if (raw == Locale.class) {\n            FromStringDeserializer<?> deser = FromStringDeserializer.findDeserializer(Locale.class);\n            return new StdKeyDeserializer(TYPE_LOCALE, raw, deser);\n        } else if (raw == Currency.class) {\n            FromStringDeserializer<?> deser = FromStringDeserializer.findDeserializer(Currency.class);\n            return new StdKeyDeserializer(TYPE_CURRENCY, raw, deser);\n        } else {\n            return null;\n        }\n        return new StdKeyDeserializer(kind, raw);\n    }', 'start_line': 70, 'end_line': 116, 'buggy_lines': [75]}
+================== buggy_method_src ==================
+public static StdKeyDeserializer forType(Class<?> raw)
+    {
+        int kind;
+
+        // first common types:
+        if (raw == String.class || raw == Object.class) {
+            return StringKD.forType(raw);
+        } else if (raw == UUID.class) {
+            kind = TYPE_UUID;
+        } else if (raw == Integer.class) {
+            kind = TYPE_INT;
+        } else if (raw == Long.class) {
+            kind = TYPE_LONG;
+        } else if (raw == Date.class) {
+            kind = TYPE_DATE;
+        } else if (raw == Calendar.class) {
+            kind = TYPE_CALENDAR;
+        // then less common ones...
+        } else if (raw == Boolean.class) {
+            kind = TYPE_BOOLEAN;
+        } else if (raw == Byte.class) {
+            kind = TYPE_BYTE;
+        } else if (raw == Character.class) {
+            kind = TYPE_CHAR;
+        } else if (raw == Short.class) {
+            kind = TYPE_SHORT;
+        } else if (raw == Float.class) {
+            kind = TYPE_FLOAT;
+        } else if (raw == Double.class) {
+            kind = TYPE_DOUBLE;
+        } else if (raw == URI.class) {
+            kind = TYPE_URI;
+        } else if (raw == URL.class) {
+            kind = TYPE_URL;
+        } else if (raw == Class.class) {
+            kind = TYPE_CLASS;
+        } else if (raw == Locale.class) {
+            FromStringDeserializer<?> deser = FromStringDeserializer.findDeserializer(Locale.class);
+            return new StdKeyDeserializer(TYPE_LOCALE, raw, deser);
+        } else if (raw == Currency.class) {
+            FromStringDeserializer<?> deser = FromStringDeserializer.findDeserializer(Currency.class);
+            return new StdKeyDeserializer(TYPE_CURRENCY, raw, deser);
+        } else {
+            return null;
+        }
+        return new StdKeyDeserializer(kind, raw);
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.deser.TestMapDeserialization::testcharSequenceKeyMap
+com.fasterxml.jackson.databind.JsonMappingException: Can not find a (Map) Key deserializer for type [simple type, class java.lang.CharSequence]
+ at [Source: {"a":"b"}; line: 1, column: 1]
+	at com.fasterxml.jackson.databind.JsonMappingException.from(JsonMappingException.java:284)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._handleUnknownKeyDeserializer(DeserializerCache.java:587)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache.findKeyDeserializer(DeserializerCache.java:168)
+	at com.fasterxml.jackson.databind.DeserializationContext.findKeyDeserializer(DeserializationContext.java:500)
+	at com.fasterxml.jackson.databind.deser.std.MapDeserializer.createContextual(MapDeserializer.java:231)
+	at com.fasterxml.jackson.databind.DeserializationContext.handleSecondaryContextualization(DeserializationContext.java:685)
+	at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:482)
+	at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:3908)
+	at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:3803)
+	at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:2816)
+	at com.fasterxml.jackson.databind.deser.TestMapDeserialization.testcharSequenceKeyMap(TestMapDeserialization.java:507)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+Map<CharSequence,String> result = MAPPER.readValue(JSON, new TypeReference<Map<CharSequence,String>>() { });
+
+================== buggy_lines_in_method ==================
+[6]
+================== buggy_statements ==================
+['        if (raw == String.class || raw == Object.class) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+public static StdKeyDeserializer forType(Class<?> raw)
+    {
+        int kind;
+
+        // first common types:
+        if (raw == String.class || raw == Object.class) {

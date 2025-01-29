@@ -1,0 +1,118 @@
+
+================== buggy_file ==================
+src/main/java/org/jsoup/parser/HtmlTreeBuilder.java
+================== buggy_method ==================
+{'method_name': 'resetInsertionMode', 'method_body': 'void resetInsertionMode() {\n        boolean last = false;\n        for (int pos = stack.size() -1; pos >= 0; pos--) {\n            Element node = stack.get(pos);\n            if (pos == 0) {\n                last = true;\n                node = contextElement;\n            }\n            String name = node.nodeName();\n            if ("select".equals(name)) {\n                transition(HtmlTreeBuilderState.InSelect);\n                break; // frag\n            } else if (("td".equals(name) || "th".equals(name) && !last)) {\n                transition(HtmlTreeBuilderState.InCell);\n                break;\n            } else if ("tr".equals(name)) {\n                transition(HtmlTreeBuilderState.InRow);\n                break;\n            } else if ("tbody".equals(name) || "thead".equals(name) || "tfoot".equals(name)) {\n                transition(HtmlTreeBuilderState.InTableBody);\n                break;\n            } else if ("caption".equals(name)) {\n                transition(HtmlTreeBuilderState.InCaption);\n                break;\n            } else if ("colgroup".equals(name)) {\n                transition(HtmlTreeBuilderState.InColumnGroup);\n                break; // frag\n            } else if ("table".equals(name)) {\n                transition(HtmlTreeBuilderState.InTable);\n                break;\n            } else if ("head".equals(name)) {\n                transition(HtmlTreeBuilderState.InBody);\n                break; // frag\n            } else if ("body".equals(name)) {\n                transition(HtmlTreeBuilderState.InBody);\n                break;\n            } else if ("frameset".equals(name)) {\n                transition(HtmlTreeBuilderState.InFrameset);\n                break; // frag\n            } else if ("html".equals(name)) {\n                transition(HtmlTreeBuilderState.BeforeHead);\n                break; // frag\n            } else if (last) {\n                transition(HtmlTreeBuilderState.InBody);\n                break; // frag\n            }\n        }\n    }', 'start_line': 412, 'end_line': 459, 'buggy_lines': [420]}
+================== buggy_method_src ==================
+void resetInsertionMode() {
+        boolean last = false;
+        for (int pos = stack.size() -1; pos >= 0; pos--) {
+            Element node = stack.get(pos);
+            if (pos == 0) {
+                last = true;
+                node = contextElement;
+            }
+            String name = node.nodeName();
+            if ("select".equals(name)) {
+                transition(HtmlTreeBuilderState.InSelect);
+                break; // frag
+            } else if (("td".equals(name) || "th".equals(name) && !last)) {
+                transition(HtmlTreeBuilderState.InCell);
+                break;
+            } else if ("tr".equals(name)) {
+                transition(HtmlTreeBuilderState.InRow);
+                break;
+            } else if ("tbody".equals(name) || "thead".equals(name) || "tfoot".equals(name)) {
+                transition(HtmlTreeBuilderState.InTableBody);
+                break;
+            } else if ("caption".equals(name)) {
+                transition(HtmlTreeBuilderState.InCaption);
+                break;
+            } else if ("colgroup".equals(name)) {
+                transition(HtmlTreeBuilderState.InColumnGroup);
+                break; // frag
+            } else if ("table".equals(name)) {
+                transition(HtmlTreeBuilderState.InTable);
+                break;
+            } else if ("head".equals(name)) {
+                transition(HtmlTreeBuilderState.InBody);
+                break; // frag
+            } else if ("body".equals(name)) {
+                transition(HtmlTreeBuilderState.InBody);
+                break;
+            } else if ("frameset".equals(name)) {
+                transition(HtmlTreeBuilderState.InFrameset);
+                break; // frag
+            } else if ("html".equals(name)) {
+                transition(HtmlTreeBuilderState.BeforeHead);
+                break; // frag
+            } else if (last) {
+                transition(HtmlTreeBuilderState.InBody);
+                break; // frag
+            }
+        }
+    }
+================== test_stack ==================
+org.jsoup.parser.HtmlParserTest::preservedCaseLinksCantNest
+junit.framework.AssertionFailedError: expected:<<A> ONE <[/A> <A> Two] </A>> but was:<<A> ONE <[A> Two </A>] </A>>
+	at org.junit.Assert.assertEquals(Assert.java:115)
+	at org.junit.Assert.assertEquals(Assert.java:144)
+	at org.jsoup.parser.HtmlParserTest.preservedCaseLinksCantNest(HtmlParserTest.java:1135)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals("<A> ONE </A> <A> Two </A>", StringUtil.normaliseWhitespace(doc.body().html()));
+
+================== buggy_lines_in_method ==================
+[9]
+================== buggy_statements ==================
+['            String name = node.nodeName();']
+================== buggy_method_src_endswith_buggy_statement ==================
+void resetInsertionMode() {
+        boolean last = false;
+        for (int pos = stack.size() -1; pos >= 0; pos--) {
+            Element node = stack.get(pos);
+            if (pos == 0) {
+                last = true;
+                node = contextElement;
+            }
+            String name = node.nodeName();

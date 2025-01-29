@@ -1,0 +1,103 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/ser/std/StdSerializer.java
+================== buggy_method ==================
+{'method_name': 'findConvertingContentSerializer', 'method_body': 'protected JsonSerializer<?> findConvertingContentSerializer(SerializerProvider provider,\n            BeanProperty prop, JsonSerializer<?> existingSerializer)\n        throws JsonMappingException\n    {\n        /* 19-Oct-2014, tatu: As per [databind#357], need to avoid infinite loop\n         *   when applying contextual content converter; this is not ideal way,\n         *   but should work for most cases.\n         */\n        final AnnotationIntrospector intr = provider.getAnnotationIntrospector();\n        if (intr != null && prop != null) {\n            AnnotatedMember m = prop.getMember();\n            if (m != null) {\n                Object convDef = intr.findSerializationContentConverter(m);\n                if (convDef != null) {\n                    Converter<Object,Object> conv = provider.converterInstance(prop.getMember(), convDef);\n                    JavaType delegateType = conv.getOutputType(provider.getTypeFactory());\n                    // [databind#731]: Should skip if nominally java.lang.Object\n                    if (existingSerializer == null) {\n                        existingSerializer = provider.findValueSerializer(delegateType);\n                    }\n                    return new StdDelegatingSerializer(conv, delegateType, existingSerializer);\n                }\n            }\n        }\n        return existingSerializer;\n    }', 'start_line': 245, 'end_line': 270, 'buggy_lines': [262]}
+================== buggy_method_src ==================
+protected JsonSerializer<?> findConvertingContentSerializer(SerializerProvider provider,
+            BeanProperty prop, JsonSerializer<?> existingSerializer)
+        throws JsonMappingException
+    {
+        /* 19-Oct-2014, tatu: As per [databind#357], need to avoid infinite loop
+         *   when applying contextual content converter; this is not ideal way,
+         *   but should work for most cases.
+         */
+        final AnnotationIntrospector intr = provider.getAnnotationIntrospector();
+        if (intr != null && prop != null) {
+            AnnotatedMember m = prop.getMember();
+            if (m != null) {
+                Object convDef = intr.findSerializationContentConverter(m);
+                if (convDef != null) {
+                    Converter<Object,Object> conv = provider.converterInstance(prop.getMember(), convDef);
+                    JavaType delegateType = conv.getOutputType(provider.getTypeFactory());
+                    // [databind#731]: Should skip if nominally java.lang.Object
+                    if (existingSerializer == null) {
+                        existingSerializer = provider.findValueSerializer(delegateType);
+                    }
+                    return new StdDelegatingSerializer(conv, delegateType, existingSerializer);
+                }
+            }
+        }
+        return existingSerializer;
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.convert.TestConvertingSerializer::testIssue731
+com.fasterxml.jackson.databind.JsonMappingException: No serializer found for class com.fasterxml.jackson.databind.convert.TestConvertingSerializer$DummyBean and no properties discovered to create BeanSerializer (to avoid exception, disable SerializationFeature.FAIL_ON_EMPTY_BEANS) )
+	at com.fasterxml.jackson.databind.ser.impl.UnknownSerializer.failForEmpty(UnknownSerializer.java:59)
+	at com.fasterxml.jackson.databind.ser.impl.UnknownSerializer.serialize(UnknownSerializer.java:26)
+	at com.fasterxml.jackson.databind.ser.std.StdDelegatingSerializer.serialize(StdDelegatingSerializer.java:161)
+	at com.fasterxml.jackson.databind.ser.DefaultSerializerProvider.serializeValue(DefaultSerializerProvider.java:129)
+	at com.fasterxml.jackson.databind.ObjectWriter._configAndWriteValue(ObjectWriter.java:1052)
+	at com.fasterxml.jackson.databind.ObjectWriter.writeValueAsString(ObjectWriter.java:923)
+	at com.fasterxml.jackson.databind.convert.TestConvertingSerializer.testIssue731(TestConvertingSerializer.java:201)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+String json = objectWriter().writeValueAsString(new ConvertingBeanWithUntypedConverter(1, 2));
+
+================== buggy_lines_in_method ==================
+[18]
+================== buggy_statements ==================
+['                    if (existingSerializer == null) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+protected JsonSerializer<?> findConvertingContentSerializer(SerializerProvider provider,
+            BeanProperty prop, JsonSerializer<?> existingSerializer)
+        throws JsonMappingException
+    {
+        /* 19-Oct-2014, tatu: As per [databind#357], need to avoid infinite loop
+         *   when applying contextual content converter; this is not ideal way,
+         *   but should work for most cases.
+         */
+        final AnnotationIntrospector intr = provider.getAnnotationIntrospector();
+        if (intr != null && prop != null) {
+            AnnotatedMember m = prop.getMember();
+            if (m != null) {
+                Object convDef = intr.findSerializationContentConverter(m);
+                if (convDef != null) {
+                    Converter<Object,Object> conv = provider.converterInstance(prop.getMember(), convDef);
+                    JavaType delegateType = conv.getOutputType(provider.getTypeFactory());
+                    // [databind#731]: Should skip if nominally java.lang.Object
+                    if (existingSerializer == null) {

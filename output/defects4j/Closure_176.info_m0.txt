@@ -1,0 +1,165 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/TypeInference.java
+================== buggy_method ==================
+{'method_name': 'updateScopeForTypeChange', 'method_body': "private void updateScopeForTypeChange(\n      FlowScope scope, Node left, JSType leftType, JSType resultType) {\n    Preconditions.checkNotNull(resultType);\n    switch (left.getType()) {\n      case Token.NAME:\n        String varName = left.getString();\n        Var var = syntacticScope.getVar(varName);\n        boolean isVarDeclaration = left.hasChildren();\n\n        // When looking at VAR initializers for declared VARs, we tend\n        // to use the declared type over the type it's being\n        // initialized to in the global scope.\n        //\n        // For example,\n        // /** @param {number} */ var f = goog.abstractMethod;\n        // it's obvious that the programmer wants you to use\n        // the declared function signature, not the inferred signature.\n        //\n        // Or,\n        // /** @type {Object.<string>} */ var x = {};\n        // the one-time anonymous object on the right side\n        // is as narrow as it can possibly be, but we need to make\n        // sure we back-infer the <string> element constraint on\n        // the left hand side, so we use the left hand side.\n\n        boolean isVarTypeBetter = !isVarDeclaration || var == null || var.isTypeInferred();\n            // Makes it easier to check for NPEs.\n\n        // TODO(nicksantos): This might be a better check once we have\n        // back-inference of object/array constraints.  It will probably\n        // introduce more type warnings.  It uses the result type iff it's\n        // strictly narrower than the declared var type.\n        //\n        //boolean isVarTypeBetter = isVarDeclaration &&\n        //    (varType.restrictByNotNullOrUndefined().isSubtype(resultType)\n        //     || !resultType.isSubtype(varType));\n\n\n        if (isVarTypeBetter) {\n          redeclareSimpleVar(scope, left, resultType);\n        }\n        left.setJSType(isVarDeclaration || leftType == null ?\n            resultType : null);\n\n        if (var != null && var.isTypeInferred()) {\n          JSType oldType = var.getType();\n          var.setType(oldType == null ?\n              resultType : oldType.getLeastSupertype(resultType));\n        }\n        break;\n      case Token.GETPROP:\n        String qualifiedName = left.getQualifiedName();\n        if (qualifiedName != null) {\n          scope.inferQualifiedSlot(left, qualifiedName,\n              leftType == null ? unknownType : leftType,\n              resultType);\n        }\n\n        left.setJSType(resultType);\n        ensurePropertyDefined(left, resultType);\n        break;\n    }\n  }", 'start_line': 523, 'end_line': 585, 'buggy_lines': [530, 548, 564, 565]}
+================== buggy_method_src ==================
+private void updateScopeForTypeChange(
+      FlowScope scope, Node left, JSType leftType, JSType resultType) {
+    Preconditions.checkNotNull(resultType);
+    switch (left.getType()) {
+      case Token.NAME:
+        String varName = left.getString();
+        Var var = syntacticScope.getVar(varName);
+        boolean isVarDeclaration = left.hasChildren();
+
+        // When looking at VAR initializers for declared VARs, we tend
+        // to use the declared type over the type it's being
+        // initialized to in the global scope.
+        //
+        // For example,
+        // /** @param {number} */ var f = goog.abstractMethod;
+        // it's obvious that the programmer wants you to use
+        // the declared function signature, not the inferred signature.
+        //
+        // Or,
+        // /** @type {Object.<string>} */ var x = {};
+        // the one-time anonymous object on the right side
+        // is as narrow as it can possibly be, but we need to make
+        // sure we back-infer the <string> element constraint on
+        // the left hand side, so we use the left hand side.
+
+        boolean isVarTypeBetter = !isVarDeclaration || var == null || var.isTypeInferred();
+            // Makes it easier to check for NPEs.
+
+        // TODO(nicksantos): This might be a better check once we have
+        // back-inference of object/array constraints.  It will probably
+        // introduce more type warnings.  It uses the result type iff it's
+        // strictly narrower than the declared var type.
+        //
+        //boolean isVarTypeBetter = isVarDeclaration &&
+        //    (varType.restrictByNotNullOrUndefined().isSubtype(resultType)
+        //     || !resultType.isSubtype(varType));
+
+
+        if (isVarTypeBetter) {
+          redeclareSimpleVar(scope, left, resultType);
+        }
+        left.setJSType(isVarDeclaration || leftType == null ?
+            resultType : null);
+
+        if (var != null && var.isTypeInferred()) {
+          JSType oldType = var.getType();
+          var.setType(oldType == null ?
+              resultType : oldType.getLeastSupertype(resultType));
+        }
+        break;
+      case Token.GETPROP:
+        String qualifiedName = left.getQualifiedName();
+        if (qualifiedName != null) {
+          scope.inferQualifiedSlot(left, qualifiedName,
+              leftType == null ? unknownType : leftType,
+              resultType);
+        }
+
+        left.setJSType(resultType);
+        ensurePropertyDefined(left, resultType);
+        break;
+    }
+  }
+================== test_stack ==================
+com.google.javascript.jscomp.TypeCheckTest::testIssue1056
+junit.framework.AssertionFailedError: expected a warning
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.TestCase.assertTrue(TestCase.java:192)
+	at com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:12785)
+	at com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:12765)
+	at com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:12701)
+	at com.google.javascript.jscomp.TypeCheckTest.testIssue1056(TypeCheckTest.java:6911)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+testTypes(
+
+================== buggy_lines_in_method ==================
+[8, 26, 42, 43]
+================== buggy_statements ==================
+['        boolean isVarDeclaration = left.hasChildren();', '        boolean isVarTypeBetter = !isVarDeclaration || var == null || var.isTypeInferred();', '        left.setJSType(isVarDeclaration || leftType == null ?', '            resultType : null);']
+================== buggy_method_src_endswith_buggy_statement ==================
+private void updateScopeForTypeChange(
+      FlowScope scope, Node left, JSType leftType, JSType resultType) {
+    Preconditions.checkNotNull(resultType);
+    switch (left.getType()) {
+      case Token.NAME:
+        String varName = left.getString();
+        Var var = syntacticScope.getVar(varName);
+        boolean isVarDeclaration = left.hasChildren();
+
+        // When looking at VAR initializers for declared VARs, we tend
+        // to use the declared type over the type it's being
+        // initialized to in the global scope.
+        //
+        // For example,
+        // /** @param {number} */ var f = goog.abstractMethod;
+        // it's obvious that the programmer wants you to use
+        // the declared function signature, not the inferred signature.
+        //
+        // Or,
+        // /** @type {Object.<string>} */ var x = {};
+        // the one-time anonymous object on the right side
+        // is as narrow as it can possibly be, but we need to make
+        // sure we back-infer the <string> element constraint on
+        // the left hand side, so we use the left hand side.
+
+        boolean isVarTypeBetter = !isVarDeclaration || var == null || var.isTypeInferred();
+            // Makes it easier to check for NPEs.
+
+        // TODO(nicksantos): This might be a better check once we have
+        // back-inference of object/array constraints.  It will probably
+        // introduce more type warnings.  It uses the result type iff it's
+        // strictly narrower than the declared var type.
+        //
+        //boolean isVarTypeBetter = isVarDeclaration &&
+        //    (varType.restrictByNotNullOrUndefined().isSubtype(resultType)
+        //     || !resultType.isSubtype(varType));
+
+
+        if (isVarTypeBetter) {
+          redeclareSimpleVar(scope, left, resultType);
+        }
+        left.setJSType(isVarDeclaration || leftType == null ?
+            resultType : null);

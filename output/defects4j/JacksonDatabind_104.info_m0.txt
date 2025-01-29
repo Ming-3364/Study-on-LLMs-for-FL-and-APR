@@ -1,0 +1,168 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/util/StdDateFormat.java
+================== buggy_method ==================
+{'method_name': '_format', 'method_body': 'protected void _format(TimeZone tz, Locale loc, Date date,\n            StringBuffer buffer)\n    {\n        Calendar cal = _getCalendar(tz);\n        cal.setTime(date);\n        // [databind#2167]: handle range beyond [1, 9999]\n        final int year = cal.get(Calendar.YEAR);\n\n        // Assuming GregorianCalendar, special handling needed for BCE (aka BC)\n                // 22-Nov-2018, tatu: Handling beyond 4-digits is not well specified wrt ISO-8601, but\n                //   it seems that plus prefix IS mandated. Padding is an open question, but since agreeement\n                //   for max length would be needed, we ewould need to limit to arbitrary length\n                //   like five digits (erroring out if beyond or padding to that as minimum).\n                //   Instead, let\'s just print number out as is and let decoder try to make sense of it.\n            pad4(buffer, year);\n        buffer.append(\'-\');\n        pad2(buffer, cal.get(Calendar.MONTH) + 1);\n        buffer.append(\'-\');\n        pad2(buffer, cal.get(Calendar.DAY_OF_MONTH));\n        buffer.append(\'T\');\n        pad2(buffer, cal.get(Calendar.HOUR_OF_DAY));\n        buffer.append(\':\');\n        pad2(buffer, cal.get(Calendar.MINUTE));\n        buffer.append(\':\');\n        pad2(buffer, cal.get(Calendar.SECOND));\n        buffer.append(\'.\');\n        pad3(buffer, cal.get(Calendar.MILLISECOND));\n\n        int offset = tz.getOffset(cal.getTimeInMillis());\n        if (offset != 0) {\n            int hours = Math.abs((offset / (60 * 1000)) / 60);\n            int minutes = Math.abs((offset / (60 * 1000)) % 60);\n            buffer.append(offset < 0 ? \'-\' : \'+\');\n            pad2(buffer, hours);\n            if( _tzSerializedWithColon ) {\n            \t\tbuffer.append(\':\');\n            }\n            pad2(buffer, minutes);\n        } else {\n            // 24-Jun-2017, tatu: While `Z` would be conveniently short, older specs\n            //   mandate use of full `+0000`\n//            formatted.append(\'Z\');\n\t        \tif( _tzSerializedWithColon ) {\n\t            buffer.append("+00:00");\n\t        \t}\n\t        \telse {\n\t        \t\tbuffer.append("+0000");\n\t        \t}\n        }\n    }', 'start_line': 432, 'end_line': 481, 'buggy_lines': [444, 451, 453]}
+================== buggy_method_src ==================
+protected void _format(TimeZone tz, Locale loc, Date date,
+            StringBuffer buffer)
+    {
+        Calendar cal = _getCalendar(tz);
+        cal.setTime(date);
+        // [databind#2167]: handle range beyond [1, 9999]
+        final int year = cal.get(Calendar.YEAR);
+
+        // Assuming GregorianCalendar, special handling needed for BCE (aka BC)
+                // 22-Nov-2018, tatu: Handling beyond 4-digits is not well specified wrt ISO-8601, but
+                //   it seems that plus prefix IS mandated. Padding is an open question, but since agreeement
+                //   for max length would be needed, we ewould need to limit to arbitrary length
+                //   like five digits (erroring out if beyond or padding to that as minimum).
+                //   Instead, let's just print number out as is and let decoder try to make sense of it.
+            pad4(buffer, year);
+        buffer.append('-');
+        pad2(buffer, cal.get(Calendar.MONTH) + 1);
+        buffer.append('-');
+        pad2(buffer, cal.get(Calendar.DAY_OF_MONTH));
+        buffer.append('T');
+        pad2(buffer, cal.get(Calendar.HOUR_OF_DAY));
+        buffer.append(':');
+        pad2(buffer, cal.get(Calendar.MINUTE));
+        buffer.append(':');
+        pad2(buffer, cal.get(Calendar.SECOND));
+        buffer.append('.');
+        pad3(buffer, cal.get(Calendar.MILLISECOND));
+
+        int offset = tz.getOffset(cal.getTimeInMillis());
+        if (offset != 0) {
+            int hours = Math.abs((offset / (60 * 1000)) / 60);
+            int minutes = Math.abs((offset / (60 * 1000)) % 60);
+            buffer.append(offset < 0 ? '-' : '+');
+            pad2(buffer, hours);
+            if( _tzSerializedWithColon ) {
+            		buffer.append(':');
+            }
+            pad2(buffer, minutes);
+        } else {
+            // 24-Jun-2017, tatu: While `Z` would be conveniently short, older specs
+            //   mandate use of full `+0000`
+//            formatted.append('Z');
+	        	if( _tzSerializedWithColon ) {
+	            buffer.append("+00:00");
+	        	}
+	        	else {
+	        		buffer.append("+0000");
+	        	}
+        }
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.ser.jdk.DateSerializationTest::testDateISO8601_10k
+org.junit.ComparisonFailure: expected:<"[+10]204-01-01T00:00:00.0...> but was:<"[:]204-01-01T00:00:00.0...>
+	at org.junit.Assert.assertEquals(Assert.java:115)
+	at org.junit.Assert.assertEquals(Assert.java:144)
+	at com.fasterxml.jackson.databind.ser.jdk.DateSerializationTest.serialize(DateSerializationTest.java:366)
+	at com.fasterxml.jackson.databind.ser.jdk.DateSerializationTest.testDateISO8601_10k(DateSerializationTest.java:134)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.databind.ser.jdk.DateSerializationTest::testDateISO8601_BCE
+org.junit.ComparisonFailure: expected:<"[+0000]-01-01T00:00:00.000+...> but was:<"[0001]-01-01T00:00:00.000+...>
+	at org.junit.Assert.assertEquals(Assert.java:115)
+	at org.junit.Assert.assertEquals(Assert.java:144)
+	at com.fasterxml.jackson.databind.ser.jdk.DateSerializationTest.serialize(DateSerializationTest.java:366)
+	at com.fasterxml.jackson.databind.ser.jdk.DateSerializationTest.testDateISO8601_BCE(DateSerializationTest.java:148)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+serialize(w, judate(10204, 1, 1,  00, 00, 00, 0, "UTC"),   "+10204-01-01T00:00:00.000+0000");
+
+================== buggy_lines_in_method ==================
+[13, 20, 22]
+================== buggy_statements ==================
+['                //   like five digits (erroring out if beyond or padding to that as minimum).', "        buffer.append('T');", "        buffer.append(':');"]
+================== buggy_method_src_endswith_buggy_statement ==================
+protected void _format(TimeZone tz, Locale loc, Date date,
+            StringBuffer buffer)
+    {
+        Calendar cal = _getCalendar(tz);
+        cal.setTime(date);
+        // [databind#2167]: handle range beyond [1, 9999]
+        final int year = cal.get(Calendar.YEAR);
+
+        // Assuming GregorianCalendar, special handling needed for BCE (aka BC)
+                // 22-Nov-2018, tatu: Handling beyond 4-digits is not well specified wrt ISO-8601, but
+                //   it seems that plus prefix IS mandated. Padding is an open question, but since agreeement
+                //   for max length would be needed, we ewould need to limit to arbitrary length
+                //   like five digits (erroring out if beyond or padding to that as minimum).
+                //   Instead, let's just print number out as is and let decoder try to make sense of it.
+            pad4(buffer, year);
+        buffer.append('-');
+        pad2(buffer, cal.get(Calendar.MONTH) + 1);
+        buffer.append('-');
+        pad2(buffer, cal.get(Calendar.DAY_OF_MONTH));
+        buffer.append('T');
+        pad2(buffer, cal.get(Calendar.HOUR_OF_DAY));
+        buffer.append(':');

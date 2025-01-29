@@ -1,0 +1,168 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/NameAnalyzer.java
+================== buggy_method ==================
+{'method_name': 'recordAssignment', 'method_body': "private void recordAssignment(NodeTraversal t, Node n, Node recordNode) {\n      Node nameNode = n.getFirstChild();\n      Node parent = n.getParent();\n      NameInformation ns = createNameInformation(t, nameNode);\n      if (ns != null) {\n        if (parent.isFor() && !NodeUtil.isForIn(parent)) {\n          // Patch for assignments that appear in the init,\n          // condition or iteration part of a FOR loop.  Without\n          // this change, all 3 of those parts try to claim the for\n          // loop as their dependency scope.  The last assignment in\n          // those three fields wins, which can result in incorrect\n          // reference edges between referenced and assigned variables.\n          //\n          // TODO(user) revisit the dependency scope calculation\n          // logic.\n          if (parent.getFirstChild().getNext() != n) {\n            recordDepScope(recordNode, ns);\n          } else {\n            recordDepScope(nameNode, ns);\n          }\n        } else {\n          // The rhs of the assignment is the caller, so it's used by the\n          // context. Don't associate it w/ the lhs.\n          // FYI: this fixes only the specific case where the assignment is the\n          // caller expression, but it could be nested deeper in the caller and\n          // we would still get a bug.\n          // See testAssignWithCall2 for an example of this.\n          recordDepScope(recordNode, ns);\n        }\n      }\n    }", 'start_line': 558, 'end_line': 588, 'buggy_lines': [578]}
+================== buggy_method_src ==================
+private void recordAssignment(NodeTraversal t, Node n, Node recordNode) {
+      Node nameNode = n.getFirstChild();
+      Node parent = n.getParent();
+      NameInformation ns = createNameInformation(t, nameNode);
+      if (ns != null) {
+        if (parent.isFor() && !NodeUtil.isForIn(parent)) {
+          // Patch for assignments that appear in the init,
+          // condition or iteration part of a FOR loop.  Without
+          // this change, all 3 of those parts try to claim the for
+          // loop as their dependency scope.  The last assignment in
+          // those three fields wins, which can result in incorrect
+          // reference edges between referenced and assigned variables.
+          //
+          // TODO(user) revisit the dependency scope calculation
+          // logic.
+          if (parent.getFirstChild().getNext() != n) {
+            recordDepScope(recordNode, ns);
+          } else {
+            recordDepScope(nameNode, ns);
+          }
+        } else {
+          // The rhs of the assignment is the caller, so it's used by the
+          // context. Don't associate it w/ the lhs.
+          // FYI: this fixes only the specific case where the assignment is the
+          // caller expression, but it could be nested deeper in the caller and
+          // we would still get a bug.
+          // See testAssignWithCall2 for an example of this.
+          recordDepScope(recordNode, ns);
+        }
+      }
+    }
+================== test_stack ==================
+com.google.javascript.jscomp.NameAnalyzerTest::testAssignWithCall
+junit.framework.AssertionFailedError:
+Expected: var x;(function(){x})()
+Result: (function(){x})()
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        VAR 1 [source_file: expected0]
+            NAME x 1 [source_file: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            CALL 1 [free_call: 1] [source_file: expected0]
+                FUNCTION  1 [source_file: expected0]
+                    NAME  1 [source_file: expected0]
+                    PARAM_LIST 1 [source_file: expected0]
+                    BLOCK 1 [source_file: expected0]
+                        EXPR_RESULT 1 [source_file: expected0]
+                            NAME x 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        EXPR_RESULT 1 [source_file: testcode]
+            CALL 1 [free_call: 1] [source_file: testcode]
+                FUNCTION  1 [source_file: testcode]
+                    NAME  1 [source_file: testcode]
+                    PARAM_LIST 1 [source_file: testcode]
+                    BLOCK 1 [source_file: testcode]
+                        EXPR_RESULT 1 [source_file: testcode]
+                            NAME x 1 [source_file: testcode]
+
+
+Subtree1: SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+    VAR 1 [source_file: expected0]
+        NAME x 1 [source_file: expected0]
+    EXPR_RESULT 1 [source_file: expected0]
+        CALL 1 [free_call: 1] [source_file: expected0]
+            FUNCTION  1 [source_file: expected0]
+                NAME  1 [source_file: expected0]
+                PARAM_LIST 1 [source_file: expected0]
+                BLOCK 1 [source_file: expected0]
+                    EXPR_RESULT 1 [source_file: expected0]
+                        NAME x 1 [source_file: expected0]
+
+
+Subtree2: SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        CALL 1 [free_call: 1] [source_file: testcode]
+            FUNCTION  1 [source_file: testcode]
+                NAME  1 [source_file: testcode]
+                PARAM_LIST 1 [source_file: testcode]
+                BLOCK 1 [source_file: testcode]
+                    EXPR_RESULT 1 [source_file: testcode]
+                        NAME x 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.NameAnalyzerTest.testAssignWithCall(NameAnalyzerTest.java:1236)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+test("var fun, x; (fun = function(){ x; })();",
+
+================== buggy_lines_in_method ==================
+[21]
+================== buggy_statements ==================
+['        } else {']
+================== buggy_method_src_endswith_buggy_statement ==================
+private void recordAssignment(NodeTraversal t, Node n, Node recordNode) {
+      Node nameNode = n.getFirstChild();
+      Node parent = n.getParent();
+      NameInformation ns = createNameInformation(t, nameNode);
+      if (ns != null) {
+        if (parent.isFor() && !NodeUtil.isForIn(parent)) {
+          // Patch for assignments that appear in the init,
+          // condition or iteration part of a FOR loop.  Without
+          // this change, all 3 of those parts try to claim the for
+          // loop as their dependency scope.  The last assignment in
+          // those three fields wins, which can result in incorrect
+          // reference edges between referenced and assigned variables.
+          //
+          // TODO(user) revisit the dependency scope calculation
+          // logic.
+          if (parent.getFirstChild().getNext() != n) {
+            recordDepScope(recordNode, ns);
+          } else {
+            recordDepScope(nameNode, ns);
+          }
+        } else {

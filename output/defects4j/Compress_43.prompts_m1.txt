@@ -1,0 +1,1300 @@
+
+================== prompt_fl_1 ==================
+
+source code:
+private byte[] createLocalFileHeader(final ZipArchiveEntry ze, final ByteBuffer name, final boolean encodable,
+                                         final boolean phased, long archiveOffset) throws IOException {
+        ResourceAlignmentExtraField oldAlignmentEx =
+            (ResourceAlignmentExtraField) ze.getExtraField(ResourceAlignmentExtraField.ID);
+        if (oldAlignmentEx != null) {
+            ze.removeExtraField(ResourceAlignmentExtraField.ID);
+        }
+
+        int alignment = ze.getAlignment();
+        if (alignment <= 0 && oldAlignmentEx != null) {
+            alignment = oldAlignmentEx.getAlignment();
+        }
+
+        if (alignment > 1 || (oldAlignmentEx != null && !oldAlignmentEx.allowMethodChange())) {
+            int oldLength = LFH_FILENAME_OFFSET +
+                            name.limit() - name.position() +
+                            ze.getLocalFileDataExtra().length;
+
+            int padding = (int) ((-archiveOffset - oldLength - ZipExtraField.EXTRAFIELD_HEADER_SIZE
+                            - ResourceAlignmentExtraField.BASE_SIZE) &
+                            (alignment - 1));
+            ze.addExtraField(new ResourceAlignmentExtraField(alignment,
+                            oldAlignmentEx != null && oldAlignmentEx.allowMethodChange(), padding));
+        }
+
+        final byte[] extra = ze.getLocalFileDataExtra();
+        final int nameLen = name.limit() - name.position();
+        final int len = LFH_FILENAME_OFFSET + nameLen + extra.length;
+        final byte[] buf = new byte[len];
+
+        System.arraycopy(LFH_SIG,  0, buf, LFH_SIG_OFFSET, WORD);
+
+        //store method in local variable to prevent multiple method calls
+        final int zipMethod = ze.getMethod();
+        final boolean dataDescriptor = usesDataDescriptor(zipMethod);
+
+        putShort(versionNeededToExtract(zipMethod, hasZip64Extra(ze), dataDescriptor), buf, LFH_VERSION_NEEDED_OFFSET);
+
+        final GeneralPurposeBit generalPurposeBit = getGeneralPurposeBits(!encodable && fallbackToUTF8, dataDescriptor);
+        generalPurposeBit.encode(buf, LFH_GPB_OFFSET);
+
+        // compression method
+        putShort(zipMethod, buf, LFH_METHOD_OFFSET);
+
+        ZipUtil.toDosTime(calendarInstance, ze.getTime(), buf, LFH_TIME_OFFSET);
+
+        // CRC
+        if (phased){
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_CRC_OFFSET, WORD);
+        } else {
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        }
+
+        // compressed length
+        // uncompressed length
+        if (hasZip64Extra(entry.entry)){
+            // point to ZIP64 extended information extra field for
+            // sizes, may get rewritten once sizes are known if
+            // stream is seekable
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_COMPRESSED_SIZE_OFFSET);
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (phased) {
+            putLong(ze.getCompressedSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_COMPRESSED_SIZE_OFFSET, WORD);
+            System.arraycopy(LZERO, 0, buf, LFH_ORIGINAL_SIZE_OFFSET, WORD);
+        } else { // Stored
+            putLong(ze.getSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        }
+        // file name length
+        putShort(nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);
+
+        // extra field length
+        putShort(extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);
+
+        // file name
+        System.arraycopy( name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);
+
+        // extra fields
+        System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);
+
+        return buf;
+    }
+
+There is a bug in the above code, please help me locate it.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_2 ==================
+
+source code:
+private byte[] createLocalFileHeader(final ZipArchiveEntry ze, final ByteBuffer name, final boolean encodable,
+                                         final boolean phased, long archiveOffset) throws IOException {
+        ResourceAlignmentExtraField oldAlignmentEx =
+            (ResourceAlignmentExtraField) ze.getExtraField(ResourceAlignmentExtraField.ID);
+        if (oldAlignmentEx != null) {
+            ze.removeExtraField(ResourceAlignmentExtraField.ID);
+        }
+
+        int alignment = ze.getAlignment();
+        if (alignment <= 0 && oldAlignmentEx != null) {
+            alignment = oldAlignmentEx.getAlignment();
+        }
+
+        if (alignment > 1 || (oldAlignmentEx != null && !oldAlignmentEx.allowMethodChange())) {
+            int oldLength = LFH_FILENAME_OFFSET +
+                            name.limit() - name.position() +
+                            ze.getLocalFileDataExtra().length;
+
+            int padding = (int) ((-archiveOffset - oldLength - ZipExtraField.EXTRAFIELD_HEADER_SIZE
+                            - ResourceAlignmentExtraField.BASE_SIZE) &
+                            (alignment - 1));
+            ze.addExtraField(new ResourceAlignmentExtraField(alignment,
+                            oldAlignmentEx != null && oldAlignmentEx.allowMethodChange(), padding));
+        }
+
+        final byte[] extra = ze.getLocalFileDataExtra();
+        final int nameLen = name.limit() - name.position();
+        final int len = LFH_FILENAME_OFFSET + nameLen + extra.length;
+        final byte[] buf = new byte[len];
+
+        System.arraycopy(LFH_SIG,  0, buf, LFH_SIG_OFFSET, WORD);
+
+        //store method in local variable to prevent multiple method calls
+        final int zipMethod = ze.getMethod();
+        final boolean dataDescriptor = usesDataDescriptor(zipMethod);
+
+        putShort(versionNeededToExtract(zipMethod, hasZip64Extra(ze), dataDescriptor), buf, LFH_VERSION_NEEDED_OFFSET);
+
+        final GeneralPurposeBit generalPurposeBit = getGeneralPurposeBits(!encodable && fallbackToUTF8, dataDescriptor);
+        generalPurposeBit.encode(buf, LFH_GPB_OFFSET);
+
+        // compression method
+        putShort(zipMethod, buf, LFH_METHOD_OFFSET);
+
+        ZipUtil.toDosTime(calendarInstance, ze.getTime(), buf, LFH_TIME_OFFSET);
+
+        // CRC
+        if (phased){
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_CRC_OFFSET, WORD);
+        } else {
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        }
+
+        // compressed length
+        // uncompressed length
+        if (hasZip64Extra(entry.entry)){
+            // point to ZIP64 extended information extra field for
+            // sizes, may get rewritten once sizes are known if
+            // stream is seekable
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_COMPRESSED_SIZE_OFFSET);
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (phased) {
+            putLong(ze.getCompressedSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_COMPRESSED_SIZE_OFFSET, WORD);
+            System.arraycopy(LZERO, 0, buf, LFH_ORIGINAL_SIZE_OFFSET, WORD);
+        } else { // Stored
+            putLong(ze.getSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        }
+        // file name length
+        putShort(nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);
+
+        // extra field length
+        putShort(extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);
+
+        // file name
+        System.arraycopy( name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);
+
+        // extra fields
+        System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);
+
+        return buf;
+    }
+
+stack trace:
+org.apache.commons.compress.archivers.zip.DataDescriptorTest::doesntWriteDataDescriptorWhenAddingRawEntries
+junit.framework.AssertionFailedError: arrays first differed at element [0]; expected:<0> but was:<8>
+	at org.junit.internal.ComparisonCriteria.arrayEquals(ComparisonCriteria.java:50)
+	at org.junit.Assert.internalArrayEquals(Assert.java:473)
+	at org.junit.Assert.assertArrayEquals(Assert.java:294)
+	at org.junit.Assert.assertArrayEquals(Assert.java:305)
+	at org.apache.commons.compress.archivers.zip.DataDescriptorTest.doesntWriteDataDescriptorWhenAddingRawEntries(DataDescriptorTest.java:162)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_3 ==================
+
+source code:
+private byte[] createLocalFileHeader(final ZipArchiveEntry ze, final ByteBuffer name, final boolean encodable,
+                                         final boolean phased, long archiveOffset) throws IOException {
+        ResourceAlignmentExtraField oldAlignmentEx =
+            (ResourceAlignmentExtraField) ze.getExtraField(ResourceAlignmentExtraField.ID);
+        if (oldAlignmentEx != null) {
+            ze.removeExtraField(ResourceAlignmentExtraField.ID);
+        }
+
+        int alignment = ze.getAlignment();
+        if (alignment <= 0 && oldAlignmentEx != null) {
+            alignment = oldAlignmentEx.getAlignment();
+        }
+
+        if (alignment > 1 || (oldAlignmentEx != null && !oldAlignmentEx.allowMethodChange())) {
+            int oldLength = LFH_FILENAME_OFFSET +
+                            name.limit() - name.position() +
+                            ze.getLocalFileDataExtra().length;
+
+            int padding = (int) ((-archiveOffset - oldLength - ZipExtraField.EXTRAFIELD_HEADER_SIZE
+                            - ResourceAlignmentExtraField.BASE_SIZE) &
+                            (alignment - 1));
+            ze.addExtraField(new ResourceAlignmentExtraField(alignment,
+                            oldAlignmentEx != null && oldAlignmentEx.allowMethodChange(), padding));
+        }
+
+        final byte[] extra = ze.getLocalFileDataExtra();
+        final int nameLen = name.limit() - name.position();
+        final int len = LFH_FILENAME_OFFSET + nameLen + extra.length;
+        final byte[] buf = new byte[len];
+
+        System.arraycopy(LFH_SIG,  0, buf, LFH_SIG_OFFSET, WORD);
+
+        //store method in local variable to prevent multiple method calls
+        final int zipMethod = ze.getMethod();
+        final boolean dataDescriptor = usesDataDescriptor(zipMethod);
+
+        putShort(versionNeededToExtract(zipMethod, hasZip64Extra(ze), dataDescriptor), buf, LFH_VERSION_NEEDED_OFFSET);
+
+        final GeneralPurposeBit generalPurposeBit = getGeneralPurposeBits(!encodable && fallbackToUTF8, dataDescriptor);
+        generalPurposeBit.encode(buf, LFH_GPB_OFFSET);
+
+        // compression method
+        putShort(zipMethod, buf, LFH_METHOD_OFFSET);
+
+        ZipUtil.toDosTime(calendarInstance, ze.getTime(), buf, LFH_TIME_OFFSET);
+
+        // CRC
+        if (phased){
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_CRC_OFFSET, WORD);
+        } else {
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        }
+
+        // compressed length
+        // uncompressed length
+        if (hasZip64Extra(entry.entry)){
+            // point to ZIP64 extended information extra field for
+            // sizes, may get rewritten once sizes are known if
+            // stream is seekable
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_COMPRESSED_SIZE_OFFSET);
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (phased) {
+            putLong(ze.getCompressedSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_COMPRESSED_SIZE_OFFSET, WORD);
+            System.arraycopy(LZERO, 0, buf, LFH_ORIGINAL_SIZE_OFFSET, WORD);
+        } else { // Stored
+            putLong(ze.getSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        }
+        // file name length
+        putShort(nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);
+
+        // extra field length
+        putShort(extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);
+
+        // file name
+        System.arraycopy( name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);
+
+        // extra fields
+        System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);
+
+        return buf;
+    }
+
+stack trace:
+org.apache.commons.compress.archivers.zip.DataDescriptorTest::doesntWriteDataDescriptorWhenAddingRawEntries
+junit.framework.AssertionFailedError: arrays first differed at element [0]; expected:<0> but was:<8>
+	at org.junit.internal.ComparisonCriteria.arrayEquals(ComparisonCriteria.java:50)
+	at org.junit.Assert.internalArrayEquals(Assert.java:473)
+	at org.junit.Assert.assertArrayEquals(Assert.java:294)
+	at org.junit.Assert.assertArrayEquals(Assert.java:305)
+	at org.apache.commons.compress.archivers.zip.DataDescriptorTest.doesntWriteDataDescriptorWhenAddingRawEntries(DataDescriptorTest.java:162)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+failure assertion code:
+assertArrayEquals(new byte[] { 0, 8 }, gpbInLFH);
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_4 ==================
+
+source code:
+private byte[] createLocalFileHeader(final ZipArchiveEntry ze, final ByteBuffer name, final boolean encodable,
+                                         final boolean phased, long archiveOffset) throws IOException {
+        ResourceAlignmentExtraField oldAlignmentEx =
+            (ResourceAlignmentExtraField) ze.getExtraField(ResourceAlignmentExtraField.ID);
+        if (oldAlignmentEx != null) {
+            ze.removeExtraField(ResourceAlignmentExtraField.ID);
+        }
+
+        int alignment = ze.getAlignment();
+        if (alignment <= 0 && oldAlignmentEx != null) {
+            alignment = oldAlignmentEx.getAlignment();
+        }
+
+        if (alignment > 1 || (oldAlignmentEx != null && !oldAlignmentEx.allowMethodChange())) {
+            int oldLength = LFH_FILENAME_OFFSET +
+                            name.limit() - name.position() +
+                            ze.getLocalFileDataExtra().length;
+
+            int padding = (int) ((-archiveOffset - oldLength - ZipExtraField.EXTRAFIELD_HEADER_SIZE
+                            - ResourceAlignmentExtraField.BASE_SIZE) &
+                            (alignment - 1));
+            ze.addExtraField(new ResourceAlignmentExtraField(alignment,
+                            oldAlignmentEx != null && oldAlignmentEx.allowMethodChange(), padding));
+        }
+
+        final byte[] extra = ze.getLocalFileDataExtra();
+        final int nameLen = name.limit() - name.position();
+        final int len = LFH_FILENAME_OFFSET + nameLen + extra.length;
+        final byte[] buf = new byte[len];
+
+        System.arraycopy(LFH_SIG,  0, buf, LFH_SIG_OFFSET, WORD);
+
+        //store method in local variable to prevent multiple method calls
+        final int zipMethod = ze.getMethod();
+        final boolean dataDescriptor = usesDataDescriptor(zipMethod);
+
+        putShort(versionNeededToExtract(zipMethod, hasZip64Extra(ze), dataDescriptor), buf, LFH_VERSION_NEEDED_OFFSET);
+
+        final GeneralPurposeBit generalPurposeBit = getGeneralPurposeBits(!encodable && fallbackToUTF8, dataDescriptor);
+        generalPurposeBit.encode(buf, LFH_GPB_OFFSET);
+
+        // compression method
+        putShort(zipMethod, buf, LFH_METHOD_OFFSET);
+
+        ZipUtil.toDosTime(calendarInstance, ze.getTime(), buf, LFH_TIME_OFFSET);
+
+        // CRC
+        if (phased){
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_CRC_OFFSET, WORD);
+        } else {
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        }
+
+        // compressed length
+        // uncompressed length
+        if (hasZip64Extra(entry.entry)){
+            // point to ZIP64 extended information extra field for
+            // sizes, may get rewritten once sizes are known if
+            // stream is seekable
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_COMPRESSED_SIZE_OFFSET);
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (phased) {
+            putLong(ze.getCompressedSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_COMPRESSED_SIZE_OFFSET, WORD);
+            System.arraycopy(LZERO, 0, buf, LFH_ORIGINAL_SIZE_OFFSET, WORD);
+        } else { // Stored
+            putLong(ze.getSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        }
+        // file name length
+        putShort(nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);
+
+        // extra field length
+        putShort(extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);
+
+        // file name
+        System.arraycopy( name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);
+
+        // extra fields
+        System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);
+
+        return buf;
+    }
+
+There is a bug in the above code, please help me locate it.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_5 ==================
+
+source code:
+private byte[] createLocalFileHeader(final ZipArchiveEntry ze, final ByteBuffer name, final boolean encodable,
+                                         final boolean phased, long archiveOffset) throws IOException {
+        ResourceAlignmentExtraField oldAlignmentEx =
+            (ResourceAlignmentExtraField) ze.getExtraField(ResourceAlignmentExtraField.ID);
+        if (oldAlignmentEx != null) {
+            ze.removeExtraField(ResourceAlignmentExtraField.ID);
+        }
+
+        int alignment = ze.getAlignment();
+        if (alignment <= 0 && oldAlignmentEx != null) {
+            alignment = oldAlignmentEx.getAlignment();
+        }
+
+        if (alignment > 1 || (oldAlignmentEx != null && !oldAlignmentEx.allowMethodChange())) {
+            int oldLength = LFH_FILENAME_OFFSET +
+                            name.limit() - name.position() +
+                            ze.getLocalFileDataExtra().length;
+
+            int padding = (int) ((-archiveOffset - oldLength - ZipExtraField.EXTRAFIELD_HEADER_SIZE
+                            - ResourceAlignmentExtraField.BASE_SIZE) &
+                            (alignment - 1));
+            ze.addExtraField(new ResourceAlignmentExtraField(alignment,
+                            oldAlignmentEx != null && oldAlignmentEx.allowMethodChange(), padding));
+        }
+
+        final byte[] extra = ze.getLocalFileDataExtra();
+        final int nameLen = name.limit() - name.position();
+        final int len = LFH_FILENAME_OFFSET + nameLen + extra.length;
+        final byte[] buf = new byte[len];
+
+        System.arraycopy(LFH_SIG,  0, buf, LFH_SIG_OFFSET, WORD);
+
+        //store method in local variable to prevent multiple method calls
+        final int zipMethod = ze.getMethod();
+        final boolean dataDescriptor = usesDataDescriptor(zipMethod);
+
+        putShort(versionNeededToExtract(zipMethod, hasZip64Extra(ze), dataDescriptor), buf, LFH_VERSION_NEEDED_OFFSET);
+
+        final GeneralPurposeBit generalPurposeBit = getGeneralPurposeBits(!encodable && fallbackToUTF8, dataDescriptor);
+        generalPurposeBit.encode(buf, LFH_GPB_OFFSET);
+
+        // compression method
+        putShort(zipMethod, buf, LFH_METHOD_OFFSET);
+
+        ZipUtil.toDosTime(calendarInstance, ze.getTime(), buf, LFH_TIME_OFFSET);
+
+        // CRC
+        if (phased){
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_CRC_OFFSET, WORD);
+        } else {
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        }
+
+        // compressed length
+        // uncompressed length
+        if (hasZip64Extra(entry.entry)){
+            // point to ZIP64 extended information extra field for
+            // sizes, may get rewritten once sizes are known if
+            // stream is seekable
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_COMPRESSED_SIZE_OFFSET);
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (phased) {
+            putLong(ze.getCompressedSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_COMPRESSED_SIZE_OFFSET, WORD);
+            System.arraycopy(LZERO, 0, buf, LFH_ORIGINAL_SIZE_OFFSET, WORD);
+        } else { // Stored
+            putLong(ze.getSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        }
+        // file name length
+        putShort(nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);
+
+        // extra field length
+        putShort(extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);
+
+        // file name
+        System.arraycopy( name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);
+
+        // extra fields
+        System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);
+
+        return buf;
+    }
+
+stack trace:
+org.apache.commons.compress.archivers.zip.DataDescriptorTest::doesntWriteDataDescriptorWhenAddingRawEntries
+junit.framework.AssertionFailedError: arrays first differed at element [0]; expected:<0> but was:<8>
+	at org.junit.internal.ComparisonCriteria.arrayEquals(ComparisonCriteria.java:50)
+	at org.junit.Assert.internalArrayEquals(Assert.java:473)
+	at org.junit.Assert.assertArrayEquals(Assert.java:294)
+	at org.junit.Assert.assertArrayEquals(Assert.java:305)
+	at org.apache.commons.compress.archivers.zip.DataDescriptorTest.doesntWriteDataDescriptorWhenAddingRawEntries(DataDescriptorTest.java:162)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_6 ==================
+
+source code:
+private byte[] createLocalFileHeader(final ZipArchiveEntry ze, final ByteBuffer name, final boolean encodable,
+                                         final boolean phased, long archiveOffset) throws IOException {
+        ResourceAlignmentExtraField oldAlignmentEx =
+            (ResourceAlignmentExtraField) ze.getExtraField(ResourceAlignmentExtraField.ID);
+        if (oldAlignmentEx != null) {
+            ze.removeExtraField(ResourceAlignmentExtraField.ID);
+        }
+
+        int alignment = ze.getAlignment();
+        if (alignment <= 0 && oldAlignmentEx != null) {
+            alignment = oldAlignmentEx.getAlignment();
+        }
+
+        if (alignment > 1 || (oldAlignmentEx != null && !oldAlignmentEx.allowMethodChange())) {
+            int oldLength = LFH_FILENAME_OFFSET +
+                            name.limit() - name.position() +
+                            ze.getLocalFileDataExtra().length;
+
+            int padding = (int) ((-archiveOffset - oldLength - ZipExtraField.EXTRAFIELD_HEADER_SIZE
+                            - ResourceAlignmentExtraField.BASE_SIZE) &
+                            (alignment - 1));
+            ze.addExtraField(new ResourceAlignmentExtraField(alignment,
+                            oldAlignmentEx != null && oldAlignmentEx.allowMethodChange(), padding));
+        }
+
+        final byte[] extra = ze.getLocalFileDataExtra();
+        final int nameLen = name.limit() - name.position();
+        final int len = LFH_FILENAME_OFFSET + nameLen + extra.length;
+        final byte[] buf = new byte[len];
+
+        System.arraycopy(LFH_SIG,  0, buf, LFH_SIG_OFFSET, WORD);
+
+        //store method in local variable to prevent multiple method calls
+        final int zipMethod = ze.getMethod();
+        final boolean dataDescriptor = usesDataDescriptor(zipMethod);
+
+        putShort(versionNeededToExtract(zipMethod, hasZip64Extra(ze), dataDescriptor), buf, LFH_VERSION_NEEDED_OFFSET);
+
+        final GeneralPurposeBit generalPurposeBit = getGeneralPurposeBits(!encodable && fallbackToUTF8, dataDescriptor);
+        generalPurposeBit.encode(buf, LFH_GPB_OFFSET);
+
+        // compression method
+        putShort(zipMethod, buf, LFH_METHOD_OFFSET);
+
+        ZipUtil.toDosTime(calendarInstance, ze.getTime(), buf, LFH_TIME_OFFSET);
+
+        // CRC
+        if (phased){
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_CRC_OFFSET, WORD);
+        } else {
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        }
+
+        // compressed length
+        // uncompressed length
+        if (hasZip64Extra(entry.entry)){
+            // point to ZIP64 extended information extra field for
+            // sizes, may get rewritten once sizes are known if
+            // stream is seekable
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_COMPRESSED_SIZE_OFFSET);
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (phased) {
+            putLong(ze.getCompressedSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_COMPRESSED_SIZE_OFFSET, WORD);
+            System.arraycopy(LZERO, 0, buf, LFH_ORIGINAL_SIZE_OFFSET, WORD);
+        } else { // Stored
+            putLong(ze.getSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        }
+        // file name length
+        putShort(nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);
+
+        // extra field length
+        putShort(extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);
+
+        // file name
+        System.arraycopy( name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);
+
+        // extra fields
+        System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);
+
+        return buf;
+    }
+
+stack trace:
+org.apache.commons.compress.archivers.zip.DataDescriptorTest::doesntWriteDataDescriptorWhenAddingRawEntries
+junit.framework.AssertionFailedError: arrays first differed at element [0]; expected:<0> but was:<8>
+	at org.junit.internal.ComparisonCriteria.arrayEquals(ComparisonCriteria.java:50)
+	at org.junit.Assert.internalArrayEquals(Assert.java:473)
+	at org.junit.Assert.assertArrayEquals(Assert.java:294)
+	at org.junit.Assert.assertArrayEquals(Assert.java:305)
+	at org.apache.commons.compress.archivers.zip.DataDescriptorTest.doesntWriteDataDescriptorWhenAddingRawEntries(DataDescriptorTest.java:162)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+failure assertion code:
+assertArrayEquals(new byte[] { 0, 8 }, gpbInLFH);
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_1 ==================
+
+private byte[] createLocalFileHeader(final ZipArchiveEntry ze, final ByteBuffer name, final boolean encodable,
+                                         final boolean phased, long archiveOffset) throws IOException {
+        ResourceAlignmentExtraField oldAlignmentEx =
+            (ResourceAlignmentExtraField) ze.getExtraField(ResourceAlignmentExtraField.ID);
+        if (oldAlignmentEx != null) {
+            ze.removeExtraField(ResourceAlignmentExtraField.ID);
+        }
+
+        int alignment = ze.getAlignment();
+        if (alignment <= 0 && oldAlignmentEx != null) {
+            alignment = oldAlignmentEx.getAlignment();
+        }
+
+        if (alignment > 1 || (oldAlignmentEx != null && !oldAlignmentEx.allowMethodChange())) {
+            int oldLength = LFH_FILENAME_OFFSET +
+                            name.limit() - name.position() +
+                            ze.getLocalFileDataExtra().length;
+
+            int padding = (int) ((-archiveOffset - oldLength - ZipExtraField.EXTRAFIELD_HEADER_SIZE
+                            - ResourceAlignmentExtraField.BASE_SIZE) &
+                            (alignment - 1));
+            ze.addExtraField(new ResourceAlignmentExtraField(alignment,
+                            oldAlignmentEx != null && oldAlignmentEx.allowMethodChange(), padding));
+        }
+
+        final byte[] extra = ze.getLocalFileDataExtra();
+        final int nameLen = name.limit() - name.position();
+        final int len = LFH_FILENAME_OFFSET + nameLen + extra.length;
+        final byte[] buf = new byte[len];
+
+        System.arraycopy(LFH_SIG,  0, buf, LFH_SIG_OFFSET, WORD);
+
+        //store method in local variable to prevent multiple method calls
+        final int zipMethod = ze.getMethod();
+        final boolean dataDescriptor = usesDataDescriptor(zipMethod);
+
+        putShort(versionNeededToExtract(zipMethod, hasZip64Extra(ze), dataDescriptor), buf, LFH_VERSION_NEEDED_OFFSET);
+
+        final GeneralPurposeBit generalPurposeBit = getGeneralPurposeBits(!encodable && fallbackToUTF8, dataDescriptor);
+        generalPurposeBit.encode(buf, LFH_GPB_OFFSET);
+
+        // compression method
+        putShort(zipMethod, buf, LFH_METHOD_OFFSET);
+
+        ZipUtil.toDosTime(calendarInstance, ze.getTime(), buf, LFH_TIME_OFFSET);
+
+        // CRC
+        if (phased){
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_CRC_OFFSET, WORD);
+        } else {
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        }
+
+        // compressed length
+        // uncompressed length
+        if (hasZip64Extra(entry.entry)){
+            // point to ZIP64 extended information extra field for
+            // sizes, may get rewritten once sizes are known if
+            // stream is seekable
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_COMPRESSED_SIZE_OFFSET);
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (phased) {
+            putLong(ze.getCompressedSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_COMPRESSED_SIZE_OFFSET, WORD);
+            System.arraycopy(LZERO, 0, buf, LFH_ORIGINAL_SIZE_OFFSET, WORD);
+        } else { // Stored
+            putLong(ze.getSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        }
+        // file name length
+        putShort(nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);
+
+        // extra field length
+        putShort(extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);
+
+        // file name
+        System.arraycopy( name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);
+
+        // extra fields
+        System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);
+
+        return buf;
+    }
+
+There is a bug in line [35] of the code, please help me fix it.
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_2 ==================
+
+private byte[] createLocalFileHeader(final ZipArchiveEntry ze, final ByteBuffer name, final boolean encodable,
+                                         final boolean phased, long archiveOffset) throws IOException {
+        ResourceAlignmentExtraField oldAlignmentEx =
+            (ResourceAlignmentExtraField) ze.getExtraField(ResourceAlignmentExtraField.ID);
+        if (oldAlignmentEx != null) {
+            ze.removeExtraField(ResourceAlignmentExtraField.ID);
+        }
+
+        int alignment = ze.getAlignment();
+        if (alignment <= 0 && oldAlignmentEx != null) {
+            alignment = oldAlignmentEx.getAlignment();
+        }
+
+        if (alignment > 1 || (oldAlignmentEx != null && !oldAlignmentEx.allowMethodChange())) {
+            int oldLength = LFH_FILENAME_OFFSET +
+                            name.limit() - name.position() +
+                            ze.getLocalFileDataExtra().length;
+
+            int padding = (int) ((-archiveOffset - oldLength - ZipExtraField.EXTRAFIELD_HEADER_SIZE
+                            - ResourceAlignmentExtraField.BASE_SIZE) &
+                            (alignment - 1));
+            ze.addExtraField(new ResourceAlignmentExtraField(alignment,
+                            oldAlignmentEx != null && oldAlignmentEx.allowMethodChange(), padding));
+        }
+
+        final byte[] extra = ze.getLocalFileDataExtra();
+        final int nameLen = name.limit() - name.position();
+        final int len = LFH_FILENAME_OFFSET + nameLen + extra.length;
+        final byte[] buf = new byte[len];
+
+        System.arraycopy(LFH_SIG,  0, buf, LFH_SIG_OFFSET, WORD);
+
+        //store method in local variable to prevent multiple method calls
+        final int zipMethod = ze.getMethod();
+        final boolean dataDescriptor = usesDataDescriptor(zipMethod);
+
+        putShort(versionNeededToExtract(zipMethod, hasZip64Extra(ze), dataDescriptor), buf, LFH_VERSION_NEEDED_OFFSET);
+
+        final GeneralPurposeBit generalPurposeBit = getGeneralPurposeBits(!encodable && fallbackToUTF8, dataDescriptor);
+        generalPurposeBit.encode(buf, LFH_GPB_OFFSET);
+
+        // compression method
+        putShort(zipMethod, buf, LFH_METHOD_OFFSET);
+
+        ZipUtil.toDosTime(calendarInstance, ze.getTime(), buf, LFH_TIME_OFFSET);
+
+        // CRC
+        if (phased){
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_CRC_OFFSET, WORD);
+        } else {
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        }
+
+        // compressed length
+        // uncompressed length
+        if (hasZip64Extra(entry.entry)){
+            // point to ZIP64 extended information extra field for
+            // sizes, may get rewritten once sizes are known if
+            // stream is seekable
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_COMPRESSED_SIZE_OFFSET);
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (phased) {
+            putLong(ze.getCompressedSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_COMPRESSED_SIZE_OFFSET, WORD);
+            System.arraycopy(LZERO, 0, buf, LFH_ORIGINAL_SIZE_OFFSET, WORD);
+        } else { // Stored
+            putLong(ze.getSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        }
+        // file name length
+        putShort(nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);
+
+        // extra field length
+        putShort(extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);
+
+        // file name
+        System.arraycopy( name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);
+
+        // extra fields
+        System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);
+
+        return buf;
+    }
+
+There is a bug in ['        final boolean dataDescriptor = usesDataDescriptor(zipMethod);'] , please help me fix it. 
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_3 ==================
+
+private byte[] createLocalFileHeader(final ZipArchiveEntry ze, final ByteBuffer name, final boolean encodable,
+                                         final boolean phased, long archiveOffset) throws IOException {
+        ResourceAlignmentExtraField oldAlignmentEx =
+            (ResourceAlignmentExtraField) ze.getExtraField(ResourceAlignmentExtraField.ID);
+        if (oldAlignmentEx != null) {
+            ze.removeExtraField(ResourceAlignmentExtraField.ID);
+        }
+
+        int alignment = ze.getAlignment();
+        if (alignment <= 0 && oldAlignmentEx != null) {
+            alignment = oldAlignmentEx.getAlignment();
+        }
+
+        if (alignment > 1 || (oldAlignmentEx != null && !oldAlignmentEx.allowMethodChange())) {
+            int oldLength = LFH_FILENAME_OFFSET +
+                            name.limit() - name.position() +
+                            ze.getLocalFileDataExtra().length;
+
+            int padding = (int) ((-archiveOffset - oldLength - ZipExtraField.EXTRAFIELD_HEADER_SIZE
+                            - ResourceAlignmentExtraField.BASE_SIZE) &
+                            (alignment - 1));
+            ze.addExtraField(new ResourceAlignmentExtraField(alignment,
+                            oldAlignmentEx != null && oldAlignmentEx.allowMethodChange(), padding));
+        }
+
+        final byte[] extra = ze.getLocalFileDataExtra();
+        final int nameLen = name.limit() - name.position();
+        final int len = LFH_FILENAME_OFFSET + nameLen + extra.length;
+        final byte[] buf = new byte[len];
+
+        System.arraycopy(LFH_SIG,  0, buf, LFH_SIG_OFFSET, WORD);
+
+        //store method in local variable to prevent multiple method calls
+        final int zipMethod = ze.getMethod();
+        final boolean dataDescriptor = usesDataDescriptor(zipMethod);
+
+There is a bug in the last statement, please help me fix it.
+
+Return the code **only from the method declaration to the fixed statement**, without completing or adding additional code. Do not modify anything beyond fixing the bug, and do not complete the `if` statement or other unfinished parts. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_4 ==================
+
+private byte[] createLocalFileHeader(final ZipArchiveEntry ze, final ByteBuffer name, final boolean encodable,
+                                         final boolean phased, long archiveOffset) throws IOException {
+        ResourceAlignmentExtraField oldAlignmentEx =
+            (ResourceAlignmentExtraField) ze.getExtraField(ResourceAlignmentExtraField.ID);
+        if (oldAlignmentEx != null) {
+            ze.removeExtraField(ResourceAlignmentExtraField.ID);
+        }
+
+        int alignment = ze.getAlignment();
+        if (alignment <= 0 && oldAlignmentEx != null) {
+            alignment = oldAlignmentEx.getAlignment();
+        }
+
+        if (alignment > 1 || (oldAlignmentEx != null && !oldAlignmentEx.allowMethodChange())) {
+            int oldLength = LFH_FILENAME_OFFSET +
+                            name.limit() - name.position() +
+                            ze.getLocalFileDataExtra().length;
+
+            int padding = (int) ((-archiveOffset - oldLength - ZipExtraField.EXTRAFIELD_HEADER_SIZE
+                            - ResourceAlignmentExtraField.BASE_SIZE) &
+                            (alignment - 1));
+            ze.addExtraField(new ResourceAlignmentExtraField(alignment,
+                            oldAlignmentEx != null && oldAlignmentEx.allowMethodChange(), padding));
+        }
+
+        final byte[] extra = ze.getLocalFileDataExtra();
+        final int nameLen = name.limit() - name.position();
+        final int len = LFH_FILENAME_OFFSET + nameLen + extra.length;
+        final byte[] buf = new byte[len];
+
+        System.arraycopy(LFH_SIG,  0, buf, LFH_SIG_OFFSET, WORD);
+
+        //store method in local variable to prevent multiple method calls
+        final int zipMethod = ze.getMethod();
+        final boolean dataDescriptor = usesDataDescriptor(zipMethod);
+
+        putShort(versionNeededToExtract(zipMethod, hasZip64Extra(ze), dataDescriptor), buf, LFH_VERSION_NEEDED_OFFSET);
+
+        final GeneralPurposeBit generalPurposeBit = getGeneralPurposeBits(!encodable && fallbackToUTF8, dataDescriptor);
+        generalPurposeBit.encode(buf, LFH_GPB_OFFSET);
+
+        // compression method
+        putShort(zipMethod, buf, LFH_METHOD_OFFSET);
+
+        ZipUtil.toDosTime(calendarInstance, ze.getTime(), buf, LFH_TIME_OFFSET);
+
+        // CRC
+        if (phased){
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_CRC_OFFSET, WORD);
+        } else {
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        }
+
+        // compressed length
+        // uncompressed length
+        if (hasZip64Extra(entry.entry)){
+            // point to ZIP64 extended information extra field for
+            // sizes, may get rewritten once sizes are known if
+            // stream is seekable
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_COMPRESSED_SIZE_OFFSET);
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (phased) {
+            putLong(ze.getCompressedSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_COMPRESSED_SIZE_OFFSET, WORD);
+            System.arraycopy(LZERO, 0, buf, LFH_ORIGINAL_SIZE_OFFSET, WORD);
+        } else { // Stored
+            putLong(ze.getSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        }
+        // file name length
+        putShort(nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);
+
+        // extra field length
+        putShort(extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);
+
+        // file name
+        System.arraycopy( name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);
+
+        // extra fields
+        System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);
+
+        return buf;
+    }
+
+There is a bug in line [35] of the code, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_5 ==================
+
+private byte[] createLocalFileHeader(final ZipArchiveEntry ze, final ByteBuffer name, final boolean encodable,
+                                         final boolean phased, long archiveOffset) throws IOException {
+        ResourceAlignmentExtraField oldAlignmentEx =
+            (ResourceAlignmentExtraField) ze.getExtraField(ResourceAlignmentExtraField.ID);
+        if (oldAlignmentEx != null) {
+            ze.removeExtraField(ResourceAlignmentExtraField.ID);
+        }
+
+        int alignment = ze.getAlignment();
+        if (alignment <= 0 && oldAlignmentEx != null) {
+            alignment = oldAlignmentEx.getAlignment();
+        }
+
+        if (alignment > 1 || (oldAlignmentEx != null && !oldAlignmentEx.allowMethodChange())) {
+            int oldLength = LFH_FILENAME_OFFSET +
+                            name.limit() - name.position() +
+                            ze.getLocalFileDataExtra().length;
+
+            int padding = (int) ((-archiveOffset - oldLength - ZipExtraField.EXTRAFIELD_HEADER_SIZE
+                            - ResourceAlignmentExtraField.BASE_SIZE) &
+                            (alignment - 1));
+            ze.addExtraField(new ResourceAlignmentExtraField(alignment,
+                            oldAlignmentEx != null && oldAlignmentEx.allowMethodChange(), padding));
+        }
+
+        final byte[] extra = ze.getLocalFileDataExtra();
+        final int nameLen = name.limit() - name.position();
+        final int len = LFH_FILENAME_OFFSET + nameLen + extra.length;
+        final byte[] buf = new byte[len];
+
+        System.arraycopy(LFH_SIG,  0, buf, LFH_SIG_OFFSET, WORD);
+
+        //store method in local variable to prevent multiple method calls
+        final int zipMethod = ze.getMethod();
+        final boolean dataDescriptor = usesDataDescriptor(zipMethod);
+
+        putShort(versionNeededToExtract(zipMethod, hasZip64Extra(ze), dataDescriptor), buf, LFH_VERSION_NEEDED_OFFSET);
+
+        final GeneralPurposeBit generalPurposeBit = getGeneralPurposeBits(!encodable && fallbackToUTF8, dataDescriptor);
+        generalPurposeBit.encode(buf, LFH_GPB_OFFSET);
+
+        // compression method
+        putShort(zipMethod, buf, LFH_METHOD_OFFSET);
+
+        ZipUtil.toDosTime(calendarInstance, ze.getTime(), buf, LFH_TIME_OFFSET);
+
+        // CRC
+        if (phased){
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_CRC_OFFSET, WORD);
+        } else {
+            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+        }
+
+        // compressed length
+        // uncompressed length
+        if (hasZip64Extra(entry.entry)){
+            // point to ZIP64 extended information extra field for
+            // sizes, may get rewritten once sizes are known if
+            // stream is seekable
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_COMPRESSED_SIZE_OFFSET);
+            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (phased) {
+            putLong(ze.getCompressedSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        } else if (zipMethod == DEFLATED || channel != null) {
+            System.arraycopy(LZERO, 0, buf, LFH_COMPRESSED_SIZE_OFFSET, WORD);
+            System.arraycopy(LZERO, 0, buf, LFH_ORIGINAL_SIZE_OFFSET, WORD);
+        } else { // Stored
+            putLong(ze.getSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+        }
+        // file name length
+        putShort(nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);
+
+        // extra field length
+        putShort(extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);
+
+        // file name
+        System.arraycopy( name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);
+
+        // extra fields
+        System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);
+
+        return buf;
+    }
+
+There is a bug in ['        final boolean dataDescriptor = usesDataDescriptor(zipMethod);'] , please help me fix it. 
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_6 ==================
+
+private byte[] createLocalFileHeader(final ZipArchiveEntry ze, final ByteBuffer name, final boolean encodable,
+                                         final boolean phased, long archiveOffset) throws IOException {
+        ResourceAlignmentExtraField oldAlignmentEx =
+            (ResourceAlignmentExtraField) ze.getExtraField(ResourceAlignmentExtraField.ID);
+        if (oldAlignmentEx != null) {
+            ze.removeExtraField(ResourceAlignmentExtraField.ID);
+        }
+
+        int alignment = ze.getAlignment();
+        if (alignment <= 0 && oldAlignmentEx != null) {
+            alignment = oldAlignmentEx.getAlignment();
+        }
+
+        if (alignment > 1 || (oldAlignmentEx != null && !oldAlignmentEx.allowMethodChange())) {
+            int oldLength = LFH_FILENAME_OFFSET +
+                            name.limit() - name.position() +
+                            ze.getLocalFileDataExtra().length;
+
+            int padding = (int) ((-archiveOffset - oldLength - ZipExtraField.EXTRAFIELD_HEADER_SIZE
+                            - ResourceAlignmentExtraField.BASE_SIZE) &
+                            (alignment - 1));
+            ze.addExtraField(new ResourceAlignmentExtraField(alignment,
+                            oldAlignmentEx != null && oldAlignmentEx.allowMethodChange(), padding));
+        }
+
+        final byte[] extra = ze.getLocalFileDataExtra();
+        final int nameLen = name.limit() - name.position();
+        final int len = LFH_FILENAME_OFFSET + nameLen + extra.length;
+        final byte[] buf = new byte[len];
+
+        System.arraycopy(LFH_SIG,  0, buf, LFH_SIG_OFFSET, WORD);
+
+        //store method in local variable to prevent multiple method calls
+        final int zipMethod = ze.getMethod();
+        final boolean dataDescriptor = usesDataDescriptor(zipMethod);
+
+There is a bug in the last statement, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.

@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "3",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "4",
+            "ernie-3.5-128k": "**5**"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "9",
+            "qwen-turbo": "2",
+            "ernie-3.5-128k": "29",
+            "deepseek-chat": "29",
+            "gpt-4o-mini": "29"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "2",
+            "deepseek-chat": "29",
+            "ernie-3.5-128k": "**29**",
+            "gpt-4o-mini": "29"
+        },
+        "prompt_fl_4": {
+            "doubao-pro-4k": "appendQuoting(description);",
+            "qwen-turbo": "description.appendText(wanted.toString());",
+            "ernie-3.5-128k": "description.appendText(wanted.toString());",
+            "deepseek-chat": "description.appendText(wanted.toString());",
+            "gpt-4o-mini": "appendQuoting(description);"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "description.appendText(wanted.toString());",
+            "doubao-pro-4k": "description.appendText(wanted.toString());",
+            "ernie-3.5-128k": "description.appendText(wanted.toString());",
+            "deepseek-chat": "description.appendText(wanted.toString());",
+            "gpt-4o-mini": "appendQuoting(description);"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "verify(mock).objectArgMethod(same(null));",
+            "doubao-pro-4k": "verify(mock).objectArgMethod(same(null));",
+            "deepseek-chat": "verify(mock).objectArgMethod(same(null));",
+            "ernie-3.5-128k": "verify(mock).objectArgMethod(same(null));",
+            "gpt-4o-mini": "verify(mock).objectArgMethod(same((Object) null));"
+        },
+        "prompt_apr_1": {
+            "doubao-pro-4k": "public void describeTo(Description description) {\n        description.appendText(\"same(\");\n        appendQuoting(description);\n        description.appendText(wanted.toString());\n        description.appendText(\")\");\n    }",
+            "ernie-3.5-128k": "public void describeTo(Description description) {\n        description.appendText(\"same(\");\n        appendQuoting(description);\n        description.appendValue(wanted);  // Corrected line\n        appendQuoting(description);\n        description.appendText(\")\");\n    }",
+            "qwen-turbo": "```java\npublic void describeTo(Description description) {\n    description.appendText(\"same(\");\n    appendQuoting(description);\n    description.appendValue(wanted);\n    appendQuoting(description);\n    description.appendText(\")\");\n}\n```\n\nIn this correction, `appendText(wanted.toString())` has been replaced with `appendValue(wanted)` assuming that `appendValue` is the correct method to use for appending the value of `wanted`. If `wanted` is an object and you need its string representation, then `appendValue(wanted)` is appropriate. If `wanted` is already a string or you specifically need the result of `toString()` then you should revert to using `appendText(wanted.toString())`. Please ensure that `appendValue` is the method you intend to use based on your testing and requirements.",
+            "deepseek-chat": "public void describeTo(Description description) {\n    description.appendText(\"same(\");\n    appendQuoting(description);\n    description.appendText(wanted != null ? wanted.toString() : \"null\");\n    appendQuoting(description);\n    description.appendText(\")\");\n}\n\nThe bug in line [4] is that it does not handle the case where `wanted` might be `null`. The corrected version checks if `wanted` is `null` and appends `\"null\"` if it is, otherwise it appends the result of `wanted.toString()`. This prevents a `NullPointerException` from being thrown.",
+            "gpt-4o-mini": "public void describeTo(Description description) {\n    description.appendText(\"same(\");\n    appendQuoting(description);\n    description.appendText(wanted.toString());\n    appendQuoting(description);\n    description.appendText(\")\");\n}"
+        },
+        "prompt_apr_2": {
+            "deepseek-chat": "public void describeTo(Description description) {\n    description.appendText(\"same(\");\n    appendQuoting(description);\n    description.appendText(wanted != null ? wanted.toString() : \"null\");\n    appendQuoting(description);\n    description.appendText(\")\");\n}",
+            "qwen-turbo": "Certainly, here is the corrected method:\n\n```java\npublic void describeTo(Description description) {\n    description.appendText(\"same(\");\n    appendQuoting(description);\n    description.appendValue(wanted);\n    appendQuoting(description);\n    description.appendText(\")\");\n}\n```\n\nIn this correction, `description.appendText(wanted.toString());` has been replaced with `description.appendValue(wanted);` to properly handle the object's value without needing to call `toString` explicitly.",
+            "doubao-pro-4k": "public void describeTo(Description description) {\n        description.appendText(\"same(\");\n        appendQuoting(description);\n        if (wanted!= null) {\n            description.appendText(wanted.toString());\n        }\n        appendQuoting(description);\n        description.appendText(\")\");\n    }",
+            "gpt-4o-mini": "public void describeTo(Description description) {\n    description.appendText(\"same(\");\n    appendQuoting(description);\n    description.appendText(wanted == null ? \"null\" : wanted.toString());\n    appendQuoting(description);\n    description.appendText(\")\");\n}",
+            "ernie-3.5-128k": "Sure, to fix the potential issue in the `describeTo` method, it's important to ensure that `wanted` is not null before calling `toString()` on it. If `wanted` could be null, this could cause a `NullPointerException`. To handle this gracefully, you can add a null check and append a suitable fallback value or text indicating that `wanted` is null.\n\nHere's the complete corrected method:\n\npublic void describeTo(Description description) {\n    description.appendText(\"same(\");\n    appendQuoting(description);\n    if (wanted != null) {\n        description.appendText(wanted.toString());\n    } else {\n        description.appendText(\"null\");\n    }\n    appendQuoting(description);\n    description.appendText(\")\");\n}\n\nThis version checks if `wanted` is null before calling `toString()` and appends \"null\" if it is."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\npublic void describeTo(Description description) {\n    description.appendText(\"same(\");\n    appendQuoting(description);\n    description.appendText(\", wanted.toString()\");\n}\n```",
+            "doubao-pro-4k": "public void describeTo(Description description) {\n        description.appendText(\"same(\");\n        appendQuoting(description);\n        description.appendText(wanted.toString());\n}",
+            "deepseek-chat": "```java\npublic void describeTo(Description description) {\n    description.appendText(\"same(\");\n    appendQuoting(description);\n    description.appendText(wanted.toString());\n```",
+            "ernie-3.5-128k": "public void describeTo(Description description) {\n        description.appendText(\"same(\");\n        appendQuoting(description);\n        description.appendValue(wanted);",
+            "gpt-4o-mini": "public void describeTo(Description description) {\n    description.appendText(\"same(\");\n    appendQuoting(description);\n    description.appendText(wanted.toString());\n}"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"description.appendText(\\\", \\\");\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"description.appendText(wanted);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"description.appendText(\\\"\\\\\\\"\\\" + wanted.toString() + \\\"\\\\\\\"\\\");\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"        description.appendValue(wanted.toString());\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"appendQuoting(description, wanted.toString());\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"description.appendText(wanted.toString()).toString();\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"description.appendValue(wanted);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"description.appendText(wanted != null ? wanted.toString() : \\\"null\\\");\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"description.appendText(wanted == null? \\\"null\\\" : wanted.toString());\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"description.appendText(wanted != null ? wanted.toString() : \\\"null\\\");\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"description.appendText(\\\");\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"description.appendText(wanted.toString());\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"description.appendText(wanted.toString());\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"        description.appendText(\\\")\\\");\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"description.appendText(wanted.toString() + \\\")\\\");\"\n    }\n]"
+        }
+    }
+]

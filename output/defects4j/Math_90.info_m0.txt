@@ -1,0 +1,99 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/math/stat/Frequency.java
+================== buggy_method ==================
+{'method_name': 'addValue', 'method_body': '@Deprecated\n    public void addValue(Object v) {\n    \n    /**\n     * Adds 1 to the frequency count for v.\n     * <p>\n     * If other objects have already been added to this Frequency, v must\n     * be comparable to those that have already been added.\n     * </p>\n     * \n     * @param v the value to add.\n     * @throws IllegalArgumentException if <code>v</code> is not comparable with previous entries\n     */\n        Object obj = v;\n        if (v instanceof Integer) {\n           obj = Long.valueOf(((Integer) v).longValue());\n        }\n        try {\n            Long count = (Long) freqTable.get(obj);\n            if (count == null) {\n                freqTable.put(obj, Long.valueOf(1));\n            } else {\n                freqTable.put(obj, Long.valueOf(count.longValue() + 1));\n            }\n        } catch (ClassCastException ex) {   \n            //TreeMap will throw ClassCastException if v is not comparable\n            throw new IllegalArgumentException("Value not comparable to existing values.");\n        }\n    }', 'start_line': 108, 'end_line': 136, 'buggy_lines': [111, 123]}
+================== buggy_method_src ==================
+@Deprecated
+    public void addValue(Object v) {
+    
+    /**
+     * Adds 1 to the frequency count for v.
+     * <p>
+     * If other objects have already been added to this Frequency, v must
+     * be comparable to those that have already been added.
+     * </p>
+     * 
+     * @param v the value to add.
+     * @throws IllegalArgumentException if <code>v</code> is not comparable with previous entries
+     */
+        Object obj = v;
+        if (v instanceof Integer) {
+           obj = Long.valueOf(((Integer) v).longValue());
+        }
+        try {
+            Long count = (Long) freqTable.get(obj);
+            if (count == null) {
+                freqTable.put(obj, Long.valueOf(1));
+            } else {
+                freqTable.put(obj, Long.valueOf(count.longValue() + 1));
+            }
+        } catch (ClassCastException ex) {   
+            //TreeMap will throw ClassCastException if v is not comparable
+            throw new IllegalArgumentException("Value not comparable to existing values.");
+        }
+    }
+================== test_stack ==================
+org.apache.commons.math.stat.FrequencyTest::testAddNonComparable
+java.lang.IllegalArgumentException: Value not comparable to existing values.
+	at org.apache.commons.math.stat.Frequency.addValue(Frequency.java:134)
+	at org.apache.commons.math.stat.FrequencyTest.testAddNonComparable(FrequencyTest.java:195)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+f.addValue(new Object()); // This was OK
+
+================== buggy_lines_in_method ==================
+[4, 16]
+================== buggy_statements ==================
+['    /**', '           obj = Long.valueOf(((Integer) v).longValue());']
+================== buggy_method_src_endswith_buggy_statement ==================
+@Deprecated
+    public void addValue(Object v) {
+    
+    /**
+     * Adds 1 to the frequency count for v.
+     * <p>
+     * If other objects have already been added to this Frequency, v must
+     * be comparable to those that have already been added.
+     * </p>
+     * 
+     * @param v the value to add.
+     * @throws IllegalArgumentException if <code>v</code> is not comparable with previous entries
+     */
+        Object obj = v;
+        if (v instanceof Integer) {
+           obj = Long.valueOf(((Integer) v).longValue());

@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "12",
+            "ernie-3.5-128k": "10",
+            "qwen-turbo": "7",
+            "deepseek-chat": "7",
+            "gpt-4o-mini": "12"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "12",
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "11",
+            "deepseek-chat": "113",
+            "gpt-4o-mini": "9"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "17",
+            "ernie-3.5-128k": "14",
+            "qwen-turbo": "113",
+            "gpt-4o-mini": "13",
+            "deepseek-chat": "1"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "return 2 * standardNormal.cumulativeProbability(z);",
+            "doubao-pro-4k": "return 2 * standardNormal.cumulativeProbability(z);",
+            "ernie-3.5-128k": "final double z = (Umin - EU) / FastMath.sqrt(VarU);",
+            "deepseek-chat": "```java\nreturn 2 * standardNormal.cumulativeProbability(z);\n```",
+            "gpt-4o-mini": "final double VarU = n1n2prod * (n1 + n2 + 1) / 12.0;"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "return 2 * standardNormal.cumulativeProbability(z);",
+            "doubao-pro-4k": "final double z = (Umin - EU) / FastMath.sqrt(VarU);",
+            "deepseek-chat": "return 2 * standardNormal.cumulativeProbability(z);",
+            "ernie-3.5-128k": "final double z = (Umin - EU) / FastMath.sqrt(VarU);",
+            "gpt-4o-mini": "final NormalDistribution standardNormal = new NormalDistribution(0, 1);"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "Assert.assertTrue(result > 0.1);",
+            "doubao-pro-4k": "Assert.assertTrue(result > 0.1);",
+            "ernie-3.5-128k": "return 2 * standardNormal.cumulativeProbability(z);",
+            "deepseek-chat": "return 2 * standardNormal.cumulativeProbability(z);",
+            "gpt-4o-mini": "return 2 * standardNormal.cumulativeProbability(z);"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "```java\nprivate double calculateAsymptoticPValue(final double Umin, final int n1, final int n2) throws ConvergenceException, MaxCountExceededException {\n    final int n1n2prod = n1 * n2;\n\n    // http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U#Normal_approximation\n    final double EU = n1n2prod / 2.0;\n    final double VarU = n1n2prod * (n1 + n2 + 1) / 12.0;\n\n    final double z = (Umin - EU) / FastMath.sqrt(VarU);\n\n    final NormalDistribution standardNormal = new NormalDistribution(0, 1);\n\n    // Ensure the p-value is within valid range and handle edge cases\n    double pValue = 2 * standardNormal.cumulativeProbability(Math.abs(z));\n    if (pValue > 1) {\n        pValue = 1; // In case of numerical precision issues\n    }\n    return pValue;\n}\n```\nThis correction ensures that the p-value calculation correctly handles the absolute value of `z` and clamps the result to a maximum of 1 to avoid numerical precision issues.",
+            "ernie-3.5-128k": "private double calculateAsymptoticPValue(final double Umin,\n                                             final int n1,\n                                             final int n2)\n        throws ConvergenceException, MaxCountExceededException {\n\n    final int n1n2prod = n1 * n2;\n\n    // http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U#Normal_approximation\n    // Corrected: Use Math.abs(n1 - n2) in the variance formula\n    final double EU = n1n2prod / 2.0;\n    final double VarU = n1n2prod * (n1 + n2 + 1) / 12.0 - (Math.abs(n1 - n2) * Math.abs(n1 - n2)) / 48.0;\n\n    final double z = (Umin - EU) / FastMath.sqrt(VarU);\n\n    final NormalDistribution standardNormal = new NormalDistribution(0, 1);\n\n    return 2 * (1 - standardNormal.cumulativeProbability(Math.abs(z)));\n}",
+            "doubao-pro-4k": "private double calculateAsymptoticPValue(final double Umin,\n                                             final int n1,\n                                             final int n2)\n        throws ConvergenceException, MaxCountExceededException {\n\n        final int n1n2prod = n1 * n2;\n\n        // http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U#Normal_approximation\n        final double EU = n1n2prod / 2.0;\n        final double VarU = n1n2prod * (n1 + n2 + 1) / 12.0;\n\n        final double z = (Umin - EU) / Math.sqrt(VarU); // Bug fixed: Changed FastMath.sqrt to Math.sqrt\n\n        final NormalDistribution standardNormal = new NormalDistribution(0, 1);\n\n        return 2 * standardNormal.cumulativeProbability(z);\n    }",
+            "deepseek-chat": "The bug in line [6] is related to the calculation of the variance (`VarU`). The formula for the variance of the Mann-Whitney U statistic should account for ties if they exist, but in this case, the formula assumes no ties. However, the formula provided in the code is correct for the case where there are no ties. If ties are present, a more complex formula should be used. \n\nAssuming no ties, the formula is correct, but the issue might be related to the handling of the `z` value or the final p-value calculation. The p-value should be calculated as the probability of observing a value as extreme as or more extreme than the observed `z` value, which is typically done using the cumulative distribution function (CDF) of the standard normal distribution. The current code multiplies the CDF by 2, which is correct for a two-tailed test.\n\nHere is the complete corrected method:\n\n```java\nprivate double calculateAsymptoticPValue(final double Umin,\n                                         final int n1,\n                                         final int n2)\n    throws ConvergenceException, MaxCountExceededException {\n\n    final int n1n2prod = n1 * n2;\n\n    // http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U#Normal_approximation\n    final double EU = n1n2prod / 2.0;\n    final double VarU = n1n2prod * (n1 + n2 + 1) / 12.0;\n\n    final double z = (Umin - EU) / FastMath.sqrt(VarU);\n\n    final NormalDistribution standardNormal = new NormalDistribution(0, 1);\n\n    // Calculate the two-tailed p-value\n    return 2 * standardNormal.cumulativeProbability(-Math.abs(z));\n}\n```\n\n### Explanation of Changes:\n1. **Two-tailed p-value calculation**: The p-value is calculated as `2 * standardNormal.cumulativeProbability(-Math.abs(z))`. This ensures that the p-value is correctly calculated for a two-tailed test by considering the absolute value of `z` and then taking the negative of it to get the lower tail probability, which is then doubled.\n\n2. **No changes to the variance calculation**: The variance calculation (`VarU`) remains the same, assuming no ties in the data. If ties are present, a more complex formula should be used to adjust the variance.\n\nThis method now correctly calculates the asymptotic p-value for the Mann-Whitney U test under the assumption of no ties.",
+            "gpt-4o-mini": "private double calculateAsymptoticPValue(final double Umin,\n                                             final int n1,\n                                             final int n2)\n        throws ConvergenceException, MaxCountExceededException {\n\n        final int n1n2prod = n1 * n2;\n\n        // http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U#Normal_approximation\n        final double EU = n1n2prod / 2.0;\n        final double VarU = n1n2prod * (n1 + n2 + 1) / 12.0;\n\n        // Fixing the calculation of z using correct variance\n        final double z = (Umin - EU) / FastMath.sqrt(VarU);\n\n        final NormalDistribution standardNormal = new NormalDistribution(0, 1);\n\n        return 2 * standardNormal.cumulativeProbability(z);\n    }"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\nprivate double calculateAsymptoticPValue(final double Umin, final int n1, final int n2) throws ConvergenceException, MaxCountExceededException {\n    final double n1n2prod = (double) n1 * n2;\n\n    // http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U#Normal_approximation\n    final double EU = n1n2prod / 2.0;\n    final double VarU = n1n2prod * (n1 + n2 + 1) / 12.0;\n\n    final double z = (Umin - EU) / FastMath.sqrt(VarU);\n\n    final NormalDistribution standardNormal = new NormalDistribution(0, 1);\n\n    return 2 * standardNormal.cumulativeProbability(z);\n}\n```",
+            "gpt-4o-mini": "private double calculateAsymptoticPValue(final double Umin,\n                                             final int n1,\n                                             final int n2)\n        throws ConvergenceException, MaxCountExceededException {\n\n        final double n1n2prod = (double) n1 * n2;\n\n        // http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U#Normal_approximation\n        final double EU = n1n2prod / 2.0;\n        final double VarU = n1n2prod * (n1 + n2 + 1) / 12.0;\n\n        final double z = (Umin - EU) / FastMath.sqrt(VarU);\n\n        final NormalDistribution standardNormal = new NormalDistribution(0, 1);\n\n        return 2 * standardNormal.cumulativeProbability(z);\n    }",
+            "doubao-pro-4k": "private double calculateAsymptoticPValue(final double Umin,\n                                             final int n1,\n                                             final int n2)\n        throws ConvergenceException, MaxCountExceededException {\n\n        final int n1n2prod = n1 * n2;\n\n        // http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U#Normal_approximation\n        final double EU = n1n2prod / 2.0;\n        final double VarU = n1n2prod * (n1 + n2 + 1) / 12.0;\n\n        final double z = (Umin - EU) / FastMath.sqrt(VarU);\n\n        final NormalDistribution standardNormal = new NormalDistribution(0, 1);\n\n        return 2 * standardNormal.cumulativeProbability(z);\n    }",
+            "deepseek-chat": "The bug in the line `final int n1n2prod = n1 * n2;` is that it can cause integer overflow if `n1` and `n2` are large. To fix this, we should perform the multiplication using `long` to avoid overflow and then cast the result back to `int` if necessary. Here is the complete corrected method:\n\n```java\nprivate double calculateAsymptoticPValue(final double Umin,\n                                         final int n1,\n                                         final int n2)\n    throws ConvergenceException, MaxCountExceededException {\n\n    // Use long to avoid integer overflow\n    final long n1n2prod = (long) n1 * n2;\n\n    // http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U#Normal_approximation\n    final double EU = n1n2prod / 2.0;\n    final double VarU = n1n2prod * (n1 + n2 + 1) / 12.0;\n\n    final double z = (Umin - EU) / FastMath.sqrt(VarU);\n\n    final NormalDistribution standardNormal = new NormalDistribution(0, 1);\n\n    return 2 * standardNormal.cumulativeProbability(z);\n}\n```\n\nIn this corrected version, the multiplication `n1 * n2` is performed using `long` to prevent overflow. The rest of the method remains unchanged.",
+            "ernie-3.5-128k": "Certainly! The line you mentioned, `final int n1n2prod = n1 * n2;`, is not inherently buggy in itself. However, if there is a concern about potential overflow for large values of `n1` and `n2`, we should use a `long` type instead of `int` to store the product. Here is the complete corrected method with this adjustment:\n\nprivate double calculateAsymptoticPValue(final double Umin,\n                                             final int n1,\n                                             final int n2)\n        throws ConvergenceException, MaxCountExceededException {\n\n    final long n1n2prod = (long) n1 * n2;\n\n    // http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U#Normal_approximation\n    final double EU = n1n2prod / 2.0;\n    final double VarU = n1n2prod * (n1 + n2 + 1.0) / 12.0;\n\n    final double z = (Umin - EU) / FastMath.sqrt(VarU);\n\n    final NormalDistribution standardNormal = new NormalDistribution(0, 1);\n\n    return 2 * standardNormal.cumulativeProbability(z);\n}\n\nIn this corrected version, `n1n2prod` is declared as a `long` to prevent potential overflow issues when multiplying two large `int` values."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\nprivate double calculateAsymptoticPValue(final double Umin, final int n1, final int n2) throws ConvergenceException, MaxCountExceededException {\n    if (n1 <= 0 || n2 <= 0) {\n        throw new IllegalArgumentException(\"Sample sizes must be positive integers.\");\n    }\n    final int n1n2prod = n1 * n2;\n```",
+            "deepseek-chat": "```java\nprivate double calculateAsymptoticPValue(final double Umin,\n                                             final int n1,\n                                             final int n2)\n        throws ConvergenceException, MaxCountExceededException {\n\n        final long n1n2prod = (long) n1 * n2;\n```",
+            "gpt-4o-mini": "private double calculateAsymptoticPValue(final double Umin,\n                                             final int n1,\n                                             final int n2)\n        throws ConvergenceException, MaxCountExceededException {\n\n        final int n1n2prod = n1 * (n2);",
+            "ernie-3.5-128k": "private double calculateAsymptoticPValue(final double Umin,\n                                             final int n1,\n                                             final int n2)\n        throws ConvergenceException, MaxCountExceededException {\n\n        final long n1n2prod = (long) n1 * n2;",
+            "doubao-pro-4k": "private double calculateAsymptoticPValue(final double Umin,\n                                             final int n1,\n                                             final int n2)\n        throws ConvergenceException, MaxCountExceededException {\n\n        final int n1n2Prod = n1 * n2;\n}"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"final double z = Math.abs((Umin - EU) / FastMath.sqrt(VarU));\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"final double VarU = (n1n2prod * (n1 + n2 + 1)) / 12.0;\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"final double z = (Umin - EU) / Math.sqrt(VarU);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"final double z = (Umin - EU) / Math.sqrt(VarU);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"final double z = (Umin - EU) / FastMath.sqrt(VarU);\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"final double n1n2prod = (double) n1 * n2;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"final long n1n2prod = (long) n1 * n2;\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"final long n1n2prod = (long) n1 * n2;\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"final long n1n2prod = (long) n1 * n2;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"final int n1n2prod = n1 * (n2 + 1);\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"final int n1n2prod = n1 * n2;\"\n    }\n]",
+            "doubao-pro-4k": "[\n{\"line_number\": 5,\"fixed_statement\": \"final int n1n2 = n1 * n2;\"}\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"final long n1n2prod = (long) n1 * n2;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"final long n1n2prod = (long) n1 * n2;\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"final long n1n2prod = (long) n1 * n2;\"\n    }\n]"
+        }
+    }
+]

@@ -1,0 +1,209 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/TypeInference.java
+================== buggy_method ==================
+{'method_name': 'traverseObjectLiteral', 'method_body': 'private FlowScope traverseObjectLiteral(Node n, FlowScope scope) {\n    JSType type = n.getJSType();\n    Preconditions.checkNotNull(type);\n\n    for (Node name = n.getFirstChild(); name != null; name = name.getNext()) {\n      scope = traverse(name.getFirstChild(), scope);\n    }\n\n    // Object literals can be reflected on other types.\n    // See CodingConvention#getObjectLiteralCase and goog.object.reflect.\n    // Ignore these types of literals.\n    ObjectType objectType = ObjectType.cast(type);\n    if (objectType == null) {\n      return scope;\n    }\n    boolean hasLendsName = n.getJSDocInfo() != null &&\n        n.getJSDocInfo().getLendsName() != null;\n    if (objectType.hasReferenceName() && !hasLendsName) {\n      return scope;\n    }\n\n    String qObjName = NodeUtil.getBestLValueName(\n        NodeUtil.getBestLValue(n));\n    for (Node name = n.getFirstChild(); name != null;\n         name = name.getNext()) {\n      String memberName = NodeUtil.getObjectLitKeyName(name);\n      if (memberName != null) {\n        JSType rawValueType =  name.getFirstChild().getJSType();\n        JSType valueType = NodeUtil.getObjectLitKeyTypeFromValueType(\n            name, rawValueType);\n        if (valueType == null) {\n          valueType = unknownType;\n        }\n        objectType.defineInferredProperty(memberName, valueType, name);\n\n        // Do normal flow inference if this is a direct property assignment.\n        if (qObjName != null && name.isStringKey()) {\n          String qKeyName = qObjName + "." + memberName;\n          Var var = syntacticScope.getVar(qKeyName);\n          JSType oldType = var == null ? null : var.getType();\n          if (var != null && var.isTypeInferred()) {\n            var.setType(oldType == null ?\n                valueType : oldType.getLeastSupertype(oldType));\n          }\n\n          scope.inferQualifiedSlot(name, qKeyName,\n              oldType == null ? unknownType : oldType,\n              valueType);\n        }\n      } else {\n        n.setJSType(unknownType);\n      }\n    }\n    return scope;\n  }', 'start_line': 719, 'end_line': 773, 'buggy_lines': [731, 732, 733, 734, 735, 736]}
+================== buggy_method_src ==================
+private FlowScope traverseObjectLiteral(Node n, FlowScope scope) {
+    JSType type = n.getJSType();
+    Preconditions.checkNotNull(type);
+
+    for (Node name = n.getFirstChild(); name != null; name = name.getNext()) {
+      scope = traverse(name.getFirstChild(), scope);
+    }
+
+    // Object literals can be reflected on other types.
+    // See CodingConvention#getObjectLiteralCase and goog.object.reflect.
+    // Ignore these types of literals.
+    ObjectType objectType = ObjectType.cast(type);
+    if (objectType == null) {
+      return scope;
+    }
+    boolean hasLendsName = n.getJSDocInfo() != null &&
+        n.getJSDocInfo().getLendsName() != null;
+    if (objectType.hasReferenceName() && !hasLendsName) {
+      return scope;
+    }
+
+    String qObjName = NodeUtil.getBestLValueName(
+        NodeUtil.getBestLValue(n));
+    for (Node name = n.getFirstChild(); name != null;
+         name = name.getNext()) {
+      String memberName = NodeUtil.getObjectLitKeyName(name);
+      if (memberName != null) {
+        JSType rawValueType =  name.getFirstChild().getJSType();
+        JSType valueType = NodeUtil.getObjectLitKeyTypeFromValueType(
+            name, rawValueType);
+        if (valueType == null) {
+          valueType = unknownType;
+        }
+        objectType.defineInferredProperty(memberName, valueType, name);
+
+        // Do normal flow inference if this is a direct property assignment.
+        if (qObjName != null && name.isStringKey()) {
+          String qKeyName = qObjName + "." + memberName;
+          Var var = syntacticScope.getVar(qKeyName);
+          JSType oldType = var == null ? null : var.getType();
+          if (var != null && var.isTypeInferred()) {
+            var.setType(oldType == null ?
+                valueType : oldType.getLeastSupertype(oldType));
+          }
+
+          scope.inferQualifiedSlot(name, qKeyName,
+              oldType == null ? unknownType : oldType,
+              valueType);
+        }
+      } else {
+        n.setJSType(unknownType);
+      }
+    }
+    return scope;
+  }
+================== test_stack ==================
+com.google.javascript.jscomp.TypeCheckTest::testIssue1023
+junit.framework.AssertionFailedError: expected a warning
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.TestCase.assertTrue(TestCase.java:192)
+	at com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:11991)
+	at com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:11971)
+	at com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:11907)
+	at com.google.javascript.jscomp.TypeCheckTest.testIssue1023(TypeCheckTest.java:6756)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.TypedScopeCreatorTest::testMethodBeforeFunction2
+junit.framework.ComparisonFailure: expected:<[function (this:Window, ?): undefined]> but was:<[?]>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.Assert.assertEquals(Assert.java:107)
+	at junit.framework.TestCase.assertEquals(TestCase.java:269)
+	at com.google.javascript.jscomp.TypedScopeCreatorTest.testMethodBeforeFunction2(TypedScopeCreatorTest.java:452)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.TypedScopeCreatorTest::testPropertiesOnInterface2
+java.lang.NullPointerException
+	at com.google.javascript.jscomp.TypedScopeCreatorTest.testPropertiesOnInterface2(TypedScopeCreatorTest.java:551)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+testTypes(
+
+================== buggy_lines_in_method ==================
+[13, 14, 15, 16, 17, 18]
+================== buggy_statements ==================
+['    if (objectType == null) {', '      return scope;', '    }', '    boolean hasLendsName = n.getJSDocInfo() != null &&', '        n.getJSDocInfo().getLendsName() != null;', '    if (objectType.hasReferenceName() && !hasLendsName) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+private FlowScope traverseObjectLiteral(Node n, FlowScope scope) {
+    JSType type = n.getJSType();
+    Preconditions.checkNotNull(type);
+
+    for (Node name = n.getFirstChild(); name != null; name = name.getNext()) {
+      scope = traverse(name.getFirstChild(), scope);
+    }
+
+    // Object literals can be reflected on other types.
+    // See CodingConvention#getObjectLiteralCase and goog.object.reflect.
+    // Ignore these types of literals.
+    ObjectType objectType = ObjectType.cast(type);
+    if (objectType == null) {
+      return scope;
+    }
+    boolean hasLendsName = n.getJSDocInfo() != null &&
+        n.getJSDocInfo().getLendsName() != null;
+    if (objectType.hasReferenceName() && !hasLendsName) {

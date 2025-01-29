@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "qwen-turbo": "7",
+            "doubao-pro-4k": "11",
+            "ernie-3.5-128k": "**12**",
+            "deepseek-chat": "10",
+            "gpt-4o-mini": "16"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "12",
+            "qwen-turbo": "8",
+            "ernie-3.5-128k": "**6**",
+            "deepseek-chat": "10",
+            "gpt-4o-mini": "17"
+        },
+        "prompt_fl_3": {
+            "qwen-turbo": "6",
+            "doubao-pro-4k": "11",
+            "deepseek-chat": "10",
+            "gpt-4o-mini": "10",
+            "ernie-3.5-128k": "**14**"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "return true;",
+            "ernie-3.5-128k": "if (searchChars[j] == ch) {",
+            "doubao-pro-4k": "return true;",
+            "deepseek-chat": "```java\nif (searchChars[j] == ch) {\n```",
+            "gpt-4o-mini": "```\n// ch is a supplementary character\n```"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "return true;",
+            "ernie-3.5-128k": "if (searchChars[j] == ch)",
+            "deepseek-chat": "if (searchChars[j] == ch) {",
+            "doubao-pro-4k": "return true;",
+            "gpt-4o-mini": "// ch is a supplementary character\n// ch is in the Basic Multilingual Plane\nreturn true;"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "return true;",
+            "ernie-3.5-128k": "if (searchChars[j] == ch)",
+            "deepseek-chat": "if (searchChars[j] == ch) {",
+            "doubao-pro-4k": "assertEquals(false, StringUtils.containsAny(CharU20000, CharU20001.toCharArray()));",
+            "gpt-4o-mini": "if (searchChars[j] == ch) {"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "```java\npublic static boolean containsAny(CharSequence cs, char[] searchChars) {\n    if (isEmpty(cs) || ArrayUtils.isEmpty(searchChars)) {\n        return false;\n    }\n    int csLength = cs.length();\n    int searchLength = searchChars.length;\n    for (int i = 0; i < csLength; i++) {\n        char ch = cs.charAt(i);\n        for (int j = 0; j < searchLength; j++) {\n            if (searchChars[j] == ch) {\n                return true;\n            }\n        }\n    }\n    return false;\n}\n```\n\nIn this corrected version, the logic inside the nested loop correctly checks if any character in `cs` matches any character in `searchChars`. If a match is found, the method returns `true`. If no matches are found after checking all characters, the method returns `false`. The comments on lines 8 and 13 have been removed as they were incorrect and misleading.",
+            "gpt-4o-mini": "public static boolean containsAny(CharSequence cs, char[] searchChars) {\n    if (isEmpty(cs) || ArrayUtils.isEmpty(searchChars)) {\n        return false;\n    }\n    int csLength = cs.length();\n    int searchLength = searchChars.length;\n    for (int i = 0; i < csLength; i++) {\n        char ch = cs.charAt(i);\n        for (int j = 0; j < searchLength; j++) {\n            if (searchChars[j] == ch) {\n                return true;\n            }\n        }\n    }\n    return false;\n}",
+            "doubao-pro-4k": "public static boolean containsAny(CharSequence cs, char[] searchChars) {\n    if (isEmpty(cs) || ArrayUtils.isEmpty(searchChars)) {\n        return false;\n    }\n    int csLength = cs.length();\n    int searchLength = searchChars.length;\n    for (int i = 0; i < csLength; i++) {\n        char ch = cs.charAt(i);\n        for (int j = 0; j < searchLength; j++) {\n            if (searchChars[j] == ch) {\n                // ch is a supplementary character\n                // ch is in the Basic Multilingual Plane\n                return true;\n            }\n        }\n    }\n    return false;\n}",
+            "deepseek-chat": "The bug in the code is that it does not handle supplementary characters correctly. Supplementary characters are characters that are not in the Basic Multilingual Plane (BMP) and are represented by a pair of `char` values (a surrogate pair). The current code treats each `char` individually, which can lead to incorrect results when dealing with supplementary characters.\n\nTo fix this, we need to check if the character is a high surrogate and if the next character is a low surrogate, forming a valid surrogate pair. If so, we should treat them as a single supplementary character.\n\nHere is the corrected method:\n\npublic static boolean containsAny(CharSequence cs, char[] searchChars) {\n    if (isEmpty(cs) || ArrayUtils.isEmpty(searchChars)) {\n        return false;\n    }\n    int csLength = cs.length();\n    int searchLength = searchChars.length;\n    for (int i = 0; i < csLength; i++) {\n        char ch = cs.charAt(i);\n        if (Character.isHighSurrogate(ch) && i + 1 < csLength) {\n            char ch2 = cs.charAt(i + 1);\n            if (Character.isLowSurrogate(ch2)) {\n                int codePoint = Character.toCodePoint(ch, ch2);\n                for (int j = 0; j < searchLength; j++) {\n                    if (searchChars[j] == codePoint) {\n                        return true;\n                    }\n                }\n                i++; // Skip the low surrogate\n                continue;\n            }\n        }\n        for (int j = 0; j < searchLength; j++) {\n            if (searchChars[j] == ch) {\n                return true;\n            }\n        }\n    }\n    return false;\n}\n\nIn this corrected version, the method now checks if the current character is a high surrogate and if the next character is a low surrogate. If both conditions are met, it combines them into a code point and checks if this code point is in the `searchChars` array. If the character is not part of a surrogate pair, it checks the character directly against the `searchChars` array. This ensures that supplementary characters are handled correctly.",
+            "ernie-3.5-128k": "public static boolean containsAny(CharSequence cs, char[] searchChars) {\n\t\tif (isEmpty(cs) || ArrayUtils.isEmpty(searchChars)) {\n\t\t\treturn false;\n\t\t}\n\t\tint csLength = cs.length();\n\t\tint searchLength = searchChars.length;\n\t\tfor (int i = 0; i < csLength; i++) {\n\t\t\tchar ch = cs.charAt(i);\n\t\t\tfor (int j = 0; j < searchLength; j++) {\n\t\t\t\tif (searchChars[j] == ch) {\n\t\t\t\t\t// Removed incorrect comments\n\t\t\t\t\treturn true;\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\treturn false;\n\t}\n\n// Note: Ensure you have a proper implementation of `isEmpty` method for CharSequence and `ArrayUtils.isEmpty` for char[].\n// Example implementation for isEmpty could be:\n// public static boolean isEmpty(CharSequence cs) {\n//     return cs == null || cs.length() == 0;\n// }\n//\n// Assuming ArrayUtils.isEmpty is from Apache Commons Lang or similar library, or you can implement it as:\n// public static boolean isEmpty(char[] array) {\n//     return array == null || array.length == 0;\n// }"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\npublic static boolean containsAny(CharSequence cs, char[] searchChars) {\n    if (isEmpty(cs) || ArrayUtils.isEmpty(searchChars)) {\n        return false;\n    }\n    int csLength = cs.length();\n    int searchLength = searchChars.length;\n    for (int i = 0; i < csLength; i++) {\n        char ch = cs.charAt(i);\n        for (int j = 0; j < searchLength; j++) {\n            if (searchChars[j] == ch) {\n                // ch is found in searchChars\n                return true;\n            }\n        }\n    }\n    return false;\n}\n```\n\nIn this corrected version, the comment about supplementary characters and the Basic Multilingual Plane is removed as it is not relevant to the logic of checking if any character in `cs` is contained in `searchChars`. The method now correctly returns `true` when a matching character is found.",
+            "gpt-4o-mini": "public static boolean containsAny(CharSequence cs, char[] searchChars) {\n    if (isEmpty(cs) || ArrayUtils.isEmpty(searchChars)) {\n        return false;\n    }\n    int csLength = cs.length();\n    int searchLength = searchChars.length;\n    for (int i = 0; i < csLength; i++) {\n        char ch = cs.charAt(i);\n        for (int j = 0; j < searchLength; j++) {\n            if (searchChars[j] == ch) {\n                return true;\n            }\n        }\n    }\n    return false;\n}",
+            "deepseek-chat": "public static boolean containsAny(CharSequence cs, char[] searchChars) {\n    if (isEmpty(cs) || ArrayUtils.isEmpty(searchChars)) {\n        return false;\n    }\n    int csLength = cs.length();\n    int searchLength = searchChars.length;\n    for (int i = 0; i < csLength; i++) {\n        char ch = cs.charAt(i);\n        for (int j = 0; j < searchLength; j++) {\n            if (searchChars[j] == ch) {\n                // Check if the character is a supplementary character\n                if (Character.isHighSurrogate(ch) && i + 1 < csLength) {\n                    char lowSurrogate = cs.charAt(i + 1);\n                    if (Character.isLowSurrogate(lowSurrogate)) {\n                        // Handle supplementary characters\n                        return true;\n                    }\n                } else {\n                    // Handle characters in the Basic Multilingual Plane\n                    return true;\n                }\n            }\n        }\n    }\n    return false;\n}",
+            "doubao-pro-4k": "public static boolean containsAny(CharSequence cs, char[] searchChars) {\n    if (isEmpty(cs) || ArrayUtils.isEmpty(searchChars)) {\n        return false;\n    }\n    int csLength = cs.length();\n    int searchLength = searchChars.length;\n    for (int i = 0; i < csLength; i++) {\n        char ch = cs.charAt(i);\n        for (int j = 0; j < searchLength; j++) {\n            if (searchChars[j] == ch) {\n                // ch is a supplementary character\n                // ch is in the Basic Multilingual Plane\n                return true;\n            }\n        }\n    }\n    return false;\n}",
+            "ernie-3.5-128k": "public static boolean containsAny(CharSequence cs, char[] searchChars) {\n\t\tif (isEmpty(cs) || ArrayUtils.isEmpty(searchChars)) {\n\t\t\treturn false;\n\t\t}\n\t\tint csLength = cs.length();\n\t\tint searchLength = searchChars.length;\n\t\tfor (int i = 0; i < csLength; i++) {\n\t\t\tchar ch = cs.charAt(i);\n\t\t\tfor (int j = 0; j < searchLength; j++) {\n\t\t\t\tif (searchChars[j] == ch) {\n\t\t\t\t\treturn true;\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\treturn false;\n\t}\n\nNote: The provided code snippet assumes the existence of `isEmpty` method for checking if the CharSequence is empty and `ArrayUtils.isEmpty` for checking if the char array is empty. Ensure these methods are correctly implemented or replace them with standard checks like `cs == null || cs.length() == 0` and `searchChars == null || searchChars.length == 0` respectively."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\npublic static boolean containsAny(CharSequence cs, char[] searchChars) {\n\tif (isEmpty(cs) || ArrayUtils.isEmpty(searchChars)) {\n\t\treturn false;\n\t}\n\tint csLength = cs.length();\n\tint searchLength = searchChars.length;\n\tfor (int i = 0; i < csLength; i++) {\n\t\tchar ch = cs.charAt(i);\n\t\tfor (int j = 0; j < searchLength; j++) {\n\t\t\tif (searchChars[j] == ch) {\n\t\t\t\treturn true;\n```",
+            "deepseek-chat": "public static boolean containsAny(CharSequence cs, char[] searchChars) {\n\t\tif (isEmpty(cs) || ArrayUtils.isEmpty(searchChars)) {\n\t\t\treturn false;\n\t\t}\n\t\tint csLength = cs.length();\n\t\tint searchLength = searchChars.length;\n\t\tfor (int i = 0; i < csLength; i++) {\n\t\t\tchar ch = cs.charAt(i);\n\t\t\tfor (int j = 0; j < searchLength; j++) {\n\t\t\t\tif (searchChars[j] == ch) {\n\t\t\t\t\treturn true;",
+            "gpt-4o-mini": "public static boolean containsAny(CharSequence cs, char[] searchChars) {\n    if (isEmpty(cs) || ArrayUtils.isEmpty(searchChars)) {\n        return false;\n    }\n    int csLength = cs.length();\n    int searchLength = searchChars.length;\n    for (int i = 0; i < csLength; i++) {\n        char ch = cs.charAt(i);\n        for (int j = 0; j < searchLength; j++) {\n            if (searchChars[j] == ch) {\n                return true;\n            }\n        }\n    }\n}",
+            "ernie-3.5-128k": "public static boolean containsAny(CharSequence cs, char[] searchChars) {\n\t\tif (isEmpty(cs) || ArrayUtils.isEmpty(searchChars)) {\n\t\t\treturn false;\n\t\t}\n\t\tint csLength = cs.length();\n\t\tint searchLength = searchChars.length;\n\t\tfor (int i = 0; i < csLength; i++) {\n\t\t\tchar ch = cs.charAt(i);\n\t\t\tfor (int j = 0; j < searchLength; j++) {\n\t\t\t\tif (searchChars[j] == ch) {\n\t\t\t\t\treturn true;\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\treturn false;\n}",
+            "doubao-pro-4k": "public static boolean containsAny(CharSequence cs, char[] searchChars) {\n    if (isEmpty(cs) || ArrayUtils.isEmpty(searchChars)) {\n        return false;\n    }\n    int csLength = cs.length();\n    int searchLength = searchChars.length;\n    for (int i = 0; i < csLength; i++) {\n        char ch = cs.charAt(i);\n        for (int j = 0; j < searchLength; j++) {\n            if (searchChars[j] == ch) {\n                return true;\n            }\n        }\n    }\n}"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"if (cs == null || isEmpty(cs) || ArrayUtils.isEmpty(searchChars))\"\n    },\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"return true;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"for (int i = 0; i < csLength; i++) {\"\n    },\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"if (searchChars[j] == ch) {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"if (searchChars[j] == ch || (Character.isSupplementaryCodePoint(ch) && ch == searchChars[j])) {\"\n    },\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"return true;\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"                // Remove these erroneous comments as they are not relevant to the functionality\"\n    },\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"                // Remove these erroneous comments as they are not relevant to the functionality\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"for (int j = 0; j < searchLength && searchChars[j]!= ch; j++) {\"\n    },\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"return true;\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"if (searchChars[j] == ch) { return true; }\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"char ch = cs.charAt(i);\"\n    },\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"return true;\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"char ch = cs.charAt(i);\"\n    },\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"return true;\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"\\t\\t\\tchar ch = cs.charAt(i);\"\n    },\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"\\t\\t\\t\\t\\t\\treturn true;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"char ch = cs.charAt(i); if (Character.isHighSurrogate(ch) || Character.isLowSurrogate(ch)) { return false; }\"\n    },\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"return true;\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"return true;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 11,\n        \"fixed_statement\": \"if (searchChars[j] == ch) {\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 11,\n        \"fixed_statement\": \"if (searchChars[j] == ch) { return true; }\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 11,\n        \"fixed_statement\": \"return true;\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 14,\n        \"fixed_statement\": \"return true;\"\n    }\n]"
+        }
+    }
+]

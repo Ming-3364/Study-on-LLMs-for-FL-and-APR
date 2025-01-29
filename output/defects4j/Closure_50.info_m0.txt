@@ -1,0 +1,319 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/PeepholeReplaceKnownMethods.java
+================== buggy_method ==================
+{'method_name': 'tryFoldArrayJoin', 'method_body': 'private Node tryFoldArrayJoin(Node n) {\n    Node callTarget = n.getFirstChild();\n\n    if (callTarget == null || !NodeUtil.isGetProp(callTarget)) {\n      return n;\n    }\n\n    Node right = callTarget.getNext();\n    if (right != null) {\n      if (!NodeUtil.isImmutableValue(right)) {\n        return n;\n      }\n    }\n\n    Node arrayNode = callTarget.getFirstChild();\n    Node functionName = arrayNode.getNext();\n\n    if ((arrayNode.getType() != Token.ARRAYLIT) ||\n        !functionName.getString().equals("join")) {\n      return n;\n    }\n\n      // "," is the default, it doesn\'t need to be explicit\n\n    String joinString = (right == null) ? "," : NodeUtil.getStringValue(right);\n    List<Node> arrayFoldedChildren = Lists.newLinkedList();\n    StringBuilder sb = null;\n    int foldedSize = 0;\n    Node prev = null;\n    Node elem = arrayNode.getFirstChild();\n    // Merges adjacent String nodes.\n    while (elem != null) {\n      if (NodeUtil.isImmutableValue(elem) || elem.getType() == Token.EMPTY) {\n        if (sb == null) {\n          sb = new StringBuilder();\n        } else {\n          sb.append(joinString);\n        }\n        sb.append(NodeUtil.getArrayElementStringValue(elem));\n      } else {\n        if (sb != null) {\n          Preconditions.checkNotNull(prev);\n          // + 2 for the quotes.\n          foldedSize += sb.length() + 2;\n          arrayFoldedChildren.add(\n              Node.newString(sb.toString()).copyInformationFrom(prev));\n          sb = null;\n        }\n        foldedSize += InlineCostEstimator.getCost(elem);\n        arrayFoldedChildren.add(elem);\n      }\n      prev = elem;\n      elem = elem.getNext();\n    }\n\n    if (sb != null) {\n      Preconditions.checkNotNull(prev);\n      // + 2 for the quotes.\n      foldedSize += sb.length() + 2;\n      arrayFoldedChildren.add(\n          Node.newString(sb.toString()).copyInformationFrom(prev));\n    }\n    // one for each comma.\n    foldedSize += arrayFoldedChildren.size() - 1;\n\n    int originalSize = InlineCostEstimator.getCost(n);\n    switch (arrayFoldedChildren.size()) {\n      case 0:\n        Node emptyStringNode = Node.newString("");\n        n.getParent().replaceChild(n, emptyStringNode);\n        reportCodeChange();\n        return emptyStringNode;\n      case 1:\n        Node foldedStringNode = arrayFoldedChildren.remove(0);\n        if (foldedSize > originalSize) {\n          return n;\n        }\n        arrayNode.detachChildren();\n        if (foldedStringNode.getType() != Token.STRING) {\n          // If the Node is not a string literal, ensure that\n          // it is coerced to a string.\n          Node replacement = new Node(Token.ADD,\n              Node.newString("").copyInformationFrom(n),\n              foldedStringNode);\n          foldedStringNode = replacement;\n        }\n        n.getParent().replaceChild(n, foldedStringNode);\n        reportCodeChange();\n        return foldedStringNode;\n      default:\n        // No folding could actually be performed.\n        if (arrayFoldedChildren.size() == arrayNode.getChildCount()) {\n          return n;\n        }\n        int kJoinOverhead = "[].join()".length();\n        foldedSize += kJoinOverhead;\n        foldedSize += (right != null) ? InlineCostEstimator.getCost(right) : 0;\n        if (foldedSize > originalSize) {\n          return n;\n        }\n        arrayNode.detachChildren();\n        for (Node node : arrayFoldedChildren) {\n          arrayNode.addChildToBack(node);\n        }\n        reportCodeChange();\n        break;\n    }\n\n    return n;\n  }', 'start_line': 367, 'end_line': 476, 'buggy_lines': [376]}
+================== buggy_method_src ==================
+private Node tryFoldArrayJoin(Node n) {
+    Node callTarget = n.getFirstChild();
+
+    if (callTarget == null || !NodeUtil.isGetProp(callTarget)) {
+      return n;
+    }
+
+    Node right = callTarget.getNext();
+    if (right != null) {
+      if (!NodeUtil.isImmutableValue(right)) {
+        return n;
+      }
+    }
+
+    Node arrayNode = callTarget.getFirstChild();
+    Node functionName = arrayNode.getNext();
+
+    if ((arrayNode.getType() != Token.ARRAYLIT) ||
+        !functionName.getString().equals("join")) {
+      return n;
+    }
+
+      // "," is the default, it doesn't need to be explicit
+
+    String joinString = (right == null) ? "," : NodeUtil.getStringValue(right);
+    List<Node> arrayFoldedChildren = Lists.newLinkedList();
+    StringBuilder sb = null;
+    int foldedSize = 0;
+    Node prev = null;
+    Node elem = arrayNode.getFirstChild();
+    // Merges adjacent String nodes.
+    while (elem != null) {
+      if (NodeUtil.isImmutableValue(elem) || elem.getType() == Token.EMPTY) {
+        if (sb == null) {
+          sb = new StringBuilder();
+        } else {
+          sb.append(joinString);
+        }
+        sb.append(NodeUtil.getArrayElementStringValue(elem));
+      } else {
+        if (sb != null) {
+          Preconditions.checkNotNull(prev);
+          // + 2 for the quotes.
+          foldedSize += sb.length() + 2;
+          arrayFoldedChildren.add(
+              Node.newString(sb.toString()).copyInformationFrom(prev));
+          sb = null;
+        }
+        foldedSize += InlineCostEstimator.getCost(elem);
+        arrayFoldedChildren.add(elem);
+      }
+      prev = elem;
+      elem = elem.getNext();
+    }
+
+    if (sb != null) {
+      Preconditions.checkNotNull(prev);
+      // + 2 for the quotes.
+      foldedSize += sb.length() + 2;
+      arrayFoldedChildren.add(
+          Node.newString(sb.toString()).copyInformationFrom(prev));
+    }
+    // one for each comma.
+    foldedSize += arrayFoldedChildren.size() - 1;
+
+    int originalSize = InlineCostEstimator.getCost(n);
+    switch (arrayFoldedChildren.size()) {
+      case 0:
+        Node emptyStringNode = Node.newString("");
+        n.getParent().replaceChild(n, emptyStringNode);
+        reportCodeChange();
+        return emptyStringNode;
+      case 1:
+        Node foldedStringNode = arrayFoldedChildren.remove(0);
+        if (foldedSize > originalSize) {
+          return n;
+        }
+        arrayNode.detachChildren();
+        if (foldedStringNode.getType() != Token.STRING) {
+          // If the Node is not a string literal, ensure that
+          // it is coerced to a string.
+          Node replacement = new Node(Token.ADD,
+              Node.newString("").copyInformationFrom(n),
+              foldedStringNode);
+          foldedStringNode = replacement;
+        }
+        n.getParent().replaceChild(n, foldedStringNode);
+        reportCodeChange();
+        return foldedStringNode;
+      default:
+        // No folding could actually be performed.
+        if (arrayFoldedChildren.size() == arrayNode.getChildCount()) {
+          return n;
+        }
+        int kJoinOverhead = "[].join()".length();
+        foldedSize += kJoinOverhead;
+        foldedSize += (right != null) ? InlineCostEstimator.getCost(right) : 0;
+        if (foldedSize > originalSize) {
+          return n;
+        }
+        arrayNode.detachChildren();
+        for (Node node : arrayFoldedChildren) {
+          arrayNode.addChildToBack(node);
+        }
+        reportCodeChange();
+        break;
+    }
+
+    return n;
+  }
+================== test_stack ==================
+com.google.javascript.jscomp.PeepholeReplaceKnownMethodsTest::testStringJoinAdd
+junit.framework.AssertionFailedError:
+Expected: x=["a",foo,"b,c"].join()
+Result: x=["a",foo,"b,c"].join(",")
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            ASSIGN 1 [source_file: expected0]
+                NAME x 1 [source_file: expected0]
+                CALL 1 [source_file: expected0]
+                    GETPROP 1 [source_file: expected0]
+                        ARRAYLIT 1 [source_file: expected0]
+                            STRING a 1 [source_file: expected0]
+                            NAME foo 1 [source_file: expected0]
+                            STRING b,c 1 [source_file: expected0]
+                        STRING join 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        EXPR_RESULT 1 [source_file: testcode]
+            ASSIGN 1 [source_file: testcode]
+                NAME x 1 [source_file: testcode]
+                CALL 1 [source_file: testcode]
+                    GETPROP 1 [source_file: testcode]
+                        ARRAYLIT 1 [source_file: testcode]
+                            STRING a 1 [source_file: testcode]
+                            NAME foo 1 [source_file: testcode]
+                            STRING b,c 1 [source_file: testcode]
+                        STRING join 1 [source_file: testcode]
+                    STRING , 1 [source_file: testcode]
+
+
+Subtree1: CALL 1 [source_file: expected0]
+    GETPROP 1 [source_file: expected0]
+        ARRAYLIT 1 [source_file: expected0]
+            STRING a 1 [source_file: expected0]
+            NAME foo 1 [source_file: expected0]
+            STRING b,c 1 [source_file: expected0]
+        STRING join 1 [source_file: expected0]
+
+
+Subtree2: CALL 1 [source_file: testcode]
+    GETPROP 1 [source_file: testcode]
+        ARRAYLIT 1 [source_file: testcode]
+            STRING a 1 [source_file: testcode]
+            NAME foo 1 [source_file: testcode]
+            STRING b,c 1 [source_file: testcode]
+        STRING join 1 [source_file: testcode]
+    STRING , 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:862)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:423)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:348)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:317)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:305)
+	at com.google.javascript.jscomp.PeepholeReplaceKnownMethodsTest.fold(PeepholeReplaceKnownMethodsTest.java:280)
+	at com.google.javascript.jscomp.PeepholeReplaceKnownMethodsTest.testStringJoinAdd(PeepholeReplaceKnownMethodsTest.java:87)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.PeepholeReplaceKnownMethodsTest::testNoStringJoin
+junit.framework.AssertionFailedError:
+Expected: x=[].join(",",2)
+Result: x=""
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            ASSIGN 1 [source_file: expected0]
+                NAME x 1 [source_file: expected0]
+                CALL 1 [source_file: expected0]
+                    GETPROP 1 [source_file: expected0]
+                        ARRAYLIT 1 [source_file: expected0]
+                        STRING join 1 [source_file: expected0]
+                    STRING , 1 [source_file: expected0]
+                    NUMBER 2.0 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        EXPR_RESULT 1 [source_file: testcode]
+            ASSIGN 1 [source_file: testcode]
+                NAME x 1 [source_file: testcode]
+                STRING  1 [source_file: testcode]
+
+
+Subtree1: CALL 1 [source_file: expected0]
+    GETPROP 1 [source_file: expected0]
+        ARRAYLIT 1 [source_file: expected0]
+        STRING join 1 [source_file: expected0]
+    STRING , 1 [source_file: expected0]
+    NUMBER 2.0 1 [source_file: expected0]
+
+
+Subtree2: STRING  1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:862)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:423)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:348)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:317)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:305)
+	at com.google.javascript.jscomp.CompilerTestCase.testSame(CompilerTestCase.java:537)
+	at com.google.javascript.jscomp.PeepholeReplaceKnownMethodsTest.foldSame(PeepholeReplaceKnownMethodsTest.java:276)
+	at com.google.javascript.jscomp.PeepholeReplaceKnownMethodsTest.testNoStringJoin(PeepholeReplaceKnownMethodsTest.java:78)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+fold("x = ['a', foo, 'b', 'c'].join(',')",
+
+================== buggy_lines_in_method ==================
+[10]
+================== buggy_statements ==================
+['      if (!NodeUtil.isImmutableValue(right)) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+private Node tryFoldArrayJoin(Node n) {
+    Node callTarget = n.getFirstChild();
+
+    if (callTarget == null || !NodeUtil.isGetProp(callTarget)) {
+      return n;
+    }
+
+    Node right = callTarget.getNext();
+    if (right != null) {
+      if (!NodeUtil.isImmutableValue(right)) {

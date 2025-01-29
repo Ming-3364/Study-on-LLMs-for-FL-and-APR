@@ -1,0 +1,139 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/jsontype/impl/SubTypeValidator.java
+================== buggy_method ==================
+{'method_name': 'validateSubType', 'method_body': 'public void validateSubType(DeserializationContext ctxt, JavaType type) throws JsonMappingException\n    {\n        // There are certain nasty classes that could cause problems, mostly\n        // via default typing -- catch them here.\n        final Class<?> raw = type.getRawClass();\n        String full = raw.getName();\n\n        main_check:\n        do {\n            if (_cfgIllegalClassNames.contains(full)) {\n                break;\n            }\n\n            // 18-Dec-2017, tatu: As per [databind#1855], need bit more sophisticated handling\n            //    for some Spring framework types\n            // 05-Jan-2017, tatu: ... also, only applies to classes, not interfaces\n            if (raw.isInterface()) {\n                ;\n            } else if (full.startsWith(PREFIX_SPRING)) {\n                for (Class<?> cls = raw; (cls != null) && (cls != Object.class); cls = cls.getSuperclass()){\n                    String name = cls.getSimpleName();\n                    // looking for "AbstractBeanFactoryPointcutAdvisor" but no point to allow any is there?\n                    if ("AbstractPointcutAdvisor".equals(name)\n                            // ditto  for "FileSystemXmlApplicationContext": block all ApplicationContexts\n                            || "AbstractApplicationContext".equals(name)) {\n                        break main_check;\n                    }\n                // [databind#1737]; more 3rd party\n                // s.add("com.mchange.v2.c3p0.JndiRefForwardingDataSource");\n                // s.add("com.mchange.v2.c3p0.WrapperConnectionPoolDataSource");\n                // [databind#1931]; more 3rd party\n                // com.mchange.v2.c3p0.ComboPooledDataSource\n                // com.mchange.v2.c3p0.debug.AfterCloseLoggingComboPooledDataSource \n                }\n            }\n            return;\n        } while (false);\n\n        throw JsonMappingException.from(ctxt,\n                String.format("Illegal type (%s) to deserialize: prevented for security reasons", full));\n    }', 'start_line': 71, 'end_line': 111, 'buggy_lines': [100, 108]}
+================== buggy_method_src ==================
+public void validateSubType(DeserializationContext ctxt, JavaType type) throws JsonMappingException
+    {
+        // There are certain nasty classes that could cause problems, mostly
+        // via default typing -- catch them here.
+        final Class<?> raw = type.getRawClass();
+        String full = raw.getName();
+
+        main_check:
+        do {
+            if (_cfgIllegalClassNames.contains(full)) {
+                break;
+            }
+
+            // 18-Dec-2017, tatu: As per [databind#1855], need bit more sophisticated handling
+            //    for some Spring framework types
+            // 05-Jan-2017, tatu: ... also, only applies to classes, not interfaces
+            if (raw.isInterface()) {
+                ;
+            } else if (full.startsWith(PREFIX_SPRING)) {
+                for (Class<?> cls = raw; (cls != null) && (cls != Object.class); cls = cls.getSuperclass()){
+                    String name = cls.getSimpleName();
+                    // looking for "AbstractBeanFactoryPointcutAdvisor" but no point to allow any is there?
+                    if ("AbstractPointcutAdvisor".equals(name)
+                            // ditto  for "FileSystemXmlApplicationContext": block all ApplicationContexts
+                            || "AbstractApplicationContext".equals(name)) {
+                        break main_check;
+                    }
+                // [databind#1737]; more 3rd party
+                // s.add("com.mchange.v2.c3p0.JndiRefForwardingDataSource");
+                // s.add("com.mchange.v2.c3p0.WrapperConnectionPoolDataSource");
+                // [databind#1931]; more 3rd party
+                // com.mchange.v2.c3p0.ComboPooledDataSource
+                // com.mchange.v2.c3p0.debug.AfterCloseLoggingComboPooledDataSource 
+                }
+            }
+            return;
+        } while (false);
+
+        throw JsonMappingException.from(ctxt,
+                String.format("Illegal type (%s) to deserialize: prevented for security reasons", full));
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.interop.IllegalTypesCheckTest::testC3P0Types
+junit.framework.AssertionFailedError: Expected an exception with one of substrings ([Illegal type]): got one with message "Can not instantiate value of type [simple type, class com.mchange.v2.c3p0.jacksontest.ComboPooledDataSource] from String value ('/tmp/foobar.txt'); no single-String constructor/factory method
+ at [Source: {"v":["com.mchange.v2.c3p0.jacksontest.ComboPooledDataSource","/tmp/foobar.txt"]}; line: 1, column: 63] (through reference chain: com.fasterxml.jackson.databind.interop.PolyWrapper["v"])"
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.TestCase.fail(TestCase.java:227)
+	at com.fasterxml.jackson.databind.BaseTest.verifyException(BaseTest.java:368)
+	at com.fasterxml.jackson.databind.interop.IllegalTypesCheckTest._verifyException(IllegalTypesCheckTest.java:156)
+	at com.fasterxml.jackson.databind.interop.IllegalTypesCheckTest._verifySecurityException(IllegalTypesCheckTest.java:140)
+	at com.fasterxml.jackson.databind.interop.IllegalTypesCheckTest._testIllegalType(IllegalTypesCheckTest.java:133)
+	at com.fasterxml.jackson.databind.interop.IllegalTypesCheckTest._testIllegalType(IllegalTypesCheckTest.java:119)
+	at com.fasterxml.jackson.databind.interop.IllegalTypesCheckTest.testC3P0Types(IllegalTypesCheckTest.java:115)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+_testIllegalType(ComboPooledDataSource.class); // [databind#1931]
+
+================== buggy_lines_in_method ==================
+[30, 38]
+================== buggy_statements ==================
+['                // s.add("com.mchange.v2.c3p0.WrapperConnectionPoolDataSource");', '']
+================== buggy_method_src_endswith_buggy_statement ==================
+public void validateSubType(DeserializationContext ctxt, JavaType type) throws JsonMappingException
+    {
+        // There are certain nasty classes that could cause problems, mostly
+        // via default typing -- catch them here.
+        final Class<?> raw = type.getRawClass();
+        String full = raw.getName();
+
+        main_check:
+        do {
+            if (_cfgIllegalClassNames.contains(full)) {
+                break;
+            }
+
+            // 18-Dec-2017, tatu: As per [databind#1855], need bit more sophisticated handling
+            //    for some Spring framework types
+            // 05-Jan-2017, tatu: ... also, only applies to classes, not interfaces
+            if (raw.isInterface()) {
+                ;
+            } else if (full.startsWith(PREFIX_SPRING)) {
+                for (Class<?> cls = raw; (cls != null) && (cls != Object.class); cls = cls.getSuperclass()){
+                    String name = cls.getSimpleName();
+                    // looking for "AbstractBeanFactoryPointcutAdvisor" but no point to allow any is there?
+                    if ("AbstractPointcutAdvisor".equals(name)
+                            // ditto  for "FileSystemXmlApplicationContext": block all ApplicationContexts
+                            || "AbstractApplicationContext".equals(name)) {
+                        break main_check;
+                    }
+                // [databind#1737]; more 3rd party
+                // s.add("com.mchange.v2.c3p0.JndiRefForwardingDataSource");
+                // s.add("com.mchange.v2.c3p0.WrapperConnectionPoolDataSource");
+                // [databind#1931]; more 3rd party
+                // com.mchange.v2.c3p0.ComboPooledDataSource
+                // com.mchange.v2.c3p0.debug.AfterCloseLoggingComboPooledDataSource 
+                }
+            }
+            return;
+        } while (false);

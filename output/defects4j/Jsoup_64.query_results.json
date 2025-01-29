@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "4",
+            "qwen-turbo": "3",
+            "ernie-3.5-128k": "**4**",
+            "deepseek-chat": "4",
+            "gpt-4o-mini": "4"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "4",
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "**376**",
+            "gpt-4o-mini": "376",
+            "deepseek-chat": "1"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "376",
+            "deepseek-chat": "376",
+            "ernie-3.5-128k": "**376**",
+            "gpt-4o-mini": "376"
+        },
+        "prompt_fl_4": {
+            "doubao-pro-4k": "tb.insert(startTag);",
+            "qwen-turbo": "tb.transition(Text);",
+            "ernie-3.5-128k": "tb.transition(Text);",
+            "deepseek-chat": "tb.transition(Text);",
+            "gpt-4o-mini": "tb.transition(Text);"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "tb.transition(Text);",
+            "doubao-pro-4k": "tb.insert(startTag);",
+            "ernie-3.5-128k": "tb.tokeniser.transition(TokeniserState.Rawtext);",
+            "deepseek-chat": "tb.transition(Text);",
+            "gpt-4o-mini": "tb.insert(startTag);"
+        },
+        "prompt_fl_6": {
+            "doubao-pro-4k": "tb.insert(startTag);",
+            "qwen-turbo": "tb.transition(Text);",
+            "deepseek-chat": "tb.transition(Text);",
+            "ernie-3.5-128k": "tb.tokeniser.transition(TokeniserState.Rawtext);",
+            "gpt-4o-mini": "tb.transition(Text);"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "```java\nprivate static void handleRawtext(Token.StartTag startTag, HtmlTreeBuilder tb) {\n    tb.insert(startTag);\n    tb.tokeniser.transition(TokeniserState.RAWTEXT); // Corrected from Rawtext to RAWTEXT\n    tb.markInsertionMode();\n    tb.transition(Text);\n}\n```",
+            "doubao-pro-4k": "private static void handleRawtext(Token.StartTag startTag, HtmlTreeBuilder tb) {\n        tb.insert(startTag);\n        tb.getTokeniser().transition(TokeniserState.Rawtext);\n        tb.markInsertionMode();\n        tb.transition(Text);\n    }",
+            "ernie-3.5-128k": "private static void handleRawtext(Token.StartTag startTag, HtmlTreeBuilder tb) {\n        tb.insert(startTag);\n        tb.tokeniser.setState(TokeniserState.RAWTEXT);\n        tb.markInsertionMode();\n        tb.transition(InsertionMode.TEXT);\n    }",
+            "gpt-4o-mini": "private static void handleRawtext(Token.StartTag startTag, HtmlTreeBuilder tb) {\n    tb.insert(startTag);\n    tb.tokeniser.transition(TokeniserState.RAWTEXT);\n    tb.markInsertionMode();\n    tb.transition(Text);\n}",
+            "deepseek-chat": "private static void handleRawtext(Token.StartTag startTag, HtmlTreeBuilder tb) {\n    tb.insert(startTag);\n    tb.tokeniser.transition(TokeniserState.Rawtext);\n    tb.markInsertionMode();\n    tb.transition(TextMode);\n}\n\nThe bug in line [2] was that the `transition` method was called with `Text`, which is likely incorrect. It should be `TextMode` to properly transition to the text insertion mode. The corrected method now uses `TextMode` instead of `Text`."
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\nprivate static void handleRawtext(Token.StartTag startTag, HtmlTreeBuilder tb) {\n    tb.insert(startTag);\n    tb.tokeniser.transition(TokeniserState.Rcdata);\n    tb.markInsertionMode();\n    tb.transition(Text);\n}\n```\n\nIn this corrected version, `TokeniserState.Rawtext` has been changed to `TokeniserState.Rcdata`. The `Rcdata` state is typically used for elements like `title`, `textarea`, and `style` where the content is treated as raw text but with some differences from the `Rawtext` state. If you specifically need the `Rawtext` state, then you should use `TokeniserState.Rawtext` instead. Please ensure that the context of your application aligns with the correct state usage.",
+            "doubao-pro-4k": "private static void handleRawtext(Token.StartTag startTag, HtmlTreeBuilder tb) {\n        tb.insert(startTag);\n        tb.tokeniser.transition(TokeniserState.Rawtext);\n        tb.markInsertionMode();\n        tb.transition(Text);\n    }",
+            "deepseek-chat": "private static void handleRawtext(Token.StartTag startTag, HtmlTreeBuilder tb) {\n        tb.insert(startTag);\n        tb.tokeniser.transition(TokeniserState.Rawtext);\n        tb.markInsertionMode();\n        tb.transition(Text);\n        tb.insertEmptyElement(startTag);\n    }",
+            "ernie-3.5-128k": "private static void handleRawtext(Token.StartTag startTag, HtmlTreeBuilder tb) {\n        if (tb.openElements.hasInScope(ElementType.Script) && tb.currentElementIs(ElementType.Script)) {\n            tb.insert(startTag);\n        } else {\n            tb.parser.parseError(\"unexpected-start-tag-in-rawtext-mode\", startTag.tagName);\n        }\n        tb.tokeniser.transition(TokeniserState.Rawtext);\n        tb.markInsertionMode();\n        tb.transition(InsertionMode.Text);\n    }",
+            "gpt-4o-mini": "private static void handleRawtext(Token.StartTag startTag, HtmlTreeBuilder tb) {\n    // Ensure that the start tag is inserted properly into the tree.\n    if (startTag != null) {\n        tb.insert(startTag);\n    } else {\n        // Handle the case where the startTag might be null (safety check)\n        throw new IllegalArgumentException(\"StartTag cannot be null\");\n    }\n    \n    // Transition the tokeniser to the Rawtext state\n    tb.tokeniser.transition(TokeniserState.Rawtext);\n    \n    // Mark the insertion mode (presumably this sets the current mode to something specific)\n    tb.markInsertionMode();\n    \n    // Transition to the Text insertion mode\n    tb.transition(Text);\n}"
+        },
+        "prompt_apr_3": {
+            "doubao-pro-4k": "private static void handleRawtext(Token.StartTag startTag, HtmlTreeBuilder tb) {\n    tb.insert(startTag);\n}",
+            "ernie-3.5-128k": "private static void handleRawtext(Token.StartTag startTag, HtmlTreeBuilder tb) {\n        tb.insert(startTag.toHtml());",
+            "deepseek-chat": "private static void handleRawtext(Token.StartTag startTag, HtmlTreeBuilder tb) {\n    tb.insert(startTag);\n    tb.transition(HtmlTreeBuilderState.Rawtext);\n}",
+            "qwen-turbo": "```java\nprivate static void handleRawtext(Token.StartTag startTag, HtmlTreeBuilder tb) {\n    tb.insert(startTag);\n}\n``` \n\nSince the provided code snippet appears to be correct as it stands for insertion of a start tag into the tree builder, no changes were made. If there was an intention to conditionally process based on some criteria not shown here, that logic would need to be specified. As given, the `tb.insert(startTag);` line is the appropriate method call to insert a start tag into the HtmlTreeBuilder.",
+            "gpt-4o-mini": "private static void handleRawtext(Token.StartTag startTag, HtmlTreeBuilder tb) {\n    tb.insert(startTag);\n}"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"tb.tokenizer.transition(TokeniserState.Rawtext);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"tb.insert(startTag); tb.tokeniser.setState(TokeniserState.Rawtext);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"tb.tokeniser.advanceTransition(TokeniserState.Rawtext);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"tb.tokeniser.transition(TokeniserState.Rawtext);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"tb.tokeniser.transition(TokeniserState.RAWTEXT)\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"tb.insert(startTag);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"tb.insert(startTag.clone());\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"tb.insert(startTag.toToken());\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (startTag.isSelfClosing()) {\\n    tb.insertSelfClosingElement(startTag);\\n} else {\\n    tb.insert(startTag);\\n}\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"tb.insert(startTag.getTag());\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"tb.insert(startTag);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"tb.insert(startTag);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"tb.insert(startTag.toToken());\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"tb.insert(startTag, true);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (Token.isSelfClosing(startTag)) { tb.insertSelfClosingTag(startTag); } else { tb.insertStartTag(startTag); }\"\n    }\n]"
+        }
+    }
+]

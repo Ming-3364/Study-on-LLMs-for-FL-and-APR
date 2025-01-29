@@ -1,0 +1,86 @@
+
+================== buggy_file ==================
+faultyVersion.java
+================== buggy_method ==================
+{'method_name': 'main', 'method_body': 's) {\n\t\tvar sc = new Scanner(System.in);\n\t\tint n = sc.nextInt();\n\t\tint m = sc.nextInt();\n\t\tp = new int[n + 10];\n\t\tfor(int i = 1; i <= n; i ++ ) {\n\t\t\tp[i] = i; // 刚开始的祖宗 都是自己自己\n\t\t}\n\t\tlong ret = 0;\n\t\tint mm = m;\n\t\t\n\t\tvar mp = new HashMap<Integer, Long>();\n\t\tvar se = new TreeSet<Integer>();\n\t\twhile(m -- != 0 ) {\n\t\t\tint x = sc.nextInt();\n\t\t\tint y = sc.nextInt();\n\t\t\t// 这里理解为y加到x的节点下面\n\t\t\tp[find(y)] = find(x); // 该不会是这里出问题了吧\n\t\t}\n\t\t\n\t\tfor(int i = 1; i <= n; i ++ ) {\n\t\t\tint x = p[i];\n\t\t\tif(!mp.containsKey(x)) {\n\t\t\t\tmp.put(x, 0l);\n\t\t\t}\n\t\t\tlong t = mp.get(x) + 1;\n\t\t\tmp.put(x, t);\n\t\t\tse.add(x); // 这里面存的是 都是祖宗\n\t\t}\n\t\tfor(int i : se) {\n\t\t\t//System.out.print("i = " + i + "\\n");\n\t\t\t//System.out.print("x = " + mp.get(i) + "\\n");\n\t\t\tlong tt = mp.get(i);\n\t\t\tlong t2 = mp.get(i) - 1;\n\t\t\t\n\t\t\tret += tt * t2 / 2;\n\t\t\t//System.out.print("ret = " + ret + "\\n");\n\t\t}\n\t\tret -= mm;\n\t\tSystem.out.print(ret);\n\t\t\n\t\t\n\t}\n\tpublic static int find(int x) {\n\t\tif(x != p[x])p[x] = find(p[x]);\n\t\treturn p[x];\n\t}\n}\n', 'start_line': 7, 'end_line': 49}
+================== buggy_method_src ==================
+s) {
+		var sc = new Scanner(System.in);
+		int n = sc.nextInt();
+		int m = sc.nextInt();
+		p = new int[n + 10];
+		for(int i = 1; i <= n; i ++ ) {
+			p[i] = i; // 刚开始的祖宗 都是自己自己
+		}
+		long ret = 0;
+		int mm = m;
+		
+		var mp = new HashMap<Integer, Long>();
+		var se = new TreeSet<Integer>();
+		while(m -- != 0 ) {
+			int x = sc.nextInt();
+			int y = sc.nextInt();
+			// 这里理解为y加到x的节点下面
+			p[find(y)] = find(x); // 该不会是这里出问题了吧
+		}
+		
+		for(int i = 1; i <= n; i ++ ) {
+			int x = p[i];
+			if(!mp.containsKey(x)) {
+				mp.put(x, 0l);
+			}
+			long t = mp.get(x) + 1;
+			mp.put(x, t);
+			se.add(x); // 这里面存的是 都是祖宗
+		}
+		for(int i : se) {
+			//System.out.print("i = " + i + "\n");
+			//System.out.print("x = " + mp.get(i) + "\n");
+			long tt = mp.get(i);
+			long t2 = mp.get(i) - 1;
+			
+			ret += tt * t2 / 2;
+			//System.out.print("ret = " + ret + "\n");
+		}
+		ret -= mm;
+		System.out.print(ret);
+		
+		
+	}
+	public static int find(int x) {
+		if(x != p[x])p[x] = find(p[x]);
+		return p[x];
+	}
+}
+
+================== test_stack ==================
+None
+================== test_assert ==================
+None
+================== buggy_lines_in_method ==================
+[22]
+================== buggy_statements ==================
+['\t\t\tint x = p[i];']
+================== buggy_method_src_endswith_buggy_statement ==================
+s) {
+		var sc = new Scanner(System.in);
+		int n = sc.nextInt();
+		int m = sc.nextInt();
+		p = new int[n + 10];
+		for(int i = 1; i <= n; i ++ ) {
+			p[i] = i; // 刚开始的祖宗 都是自己自己
+		}
+		long ret = 0;
+		int mm = m;
+		
+		var mp = new HashMap<Integer, Long>();
+		var se = new TreeSet<Integer>();
+		while(m -- != 0 ) {
+			int x = sc.nextInt();
+			int y = sc.nextInt();
+			// 这里理解为y加到x的节点下面
+			p[find(y)] = find(x); // 该不会是这里出问题了吧
+		}
+		
+		for(int i = 1; i <= n; i ++ ) {
+			int x = p[i];

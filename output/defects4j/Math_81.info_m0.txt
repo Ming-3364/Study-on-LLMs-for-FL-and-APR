@@ -1,0 +1,251 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java
+================== buggy_method ==================
+{'method_name': 'processGeneralBlock', 'method_body': 'private void processGeneralBlock(final int n)\n        throws InvalidMatrixException {\n\n        // check decomposed matrix data range\n        double sumOffDiag = 0;\n        for (int i = 0; i < n - 1; ++i) {\n            final int fourI = 4 * i;\n            final double ei = work[fourI + 2];\n            sumOffDiag += ei;\n        }\n\n        if (sumOffDiag == 0) {\n            // matrix is already diagonal\n            return;\n        }\n\n        // initial checks for splits (see Parlett & Marques section 3.3)\n        flipIfWarranted(n, 2);\n\n        // two iterations with Li\'s test for initial splits\n        initialSplits(n);\n\n        // initialize parameters used by goodStep\n        tType = 0;\n        dMin1 = 0;\n        dMin2 = 0;\n        dN    = 0;\n        dN1   = 0;\n        dN2   = 0;\n        tau   = 0;\n\n        // process split segments\n        int i0 = 0;\n        int n0 = n;\n        while (n0 > 0) {\n\n            // retrieve shift that was temporarily stored as a negative off-diagonal element\n            sigma    = (n0 == n) ? 0 : -work[4 * n0 - 2];\n            sigmaLow = 0;\n\n            // find start of a new split segment to process\n            double offDiagMin = (i0 == n0) ? 0 : work[4 * n0 - 6];\n            double offDiagMax = 0;\n            double diagMax    = work[4 * n0 - 4];\n            double diagMin    = diagMax;\n            i0 = 0;\n            for (int i = 4 * (n0 - 2); i >= 0; i -= 4) {\n                if (work[i + 2] <= 0) {\n                    i0 = 1 + i / 4;\n                    break;\n                }\n                if (diagMin >= 4 * offDiagMax) {\n                    diagMin    = Math.min(diagMin, work[i + 4]);\n                    offDiagMax = Math.max(offDiagMax, work[i + 2]);\n                }\n                diagMax    = Math.max(diagMax, work[i] + work[i + 2]);\n                offDiagMin = Math.min(offDiagMin, work[i + 2]);\n            }\n            work[4 * n0 - 2] = offDiagMin;\n\n            // lower bound of Gershgorin disk\n            dMin = -Math.max(0, diagMin - 2 * Math.sqrt(diagMin * offDiagMax));\n\n            pingPong = 0;\n            int maxIter = 30 * (n0 - i0);\n            for (int k = 0; i0 < n0; ++k) {\n                if (k >= maxIter) {\n                    throw new InvalidMatrixException(new MaxIterationsExceededException(maxIter));\n                }\n\n                // perform one step\n                n0 = goodStep(i0, n0);\n                pingPong = 1 - pingPong;\n\n                // check for new splits after "ping" steps\n                // when the last elements of qd array are very small\n                if ((pingPong == 0) && (n0 - i0 > 3) &&\n                    (work[4 * n0 - 1] <= TOLERANCE_2 * diagMax) &&\n                    (work[4 * n0 - 2] <= TOLERANCE_2 * sigma)) {\n                    int split  = i0 - 1;\n                    diagMax    = work[4 * i0];\n                    offDiagMin = work[4 * i0 + 2];\n                    double previousEMin = work[4 * i0 + 3];\n                    for (int i = 4 * i0; i < 4 * n0 - 11; i += 4) {\n                        if ((work[i + 3] <= TOLERANCE_2 * work[i]) &&\n                            (work[i + 2] <= TOLERANCE_2 * sigma)) {\n                            // insert a split\n                            work[i + 2]  = -sigma;\n                            split        = i / 4;\n                            diagMax      = 0;\n                            offDiagMin   = work[i + 6];\n                            previousEMin = work[i + 7];\n                        } else {\n                            diagMax      = Math.max(diagMax, work[i + 4]);\n                            offDiagMin   = Math.min(offDiagMin, work[i + 2]);\n                            previousEMin = Math.min(previousEMin, work[i + 3]);\n                        }\n                    }\n                    work[4 * n0 - 2] = offDiagMin;\n                    work[4 * n0 - 1] = previousEMin;\n                    i0 = split + 1;\n                }\n            }\n\n        }\n\n    }', 'start_line': 822, 'end_line': 928, 'buggy_lines': [905, 906]}
+================== buggy_method_src ==================
+private void processGeneralBlock(final int n)
+        throws InvalidMatrixException {
+
+        // check decomposed matrix data range
+        double sumOffDiag = 0;
+        for (int i = 0; i < n - 1; ++i) {
+            final int fourI = 4 * i;
+            final double ei = work[fourI + 2];
+            sumOffDiag += ei;
+        }
+
+        if (sumOffDiag == 0) {
+            // matrix is already diagonal
+            return;
+        }
+
+        // initial checks for splits (see Parlett & Marques section 3.3)
+        flipIfWarranted(n, 2);
+
+        // two iterations with Li's test for initial splits
+        initialSplits(n);
+
+        // initialize parameters used by goodStep
+        tType = 0;
+        dMin1 = 0;
+        dMin2 = 0;
+        dN    = 0;
+        dN1   = 0;
+        dN2   = 0;
+        tau   = 0;
+
+        // process split segments
+        int i0 = 0;
+        int n0 = n;
+        while (n0 > 0) {
+
+            // retrieve shift that was temporarily stored as a negative off-diagonal element
+            sigma    = (n0 == n) ? 0 : -work[4 * n0 - 2];
+            sigmaLow = 0;
+
+            // find start of a new split segment to process
+            double offDiagMin = (i0 == n0) ? 0 : work[4 * n0 - 6];
+            double offDiagMax = 0;
+            double diagMax    = work[4 * n0 - 4];
+            double diagMin    = diagMax;
+            i0 = 0;
+            for (int i = 4 * (n0 - 2); i >= 0; i -= 4) {
+                if (work[i + 2] <= 0) {
+                    i0 = 1 + i / 4;
+                    break;
+                }
+                if (diagMin >= 4 * offDiagMax) {
+                    diagMin    = Math.min(diagMin, work[i + 4]);
+                    offDiagMax = Math.max(offDiagMax, work[i + 2]);
+                }
+                diagMax    = Math.max(diagMax, work[i] + work[i + 2]);
+                offDiagMin = Math.min(offDiagMin, work[i + 2]);
+            }
+            work[4 * n0 - 2] = offDiagMin;
+
+            // lower bound of Gershgorin disk
+            dMin = -Math.max(0, diagMin - 2 * Math.sqrt(diagMin * offDiagMax));
+
+            pingPong = 0;
+            int maxIter = 30 * (n0 - i0);
+            for (int k = 0; i0 < n0; ++k) {
+                if (k >= maxIter) {
+                    throw new InvalidMatrixException(new MaxIterationsExceededException(maxIter));
+                }
+
+                // perform one step
+                n0 = goodStep(i0, n0);
+                pingPong = 1 - pingPong;
+
+                // check for new splits after "ping" steps
+                // when the last elements of qd array are very small
+                if ((pingPong == 0) && (n0 - i0 > 3) &&
+                    (work[4 * n0 - 1] <= TOLERANCE_2 * diagMax) &&
+                    (work[4 * n0 - 2] <= TOLERANCE_2 * sigma)) {
+                    int split  = i0 - 1;
+                    diagMax    = work[4 * i0];
+                    offDiagMin = work[4 * i0 + 2];
+                    double previousEMin = work[4 * i0 + 3];
+                    for (int i = 4 * i0; i < 4 * n0 - 11; i += 4) {
+                        if ((work[i + 3] <= TOLERANCE_2 * work[i]) &&
+                            (work[i + 2] <= TOLERANCE_2 * sigma)) {
+                            // insert a split
+                            work[i + 2]  = -sigma;
+                            split        = i / 4;
+                            diagMax      = 0;
+                            offDiagMin   = work[i + 6];
+                            previousEMin = work[i + 7];
+                        } else {
+                            diagMax      = Math.max(diagMax, work[i + 4]);
+                            offDiagMin   = Math.min(offDiagMin, work[i + 2]);
+                            previousEMin = Math.min(previousEMin, work[i + 3]);
+                        }
+                    }
+                    work[4 * n0 - 2] = offDiagMin;
+                    work[4 * n0 - 1] = previousEMin;
+                    i0 = split + 1;
+                }
+            }
+
+        }
+
+    }
+================== test_stack ==================
+org.apache.commons.math.linear.EigenDecompositionImplTest::testMath308
+java.lang.ArrayIndexOutOfBoundsException: -1
+	at org.apache.commons.math.linear.EigenDecompositionImpl.computeShiftIncrement(EigenDecompositionImpl.java:1544)
+	at org.apache.commons.math.linear.EigenDecompositionImpl.goodStep(EigenDecompositionImpl.java:1071)
+	at org.apache.commons.math.linear.EigenDecompositionImpl.processGeneralBlock(EigenDecompositionImpl.java:893)
+	at org.apache.commons.math.linear.EigenDecompositionImpl.findEigenvalues(EigenDecompositionImpl.java:657)
+	at org.apache.commons.math.linear.EigenDecompositionImpl.decompose(EigenDecompositionImpl.java:246)
+	at org.apache.commons.math.linear.EigenDecompositionImpl.<init>(EigenDecompositionImpl.java:205)
+	at org.apache.commons.math.linear.EigenDecompositionImplTest.testMath308(EigenDecompositionImplTest.java:134)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+EigenDecomposition decomposition =
+
+================== buggy_lines_in_method ==================
+[84, 85]
+================== buggy_statements ==================
+['                    for (int i = 4 * i0; i < 4 * n0 - 11; i += 4) {', '                        if ((work[i + 3] <= TOLERANCE_2 * work[i]) &&']
+================== buggy_method_src_endswith_buggy_statement ==================
+private void processGeneralBlock(final int n)
+        throws InvalidMatrixException {
+
+        // check decomposed matrix data range
+        double sumOffDiag = 0;
+        for (int i = 0; i < n - 1; ++i) {
+            final int fourI = 4 * i;
+            final double ei = work[fourI + 2];
+            sumOffDiag += ei;
+        }
+
+        if (sumOffDiag == 0) {
+            // matrix is already diagonal
+            return;
+        }
+
+        // initial checks for splits (see Parlett & Marques section 3.3)
+        flipIfWarranted(n, 2);
+
+        // two iterations with Li's test for initial splits
+        initialSplits(n);
+
+        // initialize parameters used by goodStep
+        tType = 0;
+        dMin1 = 0;
+        dMin2 = 0;
+        dN    = 0;
+        dN1   = 0;
+        dN2   = 0;
+        tau   = 0;
+
+        // process split segments
+        int i0 = 0;
+        int n0 = n;
+        while (n0 > 0) {
+
+            // retrieve shift that was temporarily stored as a negative off-diagonal element
+            sigma    = (n0 == n) ? 0 : -work[4 * n0 - 2];
+            sigmaLow = 0;
+
+            // find start of a new split segment to process
+            double offDiagMin = (i0 == n0) ? 0 : work[4 * n0 - 6];
+            double offDiagMax = 0;
+            double diagMax    = work[4 * n0 - 4];
+            double diagMin    = diagMax;
+            i0 = 0;
+            for (int i = 4 * (n0 - 2); i >= 0; i -= 4) {
+                if (work[i + 2] <= 0) {
+                    i0 = 1 + i / 4;
+                    break;
+                }
+                if (diagMin >= 4 * offDiagMax) {
+                    diagMin    = Math.min(diagMin, work[i + 4]);
+                    offDiagMax = Math.max(offDiagMax, work[i + 2]);
+                }
+                diagMax    = Math.max(diagMax, work[i] + work[i + 2]);
+                offDiagMin = Math.min(offDiagMin, work[i + 2]);
+            }
+            work[4 * n0 - 2] = offDiagMin;
+
+            // lower bound of Gershgorin disk
+            dMin = -Math.max(0, diagMin - 2 * Math.sqrt(diagMin * offDiagMax));
+
+            pingPong = 0;
+            int maxIter = 30 * (n0 - i0);
+            for (int k = 0; i0 < n0; ++k) {
+                if (k >= maxIter) {
+                    throw new InvalidMatrixException(new MaxIterationsExceededException(maxIter));
+                }
+
+                // perform one step
+                n0 = goodStep(i0, n0);
+                pingPong = 1 - pingPong;
+
+                // check for new splits after "ping" steps
+                // when the last elements of qd array are very small
+                if ((pingPong == 0) && (n0 - i0 > 3) &&
+                    (work[4 * n0 - 1] <= TOLERANCE_2 * diagMax) &&
+                    (work[4 * n0 - 2] <= TOLERANCE_2 * sigma)) {
+                    int split  = i0 - 1;
+                    diagMax    = work[4 * i0];
+                    offDiagMin = work[4 * i0 + 2];
+                    double previousEMin = work[4 * i0 + 3];
+                    for (int i = 4 * i0; i < 4 * n0 - 11; i += 4) {
+                        if ((work[i + 3] <= TOLERANCE_2 * work[i]) &&

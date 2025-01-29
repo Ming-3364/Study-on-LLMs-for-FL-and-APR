@@ -1,0 +1,432 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "7",
+            "ernie-3.5-128k": "7",
+            "qwen-turbo": "3",
+            "deepseek-chat": "4",
+            "gpt-4o-mini": "9"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "7",
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "219",
+            "deepseek-chat": "4",
+            "gpt-4o-mini": "14"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "14",
+            "qwen-turbo": "2",
+            "ernie-3.5-128k": "**2**",
+            "deepseek-chat": "5",
+            "gpt-4o-mini": "38"
+        },
+        "prompt_fl_4": {
+            "doubao-pro-4k": "node.parentNode = null;",
+            "ernie-3.5-128k": "node.parentNode = null;",
+            "qwen-turbo": "node.parentNode = null;",
+            "deepseek-chat": "node.parentNode = null;",
+            "gpt-4o-mini": "node.parentNode = null;"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "node.parentNode = null;",
+            "doubao-pro-4k": "node.parentNode = null;",
+            "ernie-3.5-128k": "node.parentNode = null;",
+            "deepseek-chat": "Element fragment = Parser.parseBodyFragment(html, baseUri).body();",
+            "gpt-4o-mini": "node.parentNode = null;"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "appendChild(node);",
+            "doubao-pro-4k": "node.parentNode = null;",
+            "ernie-3.5-128k": "node.parentNode = null;",
+            "deepseek-chat": "Element fragment = Parser.parseBodyFragment(html, baseUri).body();",
+            "gpt-4o-mini": "assertEquals(\"<table><tr><td>1</td></tr><tr><td>2</td></tr></table>\", TextUtil.stripNewlines(doc.body().html()));"
+        },
+        "prompt_apr_1": {
+            "doubao-pro-4k": "public Element append(String html) {\n    Validate.notNull(html);\n\n    Element fragment = Parser.parseBodyFragment(html, baseUri).body();\n    for (Node node : fragment.childNodes()) {\n        node.setParentNode(null);\n        appendChild(node);\n    }\n    return this;\n}",
+            "deepseek-chat": "public Element append(String html) {\n    Validate.notNull(html);\n    \n    Element fragment = Parser.parseBodyFragment(html, baseUri).body();\n    for (Node node : fragment.childNodes()) {\n        node.remove(); // Corrected line: Removes the node from its current parent before appending\n        appendChild(node);\n    }\n    return this;\n}",
+            "qwen-turbo": "Certainly, the issue in the provided code is that the `node.parentNode` is being set to `null`, which can lead to unexpected behavior if the node is manipulated later. Instead, we should directly call the `appendChild` method on the current element to add the child nodes from the fragment.\n\nHere is the corrected method:\n\n```java\npublic Element append(String html) {\n    Validate.notNull(html);\n    \n    Element fragment = Parser.parseBodyFragment(html, baseUri).body();\n    for (Node node : fragment.childNodes()) {\n        appendChild(node);\n    }\n    return this;\n}\n```\n\nThis ensures that each node from the fragment is appended to the current element without altering the `parentNode` field directly.",
+            "ernie-3.5-128k": "Sure, here is the complete corrected method with the fix for line 4:\n\npublic Element append(String html) {\n        Validate.notNull(html);\n        \n        Document doc = Parser.parseBodyFragment(html, baseUri);\n        Element fragment = doc.body();\n        for (Node node : fragment.childNodes()) {\n            node.parentNode = null;\n            appendChild(node);\n        }\n        return this;\n    }\n\nThe issue in line 4 was that `Parser.parseBodyFragment(html, baseUri).body()` returns a new `Element` but does not provide a context for the `baseUri` to be properly applied to all nodes within the fragment. By first parsing into a `Document` and then extracting the body, you ensure that all nodes are correctly associated with the parsed document, which should properly handle the `baseUri`.",
+            "gpt-4o-mini": "public Element append(String html) {\n    Validate.notNull(html);\n    \n    // Fix: The method parseBodyFragment() returns a Document, not a Body, so we need to use .body() from Document, not from the body\n    Document fragment = Parser.parseBodyFragment(html, baseUri);\n    for (Node node : fragment.body().childNodes()) {\n        node.parentNode = null;\n        appendChild(node);\n    }\n    return this;\n}"
+        },
+        "prompt_apr_2": {
+            "doubao-pro-4k": "public Element append(String html) {\n    Validate.notNull(html);\n\n    Element fragment = Parser.parseBodyFragment(html, baseUri);\n    for (Node node : fragment.childNodes()) {\n        node.parentNode = null;\n        appendChild(node);\n    }\n    return this;\n}",
+            "qwen-turbo": "Certainly, here is the complete corrected method:\n\n```java\npublic Element append(String html) {\n    Validate.notNull(html);\n\n    Document parsedDocument = Parser.parse(html, baseUri);\n    Element fragment = parsedDocument.body();\n    for (Node node : fragment.childNodes()) {\n        node.parentNode = null;\n        appendChild(node);\n    }\n    return this;\n}\n```\n\nThis change ensures that the entire document is parsed correctly and then the body element is extracted. This approach avoids potential issues with `parseBodyFragment` which might not handle certain HTML structures as expected.",
+            "gpt-4o-mini": "public Element append(String html) {\n    Validate.notNull(html);\n\n    // Fixing the bug by using the correct parsing method and handling the body properly\n    Document fragmentDoc = Parser.parseFragment(html, baseUri);\n    Element fragment = fragmentDoc.body();\n\n    for (Node node : fragment.childNodes()) {\n        node.parentNode = null;\n        appendChild(node);\n    }\n    return this;\n}",
+            "deepseek-chat": "public Element append(String html) {\n    Validate.notNull(html);\n    \n    Document document = Parser.parseBodyFragment(html, baseUri);\n    Element fragment = document.body();\n    for (Node node : fragment.childNodes()) {\n        node.parentNode = null;\n        appendChild(node);\n    }\n    return this;\n}",
+            "ernie-3.5-128k": "Certainly! The issue you're encountering likely stems from the fact that `Parser.parseBodyFragment(html, baseUri).body()` might be returning a null value if the parsed fragment does not contain a `<body>` tag or if the parsing fails. To address this, you should check for null before proceeding with the rest of the code.\n\nHere is the corrected method:\n\npublic Element append(String html) {\n    Validate.notNull(html);\n    \n    Document document = Parser.parseBodyFragment(html, baseUri);\n    Element fragment = document.body();\n    if (fragment != null) {\n        for (Node node : fragment.childNodes()) {\n            node.parentNode = null;\n            appendChild(node);\n        }\n    } else {\n        // Optionally handle the case where fragment is null, e.g., log a warning\n        System.err.println(\"Warning: The parsed fragment does not contain a <body> tag.\");\n    }\n    return this;\n}\n\nIn this corrected version, we first parse the HTML fragment into a `Document` object. We then attempt to retrieve the `<body>` element from the `Document`. If the `<body>` element is not null, we proceed with detaching and appending its child nodes to the current element. If it is null, we print a warning message (you can customize this behavior as needed)."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\npublic Element append(String html) {\n    Validate.notNull(html);\n    \n    Element fragment = Parser.parseBodyFragment(html, baseUri).getRootElement();\n```",
+            "doubao-pro-4k": "public Element append(String html) {\n    Validate.notNull(html);\n\n    Element fragment = Parser.parse(html, baseUri).getBody();\n}",
+            "deepseek-chat": "public Element append(String html) {\n        Validate.notNull(html);\n        \n        Element fragment = Parser.parseBodyFragment(html, baseUri).body();\n        return fragment;",
+            "ernie-3.5-128k": "public Element append(String html) {\n        Validate.notNull(html);\n        \n        Element fragment = Parser.parseBodyFragment(html, baseUri).firstElement();",
+            "gpt-4o-mini": "public Element append(String html) {\n    Validate.notNull(html);\n    \n    Element fragment = Parser.parseBodyFragment(html, baseUri).child(0);\n"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Validate.notNull(fragment);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Element fragment = Parser.parseBodyFragment(html, baseUri);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"for (Node node : fragment.childNodesCopy()) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Element fragment = Parser.parseBodyFragment(html, this.baseUri()).body();\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"node.parentNode = fragment;\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Element fragment = Parser.parseBodyFragment(html, baseUri).body().firstChild;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"Element fragment = Parser.parseBodyFragment(html, baseUri);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Element fragment = Parser.parseBodyFragment(html, baseUri).body().child(0);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Element fragment = Parser.parseFragment(html, baseUri);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"Document fragment = Parser.parseBodyFragment(html, baseUri).firstElementSibling();\"\n    },\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"Element fragmentElement = fragment instanceof Element ? (Element) fragment : null;\"\n    },\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"if (fragmentElement != null) {\"\n    },\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"    for (Node node : fragmentElement.childNodes()) {\"\n    },\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"}\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Element fragment = Parser.parseBodyFragment(html, baseUri).get(0);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"Element fragment = Parser.parse(html, baseUri).body();\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Element fragment = Parser.parseBodyFragment(html, baseUri).body().child(0);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Element fragment = Parser.parseBodyFragment(html, baseUri).firstElement();\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Element fragment = Parser.parseFragment(html, baseUri);\"\n    }\n]"
+        }
+    },
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "7",
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "**10**",
+            "deepseek-chat": "6",
+            "gpt-4o-mini": "10"
+        },
+        "prompt_fl_2": {
+            "qwen-turbo": "4",
+            "doubao-pro-4k": "7.",
+            "deepseek-chat": "1",
+            "ernie-3.5-128k": "**3**",
+            "gpt-4o-mini": "14"
+        },
+        "prompt_fl_3": {
+            "qwen-turbo": "219",
+            "ernie-3.5-128k": "**219**",
+            "deepseek-chat": "5",
+            "gpt-4o-mini": "45",
+            "doubao-pro-4k": "7"
+        },
+        "prompt_fl_4": {
+            "doubao-pro-4k": "node.parentNode = null;",
+            "qwen-turbo": "node.parentNode = null;",
+            "ernie-3.5-128k": "Node node = nodes.get(i);",
+            "gpt-4o-mini": "node.parentNode = null;",
+            "deepseek-chat": "node.parentNode = null;"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "node.parentNode = null;",
+            "doubao-pro-4k": "node.parentNode = null;",
+            "ernie-3.5-128k": "Node node = nodes.get(i);",
+            "deepseek-chat": "Element fragment = Parser.parseBodyFragment(html, baseUri).body();",
+            "gpt-4o-mini": "node.parentNode = null;"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "node.parentNode = null;",
+            "doubao-pro-4k": "node.parentNode = null;",
+            "ernie-3.5-128k": "Node node = nodes.get(i);",
+            "deepseek-chat": "Element fragment = Parser.parseBodyFragment(html, baseUri).body();",
+            "gpt-4o-mini": "prependChild(node);"
+        },
+        "prompt_apr_1": {
+            "ernie-3.5-128k": "public Element prepend(String html) {\n        Validate.notNull(html);\n        \n        Document fragmentDoc = Parser.parseBodyFragment(html, baseUri);\n        Element fragment = fragmentDoc.body();\n        List<Node> nodes = fragment.childNodes();\n        for (int i = nodes.size() - 1; i >= 0; i--) {\n            Node node = nodes.get(i);\n            node.parentNode = null;\n            prependChild(node);\n        }\n        return this;\n    }",
+            "deepseek-chat": "public Element prepend(String html) {\n    Validate.notNull(html);\n    \n    Element fragment = Parser.parseBodyFragment(html, baseUri).body();\n    List<Node> nodes = fragment.childNodes();\n    for (int i = nodes.size() - 1; i >= 0; i--) {\n        Node node = nodes.get(i);\n        node.remove(); // Fix: Remove the node from its current parent before prepending\n        prependChild(node);\n    }\n    return this;\n}",
+            "qwen-turbo": "Certainly, the issue in the provided code is that the `Node` class does not have a `parentNode` field to set its parent. Instead, you should use the `Element` class and its methods to manipulate the DOM structure. Here's the corrected version of the method:\n\n```java\npublic Element prepend(String html) {\n    Validate.notNull(html);\n    \n    Element fragment = Parser.parseBodyFragment(html, baseUri).body();\n    List<Node> nodes = fragment.childNodes();\n    for (int i = nodes.size() - 1; i >= 0; i--) {\n        Node node = nodes.get(i);\n        if (node instanceof Element) {\n            Element element = (Element) node;\n            element.remove();\n            prependChild(element);\n        } else {\n            appendChild(node);\n        }\n    }\n    return this;\n}\n```\n\nIn this corrected version, I've used the `remove()` method to remove the node from its current parent and then used `prependChild(Element)` to add it as a child to the current element. If the node is not an instance of `Element`, it is appended as a child instead. This approach ensures that the node is correctly removed from its original location and then added to the desired location.",
+            "doubao-pro-4k": "public Element prepend(String html) {\n        Validate.notNull(html);\n\n        Element fragment = Parser.parseBodyFragment(html, baseUri); // Bug fixed: Removed.body()\n        List<Node> nodes = fragment.childNodes();\n        for (int i = nodes.size() - 1; i >= 0; i--) {\n            Node node = nodes.get(i);\n            node.parentNode = null;\n            prependChild(node);\n        }\n        return this;\n    }",
+            "gpt-4o-mini": "public Element prepend(String html) {\n    Validate.notNull(html);\n\n    Element fragment = Parser.parseBodyFragment(html, baseUri).body();\n    List<Node> nodes = fragment.childNodes();\n    for (int i = nodes.size() - 1; i >= 0; i--) {\n        Node node = nodes.get(i);\n        node.parentNode = null; // This line should be fixed\n        if (node instanceof Element) {\n            // Ensure that the node is an Element before calling prependChild\n            prependChild((Element) node);\n        } else {\n            // Handle other types of nodes, if needed (e.g., TextNode)\n            prependChild(node);\n        }\n    }\n    return this;\n}"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "Certainly, here is the corrected method:\n\n```java\npublic Element prepend(String html) {\n    Validate.notNull(html);\n    \n    Document parsedDocument = Jsoup.parseBodyFragment(html, baseUri());\n    Element fragment = parsedDocument.body();\n    List<Node> nodes = fragment.childNodes();\n    for (int i = nodes.size() - 1; i >= 0; i--) {\n        Node node = nodes.get(i);\n        node.parentNode(null); // Use the correct method to detach the node\n        prependChild(node);\n    }\n    return this;\n}\n```\n\nThis correction ensures that the `Node` is properly detached from its parent before being prepended to the current element. Additionally, it uses the correct method `parentNode(null)` to detach the node.",
+            "doubao-pro-4k": "public Element prepend(String html) {\n    Validate.notNull(html);\n\n    Element fragment = Parser.parseFragment(html, baseUri).getBody();\n    List<Node> nodes = fragment.childNodes();\n    for (int i = nodes.size() - 1; i >= 0; i--) {\n        Node node = nodes.get(i);\n        node.parentNode = null;\n        prependChild(node);\n    }\n    return this;\n}",
+            "gpt-4o-mini": "public Element prepend(String html) {\n    Validate.notNull(html);\n    \n    // Fix: Parse the HTML fragment using Parser.parseFragment instead of parseBodyFragment\n    Element fragment = Parser.parseFragment(html, baseUri);\n    List<Node> nodes = fragment.childNodes();\n    for (int i = nodes.size() - 1; i >= 0; i--) {\n        Node node = nodes.get(i);\n        node.parentNode = null;\n        prependChild(node);\n    }\n    return this;\n}",
+            "deepseek-chat": "public Element prepend(String html) {\n    Validate.notNull(html);\n    \n    Document document = Parser.parseBodyFragment(html, baseUri);\n    Element fragment = document.body();\n    List<Node> nodes = fragment.childNodes();\n    for (int i = nodes.size() - 1; i >= 0; i--) {\n        Node node = nodes.get(i);\n        node.remove();\n        prependChild(node);\n    }\n    return this;\n}",
+            "ernie-3.5-128k": "Sure, to fix the line where the `Element fragment` is being assigned, we need to ensure that the `Parser.parseBodyFragment(html, baseUri)` method is correctly called and that it returns a valid `Document` object from which we can retrieve the body. The `parseBodyFragment` method typically returns a `Document` which has a `body()` method to get the root `Element`. Here\u2019s the corrected method:\n\npublic Element prepend(String html) {\n    Validate.notNull(html);\n    \n    // Assuming Parser.parseBodyFragment returns a Document\n    Document doc = Parser.parseBodyFragment(html, baseUri);\n    Element fragment = doc.body();\n    \n    List<Node> nodes = fragment.childNodes();\n    for (int i = nodes.size() - 1; i >= 0; i--) {\n        Node node = nodes.get(i);\n        node.parentNode = null; // This line might not be necessary depending on the library; usually the library handles reparenting\n        prependChild(node);\n    }\n    return this;\n}\n\nNote:\n- The `Parser.parseBodyFragment(html, baseUri)` should return a `Document` object. Ensure that this method is correctly implemented and returns what is expected.\n- The line `node.parentNode = null;` might not be necessary depending on the specific library you are using (like jsoup). In jsoup, for example, reparenting nodes automatically handles detaching them from the original parent. If you are using a similar library, you can omit that line.\n- Ensure `prependChild(node)` is correctly implemented to handle adding nodes to the beginning of the current element's child list."
+        },
+        "prompt_apr_3": {
+            "doubao-pro-4k": "public Element prepend(String html) {\n    Validate.notNull(html);\n\n    Element fragment = Parser.parseFragment(html, baseUri);\n}",
+            "qwen-turbo": "```java\npublic Element prepend(String html) {\n    Validate.notNull(html);\n    \n    Element fragment = Parser.parseBodyFragment(html, baseUri).body();\n``` \nNote: The provided code snippet appears correct unless `Parser.parseBodyFragment(html, baseUri)` does not return an object that has a `body()` method. If there's a specific issue with the `body()` call, more context would be needed to accurately fix the bug.",
+            "deepseek-chat": "```java\npublic Element prepend(String html) {\n    Validate.notNull(html);\n    \n    Element fragment = Parser.parseBodyFragment(html, baseUri).body();\n    return fragment;\n```",
+            "ernie-3.5-128k": "public Element prepend(String html) {\n        Validate.notNull(html);\n        \n        Element fragment = Parser.parseBodyFragment(html, baseUri).firstElement();",
+            "gpt-4o-mini": "public Element prepend(String html) {\n        Validate.notNull(html);\n        \n        Element fragment = Parser.parseFragment(html, baseUri);"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Validate.notEmpty(html);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Element fragment = Parser.parseBodyFragment(html, baseUri);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Element fragment = Parser.parseBodyFragment(html, this.baseUri()).body();\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Element fragment = Parser.parseBodyFragment(html, baseUri).body();\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Element fragment = Parser.parseFragment(html, baseUri);\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Element fragment = Parser.parseBodyFragment(html, baseUri).body().firstChild;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"Element fragment = Parser.parseBodyFragment(html, baseUri);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"Element fragment = Parser.parseBodyFragment(html, baseUri).firstElementSibling();\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Element fragment = Parser.parseBodyFragment(html, baseUri).body().children().first();\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Element fragment = Parser.parseFragment(html, baseUri);\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Element fragment = Parser.parseBodyFragment(html, baseUri).get(0);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"Element fragment = Parser.parseFragment(html, baseUri).body();\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Element fragment = Parser.parseBodyFragment(html, baseUri).firstElement();\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Element fragment = Parser.parseBodyFragment(html, baseUri).body().child(0);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Element fragment = Parser.parseFragment(html, baseUri);\"\n    }\n]"
+        }
+    },
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "10",
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "**13**",
+            "deepseek-chat": "10",
+            "gpt-4o-mini": "24"
+        },
+        "prompt_fl_2": {
+            "qwen-turbo": "219",
+            "deepseek-chat": "14",
+            "ernie-3.5-128k": "33",
+            "doubao-pro-4k": "1",
+            "gpt-4o-mini": "29"
+        },
+        "prompt_fl_3": {
+            "qwen-turbo": "219",
+            "doubao-pro-4k": "18",
+            "deepseek-chat": "10",
+            "ernie-3.5-128k": "**23**",
+            "gpt-4o-mini": "20"
+        },
+        "prompt_fl_4": {
+            "doubao-pro-4k": "deepest.addChild(this);",
+            "qwen-turbo": "Element deepest = getDeepChild(wrap);",
+            "ernie-3.5-128k": "parentNode.replaceChild(this, wrap);",
+            "deepseek-chat": "```java\nparentNode.replaceChild(this, wrap);\n```",
+            "gpt-4o-mini": "parentNode.replaceChild(this, wrap);"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "parentNode.replaceChild(this, wrap);",
+            "doubao-pro-4k": "parentNode.replaceChild(this, wrap);",
+            "ernie-3.5-128k": "parentNode.replaceChild(this, wrap);",
+            "deepseek-chat": "Element wrap = wrapChildren.first();",
+            "gpt-4o-mini": "deepest.addChild(this);"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "parentNode.replaceChild(this, wrap);",
+            "doubao-pro-4k": "parentNode.replaceChild(this, wrap);",
+            "ernie-3.5-128k": "parentNode.replaceChild(this, wrap);",
+            "deepseek-chat": "Element wrap = wrapChildren.first();",
+            "gpt-4o-mini": "deepest.addChild(this);"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "Certainly! The issue on line 4 is that `Parser.parseBodyFragment` expects a second argument which is the base URI. If `baseUri` is not defined or is null, it will cause an error. To fix this, we need to ensure that `baseUri` is properly defined and passed to the method. Assuming `baseUri` is a class-level variable or needs to be passed as a parameter, I'll add it as a method parameter for completeness.\n\nHere's the complete corrected method:\n\n```java\npublic Element wrap(String html, String baseUri) {\n    Validate.notEmpty(html);\n\n    Element wrapBody = Parser.parseBodyFragment(html, baseUri).body();\n    Elements wrapChildren = wrapBody.children();\n    Element wrap = wrapChildren.first();\n    if (wrap == null) // nothing to wrap with; noop\n        return null;\n\n    Element deepest = getDeepChild(wrap);\n    parentNode.replaceChild(this, wrap);\n    deepest.addChild(this);\n\n    // remainder (unbalanced wrap, like <div></div><p></p> -- The <p> is remainder\n    if (wrapChildren.size() > 1) {\n        for (int i = 1; i < wrapChildren.size(); i++) { // skip first\n            Element remainder = wrapChildren.get(i);\n            remainder.parentNode.removeChild(remainder);\n            wrap.appendChild(remainder);\n        }\n    }\n    return this;\n}\n```\n\nIn this corrected version, the `baseUri` parameter is added to the method signature to ensure that `Parser.parseBodyFragment` has all necessary parameters.",
+            "deepseek-chat": "public Element wrap(String html) {\n    Validate.notEmpty(html);\n\n    Element wrapBody = Parser.parseBodyFragment(html, baseUri).body();\n    Elements wrapChildren = wrapBody.children();\n    if (wrapChildren.isEmpty()) // nothing to wrap with; noop\n        return null;\n\n    Element wrap = wrapChildren.first();\n    Element deepest = getDeepChild(wrap);\n    parentNode.replaceChild(this, wrap);\n    deepest.addChild(this);\n\n    // remainder (unbalanced wrap, like <div></div><p></p> -- The <p> is remainder\n    if (wrapChildren.size() > 1) {\n        for (int i = 1; i < wrapChildren.size(); i++) { // skip first\n            Element remainder = wrapChildren.get(i);\n            remainder.parentNode.removeChild(remainder);\n            wrap.appendChild(remainder);\n        }\n    }\n    return this;\n}",
+            "gpt-4o-mini": "public Element wrap(String html) {\n    Validate.notEmpty(html);\n\n    Element wrapBody = Parser.parseBodyFragment(html, baseUri).body();\n    Elements wrapChildren = wrapBody.children();\n    Element wrap = wrapChildren.first();\n    if (wrap == null) // nothing to wrap with; noop\n        return null;\n\n    // Fix: Ensure `parentNode` is not null before replacing child\n    if (parentNode == null) {\n        throw new IllegalStateException(\"Parent node is null, cannot perform wrap operation.\");\n    }\n    \n    Element deepest = getDeepChild(wrap);\n    parentNode.replaceChild(this, wrap);\n    deepest.addChild(this);\n\n    // remainder (unbalanced wrap, like <div></div><p></p> -- The <p> is remainder)\n    if (wrapChildren.size() > 1) {\n        for (int i = 1; i < wrapChildren.size(); i++) { // skip first\n            Element remainder = wrapChildren.get(i);\n            remainder.parentNode.removeChild(remainder);\n            wrap.appendChild(remainder);\n        }\n    }\n    return this;\n}",
+            "doubao-pro-4k": "public Element wrap(String html) {\n    Validate.notEmpty(html);\n\n    Element wrapBody = Parser.parseBodyFragment(html, baseUri).body();\n    Elements wrapChildren = wrapBody.children();\n    Element wrap = wrapChildren.get(0); // Bug fix: Changed from first() to get(0)\n    if (wrap == null) // nothing to wrap with; noop\n        return null;\n\n    Element deepest = getDeepChild(wrap);\n    parentNode.replaceChild(this, wrap);\n    deepest.addChild(this);\n\n    // remainder (unbalananced wrap, like <div></div><p></p> -- The <p> is remainder\n    if (wrapChildren.size() > 1) {\n        for (int i = 1; i < wrapChildren.size(); i++) { // skip first\n            Element remainder = wrapChildren.get(i);\n            remainder.parentNode.removeChild(remainder);\n            wrap.appendChild(remainder);\n        }\n    }\n    return this;\n}",
+            "ernie-3.5-128k": "public Element wrap(String html) {\n    Validate.notEmpty(html);\n\n    Document doc = Jsoup.parseBodyFragment(html, baseUri);\n    Element wrapBody = doc.body();\n    Elements wrapChildren = wrapBody.children();\n    Element wrap = wrapChildren.first();\n    if (wrap == null) // nothing to wrap with; noop\n        return null;\n\n    Element deepest = getDeepChild(wrap);\n    parentNode.replaceChild(this, wrap);\n    deepest.addChild(this);\n\n    // remainder (unbalanced wrap, like <div></div><p></p> -- The <p> is remainder\n    if (wrapChildren.size() > 1) {\n        for (int i = 1; i < wrapChildren.size(); i++) { // skip first\n            Element remainder = wrapChildren.get(i);\n            remainder.parentNode.removeChild(remainder);\n            wrap.appendChild(remainder);\n        }\n    }\n    return this;\n}\n\nIn the corrected method, I changed `Parser.parseBodyFragment(html, baseUri).body();` to `Jsoup.parseBodyFragment(html, baseUri).body();` because `Parser` is not defined in the provided code snippet and `Jsoup.parseBodyFragment` is the correct method to parse a body fragment from HTML. Ensure that `baseUri` is defined and properly set in your context, and that `getDeepChild` and other methods/variables used are also properly defined and initialized in your class."
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "Certainly! The issue you're encountering might be related to how `Parser.parseBodyFragment` handles the HTML string and the base URI. To ensure that we correctly parse the body fragment and handle the elements properly, we need to make sure that the `wrapBody` element is correctly initialized and that we handle cases where the parsed body might not contain any children.\n\nHere's the complete corrected method:\n\n```java\npublic Element wrap(String html) {\n    Validate.notEmpty(html);\n\n    Document parsedDocument = Jsoup.parseBodyFragment(html, baseUri);\n    Element wrapBody = parsedDocument.body();\n    Elements wrapChildren = wrapBody.children();\n    Element wrap = wrapChildren.first();\n    if (wrap == null) { // nothing to wrap with; noop\n        return null;\n    }\n\n    Element deepest = getDeepChild(wrap);\n    parentNode.replaceChild(this, wrap);\n    deepest.appendChild(this);\n\n    // remainder (unbalanced wrap, like <div></div><p></p> -- The <p> is remainder\n    if (wrapChildren.size() > 1) {\n        for (int i = 1; i < wrapChildren.size(); i++) { // skip first\n            Element remainder = wrapChildren.get(i);\n            remainder.remove();\n            wrap.appendChild(remainder);\n        }\n    }\n    return this;\n}\n```\n\nIn this corrected version:\n- I used `Jsoup.parseBodyFragment` directly to parse the HTML and extract the body.\n- I ensured that the `wrapBody` is correctly initialized from the parsed document.\n- I replaced `removeChild` with `remove` for better clarity and consistency.\n- The rest of the logic remains the same, ensuring that the method behaves as expected.",
+            "deepseek-chat": "public Element wrap(String html) {\n    Validate.notEmpty(html);\n\n    Document doc = Parser.parseBodyFragment(html, baseUri);\n    Element wrapBody = doc.body();\n    Elements wrapChildren = wrapBody.children();\n    Element wrap = wrapChildren.first();\n    if (wrap == null) // nothing to wrap with; noop\n        return null;\n\n    Element deepest = getDeepChild(wrap);\n    parentNode.replaceChild(this, wrap);\n    deepest.addChild(this);\n\n    // remainder (unbalanced wrap, like <div></div><p></p> -- The <p> is remainder\n    if (wrapChildren.size() > 1) {\n        for (int i = 1; i < wrapChildren.size(); i++) { // skip first\n            Element remainder = wrapChildren.get(i);\n            remainder.parentNode.removeChild(remainder);\n            wrap.appendChild(remainder);\n        }\n    }\n    return this;\n}",
+            "gpt-4o-mini": "Here is the complete corrected method:\n\n```java\npublic Element wrap(String html) {\n    Validate.notEmpty(html);\n\n    // The issue is that parseBodyFragment returns a Document, and calling .body() on it will give the body element.\n    // This causes problems if the fragment is not a valid body fragment.\n    Document doc = Parser.parseFragment(html, baseUri);\n    Element wrapBody = doc.body();\n    Elements wrapChildren = wrapBody.children();\n    Element wrap = wrapChildren.first();\n    if (wrap == null) // nothing to wrap with; noop\n        return null;\n\n    Element deepest = getDeepChild(wrap);\n    parentNode.replaceChild(this, wrap);\n    deepest.addChild(this);\n\n    // remainder (unbalanced wrap, like <div></div><p></p> -- The <p> is remainder\n    if (wrapChildren.size() > 1) {\n        for (int i = 1; i < wrapChildren.size(); i++) { // skip first\n            Element remainder = wrapChildren.get(i);\n            remainder.parentNode.removeChild(remainder);\n            wrap.appendChild(remainder);\n        }\n    }\n    return this;\n}\n```\n\n### Explanation of the fix:\n- The issue was that `Parser.parseBodyFragment(html, baseUri)` tries to parse a fragment of HTML as if it were a body of a complete HTML document, which can be problematic in some cases. \n- Instead, the correct approach is to use `Parser.parseFragment(html, baseUri)`, which parses an arbitrary HTML fragment and returns a `Document` containing the fragment. This approach does not assume that the HTML being parsed is enclosed within a `<body>` tag.\n- After parsing the fragment, we can then access the body of the document via `doc.body()`. This will give us the root of the parsed content, and we can proceed with the rest of the method as expected.\n\nNow, the method should function correctly regardless of whether the input HTML is wrapped in a `<body>` tag or not.",
+            "doubao-pro-4k": "public Element wrap(String html) {\n    Validate.notEmpty(html);\n\n    Element wrapBody = Parser.parseFragment(html, baseUri).getBody();\n    Elements wrapChildren = wrapBody.children();\n    Element wrap = wrapChildren.first();\n    if (wrap == null) // nothing to wrap with; noop\n        return null;\n\n    Element deepest = getDeepChild(wrap);\n    parentNode.replaceChild(this, wrap);\n    deepest.addChild(this);\n\n    // remainder (unbalananced wrap, like <div></div><p></p> -- The <p> is remainder\n    if (wrapChildren.size() > 1) {\n        for (int i = 1; i < wrapChildren.size(); i++) { // skip first\n            Element remainder = wrapChildren.get(i);\n            remainder.parentNode.removeChild(remainder);\n            wrap.appendChild(remainder);\n        }\n    }\n    return this;\n}",
+            "ernie-3.5-128k": "To address the potential issue in the line `Element wrapBody = Parser.parseBodyFragment(html, baseUri).body();`, it's important to ensure that the `Parser` and related methods are correctly used and that any exceptions are handled properly. The `Parser.parseBodyFragment` method should be called with valid parameters, and it's crucial to handle any `null` values or exceptions that might arise.\n\nAssuming `Parser` is from Jsoup, and `baseUri` is a properly defined URI string, the corrected method should look like this:\n\n public Element wrap(String html, String baseUri) {\n        Validate.notEmpty(html, \"HTML content must not be empty\");\n        Validate.notEmpty(baseUri, \"Base URI must not be empty\");\n\n        try {\n            Document doc = Parser.parseBodyFragment(html, baseUri);\n            Element wrapBody = doc.body();\n            if (wrapBody == null) {\n                throw new IllegalArgumentException(\"Parsed body fragment did not contain a valid body element\");\n            }\n\n            Elements wrapChildren = wrapBody.children();\n            Element wrap = wrapChildren.first();\n            if (wrap == null) { // nothing to wrap with; noop\n                return null;\n            }\n\n            Element deepest = getDeepChild(wrap);\n            parentNode.replaceChild(this, wrap);\n            deepest.addChild(this);\n\n            // remainder (unbalanced wrap, like <div></div><p></p> -- The <p> is remainder\n            if (wrapChildren.size() > 1) {\n                for (int i = 1; i < wrapChildren.size(); i++) { // skip first\n                    Element remainder = wrapChildren.get(i);\n                    remainder.parentNode.removeChild(remainder);\n                    wrap.appendChild(remainder);\n                }\n            }\n            return this;\n        } catch (Exception e) {\n            // Handle any exceptions that occur during parsing\n            // You can log the exception or throw a runtime exception\n            throw new RuntimeException(\"Error parsing HTML fragment\", e);\n        }\n    }\n\nNote that this method now includes:\n1. Validation for `baseUri` to ensure it is not empty.\n2. Proper exception handling to catch and manage any exceptions that might occur during parsing.\n3. A check to ensure that `wrapBody` is not `null` after parsing.\n\nMake sure to adjust the `getDeepChild` method and `parentNode` field according to your class context, as they are not defined in the snippet provided. Also, you may want to customize the exception handling based on your application's requirements."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\npublic Element wrap(String html) {\n    Validate.notEmpty(html);\n\n    Element wrapBody = Parser.parseBodyFragment(html, baseUri).body();\n``` \n corrected to:\n```java\npublic Element wrap(String html) {\n    Validate.notEmpty(html);\n\n    Document parsedDocument = Parser.parseBodyFragment(html, baseUri);\n    Element wrapBody = parsedDocument.body();\n```",
+            "doubao-pro-4k": "public Element wrap(String html) {\n    Validate.notEmpty(html);\n\n    Element wrapBody = Parser.parseBodyFragment(html, baseUri).getBody();\n}",
+            "ernie-3.5-128k": "public Element wrap(String html) {\n        Validate.notEmpty(html);\n\n        Element wrapBody = Parser.parseBodyFragment(html, baseUri).firstElement();",
+            "deepseek-chat": "```java\npublic Element wrap(String html) {\n    Validate.notEmpty(html);\n\n    Element wrapBody = Parser.parseBodyFragment(html, baseUri).body();\n    return wrapBody;\n```",
+            "gpt-4o-mini": "public Element wrap(String html) {\n    Validate.notEmpty(html);\n\n    Element wrapBody = Parser.parseFragment(html, baseUri); "
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Element wrapBody = new Element(Tag.valueOf(\\\"div\\\"), baseUri);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Element wrapBody = Parser.parseBodyFragment(html, baseUri).getBody();\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Element wrapBody = Parser.parseBodyFragment(html, baseUri).firstElement();\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Element wrapBody = Parser.parseBodyFragment(html, baseUri).body();\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Element wrap = wrapChildren.isEmpty() ? null : wrapChildren.first();\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Element wrapBody = Parser.parseBodyFragment(html, baseUri).body().firstElementChild();\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"Element wrapBody = Parser.parseBodyFragment(html, baseUri).getBody();\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"        Element wrapBody = Parser.parseBodyFragment(html, baseUri).body();\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"Document wrapDoc = Jsoup.parseBodyFragment(html, baseUri);\\nElement wrapBody = wrapDoc.body();\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Element wrapBody = Parser.parseFragment(html, baseUri);\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Element wrapBody = Parser.parseBodyFragment(html, baseUri).body();\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"Element wrapBody = Parser.parseFragment(html, baseUri).body();\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"Element wrapBody = Parser.parseBodyFragment(html, baseUri).body();\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Element wrapBody = Parser.parseBodyFragment(html, baseUri).firstElement();\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Element wrapBody = Parser.parseFragment(html, baseUri);\"\n    }\n]"
+        }
+    },
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "12",
+            "qwen-turbo": "21",
+            "ernie-3.5-128k": "**16**",
+            "deepseek-chat": "14",
+            "gpt-4o-mini": "29"
+        },
+        "prompt_fl_2": {
+            "qwen-turbo": "14",
+            "doubao-pro-4k": "1",
+            "ernie-3.5-128k": "22",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "42"
+        },
+        "prompt_fl_3": {
+            "qwen-turbo": "219",
+            "doubao-pro-4k": "1",
+            "deepseek-chat": "1",
+            "ernie-3.5-128k": "**369**",
+            "gpt-4o-mini": "24"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "if (child.tag().equals(bodyTag)) {\n",
+            "doubao-pro-4k": "if (child.tag().equals(bodyTag)) {",
+            "ernie-3.5-128k": "if (child.tag().equals(bodyTag)) {",
+            "deepseek-chat": "if (!isEmptyElement)\n    stack.addLast(child);",
+            "gpt-4o-mini": "stack.addLast(child);"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "parent.appendChild(child);",
+            "deepseek-chat": "Element root = addChildToParent(implicit, false);",
+            "ernie-3.5-128k": "parent.appendChild(head);",
+            "doubao-pro-4k": "// special case: make sure there's a head before putting in body\nif (child.tag().equals(bodyTag)) {\n    Element head = new Element(headTag, baseUri);\n    implicit.appendChild(head);\n}",
+            "gpt-4o-mini": "parent.appendChild(child);"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "parent.appendChild(child);",
+            "deepseek-chat": "Element root = addChildToParent(implicit, false);",
+            "ernie-3.5-128k": "Element implicit = new Element(parentTag, baseUri);",
+            "doubao-pro-4k": "assertEquals(\"<table><tr><td>1</td></tr><tr><td>2</td></tr></table>\", TextUtil.stripNewlines(doc.body().html()));",
+            "gpt-4o-mini": "Element root = addChildToParent(implicit, false);"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "Sure, here is the complete corrected method. The issue on line 6 was related to the logic of adding an implicit parent element. The correction ensures that the implicit parent is added correctly and handles the special case for the `body` tag appropriately.\n\n```java\nprivate Element addChildToParent(Element child, boolean isEmptyElement) {\n    Element parent = popStackToSuitableContainer(child.tag());\n    Tag childTag = child.tag();\n    boolean validAncestor = stackHasValidParent(childTag);\n\n    if (!validAncestor) {\n        // create implicit parent around this child\n        Tag parentTag = childTag.getImplicitParent();\n        Element implicit = new Element(parentTag, baseUri);\n        // special case: make sure there's a head before putting in body\n        if (child.tag().equals(bodyTag)) {\n            Element head = new Element(headTag, baseUri);\n            implicit.appendChild(head);\n        }\n        implicit.appendChild(child);\n\n        // recurse to ensure somewhere to put parent\n        Element root = addChildToParent(implicit, false);\n        if (!isEmptyElement) {\n            stack.addLast(child);\n        }\n        return root;\n    }\n\n    parent.appendChild(child);\n\n    if (!isEmptyElement) {\n        stack.addLast(child);\n    }\n    return parent;\n}\n```\n\nThe logic remains the same, but I've ensured that the implicit parent handling is correct and that the special case for the `body` tag is properly managed. This should resolve the bug you mentioned.",
+            "gpt-4o-mini": "private Element addChildToParent(Element child, boolean isEmptyElement) {\n    Element parent = popStackToSuitableContainer(child.tag());\n    Tag childTag = child.tag();\n    boolean validAncestor = stackHasValidParent(childTag);\n\n    if (!validAncestor) {\n        // create implicit parent around this child\n        Tag parentTag = childTag.getImplicitParent();\n        Element implicit = new Element(parentTag, baseUri);\n        // special case: make sure there's a head before putting in body\n        if (child.tag().equals(bodyTag)) {\n            Element head = new Element(headTag, baseUri);\n            implicit.appendChild(head);\n        }\n        implicit.appendChild(child);\n\n        // recurse to ensure somewhere to put parent\n        Element root = addChildToParent(implicit, false);\n        if (!isEmptyElement)\n            stack.addLast(child);\n        return root;\n    }\n\n    parent.appendChild(child);\n\n    if (!isEmptyElement)\n        stack.addLast(child);\n    return parent;\n}",
+            "doubao-pro-4k": "private Element addChildToParent(Element child, boolean isEmptyElement) {\n    Element parent = popStackToSuitableContainer(child.tag());\n    Tag childTag = child.tag();\n    boolean validAncestor = stackHasValidParent(childTag);\n\n    if (!validAncestor) {\n        // create implicit parent around this child\n        Tag parentTag = childTag.getImplicitParent();\n        Element implicit = new Element(parentTag, baseUri);\n        // special case: make sure there's a head before putting in body\n        if (child.tag().equals(bodyTag)) {\n            Element head = new Element(headTag, baseUri);\n            implicit.appendChild(head);\n        }\n        implicit.appendChild(child);\n\n        // recurse to ensure somewhere to put parent\n        Element root = addChildToParent(implicit, false);\n        if (!isEmptyElement)\n            stack.addLast(child);\n        return root;\n    }\n\n    parent.appendChild(child);\n\n    if (!isEmptyElement)\n        stack.addLast(child);\n    return parent;\n}",
+            "deepseek-chat": "private Element addChildToParent(Element child, boolean isEmptyElement) {\n    Element parent = popStackToSuitableContainer(child.tag());\n    Tag childTag = child.tag();\n    boolean validAncestor = stackHasValidParent(childTag);\n\n    if (!validAncestor) {\n        // create implicit parent around this child\n        Tag parentTag = childTag.getImplicitParent();\n        Element implicit = new Element(parentTag, baseUri);\n        // special case: make sure there's a head before putting in body\n        if (childTag.equals(bodyTag)) {\n            Element head = new Element(headTag, baseUri);\n            implicit.appendChild(head);\n        }\n        implicit.appendChild(child);\n\n        // recurse to ensure somewhere to put parent\n        Element root = addChildToParent(implicit, false);\n        if (!isEmptyElement)\n            stack.addLast(child);\n        return root;\n    }\n\n    parent.appendChild(child);\n\n    if (!isEmptyElement)\n        stack.addLast(child);\n    return parent;\n}",
+            "ernie-3.5-128k": "Sure, let's address the potential issue in line 6 of the provided method. The line `boolean validAncestor = stackHasValidParent(childTag);` suggests a method call `stackHasValidParent` that checks if the current stack of elements has a valid parent for the `childTag`. The bug might be related to how `stackHasValidParent` is implemented or how it interacts with the current state of the stack and the `childTag`.\n\nHowever, since we don't have the implementation of `stackHasValidParent`, `popStackToSuitableContainer`, `Tag`, `Element`, or the context of how the stack and elements are managed, I'll assume the basic functionality and provide a corrected version based on typical assumptions:\n\n1. Ensure `stackHasValidParent` correctly identifies valid parents.\n2. Ensure `popStackToSuitableContainer` returns the correct parent element.\n\nHere's the complete method with a placeholder comment for where additional debugging or validation might be needed:\n\nprivate Element addChildToParent(Element child, boolean isEmptyElement) {\n    Element parent = popStackToSuitableContainer(child.tag());\n    Tag childTag = child.tag();\n\n    // Ensure stackHasValidParent is correctly implemented and returns a valid boolean\n    // This might involve checking the current state of the stack against allowed parent-child relationships\n    boolean validAncestor = stackHasValidParent(childTag, parent);  // Modified to pass 'parent' for potential additional checks\n\n    if (!validAncestor) {\n        // create implicit parent around this child\n        Tag parentTag = childTag.getImplicitParent();\n        Element implicit = new Element(parentTag, baseUri);\n        // special case: make sure there's a head before putting in body\n        if (child.tag().equals(bodyTag)) {\n            Element head = new Element(headTag, baseUri);\n            implicit.appendChild(head);\n        }\n        implicit.appendChild(child);\n\n        // recurse to ensure somewhere to put parent\n        Element root = addChildToParent(implicit, false);\n        if (!isEmptyElement)\n            stack.addLast(child);\n        return root;\n    }\n\n    parent.appendChild(child);\n\n    if (!isEmptyElement)\n        stack.addLast(child);\n    return parent;\n}\n\n**Note**: I modified line 6 to include `parent` as an additional parameter to `stackHasValidParent`. This is a hypothetical change based on the assumption that the validation might need to consider the actual `parent` element retrieved by `popStackToSuitableContainer`. If `stackHasValidParent` doesn't need the `parent` element, you can revert that part of the change.\n\nAdditionally, ensure:\n- `popStackToSuitableContainer` correctly populates `parent` based on the current stack and the `childTag`.\n- `stackHasValidParent` correctly determines if the current stack state allows `childTag` to be appended to `parent`.\n- `baseUri`, `bodyTag`, and `headTag` are properly defined and initialized elsewhere in your code.\n\nIf the issue persists, you may need to debug `stackHasValidParent` and `popStackToSuitableContainer` to ensure they are functioning as expected."
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\nprivate Element addChildToParent(Element child, boolean isEmptyElement) {\n    Element parent = popStackToSuitableContainer(child.tag());\n    Tag childTag = child.tag();\n    boolean validAncestor = stackHasValidParent(childTag);\n\n    if (!validAncestor) {\n        // create implicit parent around this child\n        Tag parentTag = childTag.getImplicitParent();\n        Element implicit = new Element(parentTag, baseUri);\n        // special case: make sure there's a head before putting in body\n        if (child.tag().equals(bodyTag)) {\n            Element head = new Element(headTag, baseUri);\n            implicit.appendChild(head);\n        }\n        implicit.appendChild(child);\n\n        // recurse to ensure somewhere to put parent\n        Element root = addChildToParent(implicit, false);\n        if (!isEmptyElement) {\n            stack.addLast(child);\n        }\n        return root;\n    }\n\n    parent.appendChild(child);\n\n    if (!isEmptyElement) {\n        stack.addLast(child);\n    }\n    return parent;\n}\n```\n\nThe provided code does not contain an obvious bug within the `if (!validAncestor)` block itself. However, if the issue is related to how elements are managed in the stack, you might want to ensure that the stack operations are correctly implemented and that the conditions for adding elements to the stack are properly handled. If there is a specific issue or error message, please provide more details so I can address it accurately.",
+            "gpt-4o-mini": "private Element addChildToParent(Element child, boolean isEmptyElement) {\n        Element parent = popStackToSuitableContainer(child.tag());\n        Tag childTag = child.tag();\n        boolean validAncestor = stackHasValidParent(childTag);\n\n        if (!validAncestor) {\n            // create implicit parent around this child\n            Tag parentTag = childTag.getImplicitParent();\n            Element implicit = new Element(parentTag, baseUri);\n            // special case: make sure there's a head before putting in body\n            if (child.tag().equals(bodyTag)) {\n                Element head = new Element(headTag, baseUri);\n                implicit.appendChild(head);\n            }\n            implicit.appendChild(child);\n\n            // recurse to ensure somewhere to put parent\n            Element root = addChildToParent(implicit, false);\n            if (!isEmptyElement) {\n                stack.addLast(child);\n            }\n            return root;\n        }\n\n        parent.appendChild(child);\n\n        if (!isEmptyElement) {\n            stack.addLast(child);\n        }\n        return parent;\n    }",
+            "doubao-pro-4k": "private Element addChildToParent(Element child, boolean isEmptyElement) {\n    Element parent = popStackToSuitableContainer(child.tag());\n    Tag childTag = child.tag();\n    boolean validAncestor = stackHasValidParent(childTag);\n\n    if (!validAncestor) {\n        // create implicit parent around this child\n        Tag parentTag = childTag.getImplicitParent();\n        Element implicit = new Element(parentTag, baseUri);\n        // special case: make sure there's a head before putting in body\n        if (child.tag().equals(bodyTag)) {\n            Element head = new Element(headTag, baseUri);\n            implicit.appendChild(head);\n        }\n        implicit.appendChild(child);\n\n        // recurse to ensure somewhere to put parent\n        Element root = addChildToParent(implicit, false);\n        if (!isEmptyElement)\n            stack.addLast(child);\n        return root;\n    } else {\n        parent.appendChild(child);\n\n        if (!isEmptyElement)\n            stack.addLast(child);\n        return parent;\n    }\n}",
+            "deepseek-chat": "private Element addChildToParent(Element child, boolean isEmptyElement) {\n    Element parent = popStackToSuitableContainer(child.tag());\n    Tag childTag = child.tag();\n    boolean validAncestor = stackHasValidParent(childTag);\n\n    if (!validAncestor) {\n        // create implicit parent around this child\n        Tag parentTag = childTag.getImplicitParent();\n        Element implicit = new Element(parentTag, baseUri);\n        // special case: make sure there's a head before putting in body\n        if (childTag.equals(bodyTag)) {\n            Element head = new Element(headTag, baseUri);\n            implicit.appendChild(head);\n        }\n        implicit.appendChild(child);\n\n        // recurse to ensure somewhere to put parent\n        Element root = addChildToParent(implicit, false);\n        if (!isEmptyElement)\n            stack.addLast(child);\n        return root;\n    }\n\n    parent.appendChild(child);\n\n    if (!isEmptyElement)\n        stack.addLast(child);\n    return parent;\n}\n\nThe bug in the original code was in the condition `if (child.tag().equals(bodyTag))`. The `child.tag()` method call was redundant since `childTag` was already assigned earlier in the method. The corrected code uses `childTag` directly, which is more efficient and avoids unnecessary method calls. The rest of the method remains unchanged.",
+            "ernie-3.5-128k": "Here is the complete corrected method with the fix applied to the specified block:\n\nprivate Element addChildToParent(Element child, boolean isEmptyElement) {\n    Element parent = popStackToSuitableContainer(child.tag());\n    Tag childTag = child.tag();\n    boolean validAncestor = stackHasValidParent(childTag);\n\n    if (!validAncestor) {\n        // create implicit parent around this child\n        Tag parentTag = childTag.getImplicitParent();\n        Element implicit = new Element(parentTag, baseUri);\n        // special case: make sure there's a head before putting in body\n        if (childTag.equals(bodyTag)) {\n            Element head = new Element(headTag, baseUri);\n            implicit.appendChild(head);\n        }\n        implicit.appendChild(child);\n\n        // Recurse to ensure somewhere to put the implicit parent\n        // Pass `isEmptyElement` as `false` because we are adding a non-empty implicit parent\n        Element root = addChildToParent(implicit, false);\n\n        // Only add the child to the stack if it's not an empty element\n        // (but we already added the implicit parent, so no need to add child here)\n        // This line should be omitted because the child is already part of `implicit`\n        // if (!isEmptyElement)\n        //     stack.addLast(child);\n\n        return root;\n    }\n\n    parent.appendChild(child);\n\n    if (!isEmptyElement)\n        stack.addLast(child);\n    return parent;\n}\n\nThe fix involves removing the commented-out line inside the `if (!validAncestor)` block where `stack.addLast(child);` was mistakenly left. Since the child is already being added to the implicit parent, there's no need to add it to the stack again within this block."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\nprivate Element addChildToParent(Element child, boolean isEmptyElement) {\n    Element parent = popStackToSuitableContainer(child.tag());\n    Tag childTag = child.tag();\n    boolean validAncestor = stackHasValidParent(childTag);\n\n    if (!validAncestor) {\n```",
+            "deepseek-chat": "private Element addChildToParent(Element child, boolean isEmptyElement) {\n    Element parent = popStackToSuitableContainer(child.tag());\n    Tag childTag = child.tag();\n    boolean validAncestor = stackHasValidParent(childTag);\n\n    if (!validAncestor) {",
+            "doubao-pro-4k": "private Element addChildToParent(Element child, boolean isEmptyElement) {\n    Element parent = popStackToSuitableContainer(child.tag());\n    Tag childTag = child.tag();\n    boolean validAncestor = stackHasValidParent(childTag);\n\n    if (!validAncestor) {\n        throw new RuntimeException(\"Invalid ancestor.\");\n    }\n}",
+            "gpt-4o-mini": "private Element addChildToParent(Element child, boolean isEmptyElement) {\n    Element parent = popStackToSuitableContainer(child.tag());\n    Tag childTag = child.tag();\n    boolean validAncestor = stackHasValidParent(childTag);\n\n    if (!validAncestor) {",
+            "ernie-3.5-128k": "private Element addChildToParent(Element child, boolean isEmptyElement) {\n        Element parent = popStackToSuitableContainer(child.tag());\n        Tag childTag = child.tag();\n        boolean validAncestor = stackHasValidParent(childTag);\n\n        if (!validAncestor) {\n            // Bug fixed: Ensure the condition is properly evaluated\n            // (No change needed here as per instructions, just ensuring correct formatting)\n        }"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"if (!validAncestor && !child.tag().equals(bodyTag))\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"Tag parentTag = child.tag().getImplicitParent();\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"boolean validAncestor = stackHasValidParent(childTag) || stack.isEmpty();\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"boolean validAncestor = stackHasValidParent(parentTag);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"Tag parentTag = childTag.getImplicitParent() != null ? childTag.getImplicitParent() : parentTag;\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"boolean validAncestor = stackHasValidParent(child);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"if (!validAncestor || child.tag().equals(bodyTag)) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"boolean validAncestor = stackHasValidParent(childTag) || stack.isEmpty();\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"boolean validAncestor = stackHasValidParent(child.tag());\"\n    },\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"if (!validAncestor && !childTag.isSelfClosing()) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"if (!validAncestor) {\\n                Element implicit = new Element(childTag.getImplicitParent(), baseUri);\\n                // special case: make sure there's a head before putting in body\\n                if (childTag.equals(bodyTag)) {\\n                    Element head = new Element(headTag, baseUri);\\n                    implicit.appendChild(head);\\n                }\\n                implicit.appendChild(child);\\n\\n                // recurse to ensure somewhere to put parent\\n                Element root = addChildToParent(implicit, isEmptyElement);\\n                if (!isEmptyElement)\\n                    stack.addLast(child);\\n                return root;\\n            }\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"if (!validAncestor) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"if (!validAncestor || parent == null) {\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"if (!isEmptyElement &&!validAncestor) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"if (!validAncestor) {\"\n    },\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"    // Add appropriate error handling or logic here\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"boolean validAncestor = stackHasValidParent(childTag) && childTag != null;\"\n    }\n]"
+        }
+    },
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "7",
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "**5**",
+            "deepseek-chat": "5",
+            "gpt-4o-mini": "11"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "10",
+            "qwen-turbo": "239",
+            "ernie-3.5-128k": "219",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "219"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "219",
+            "ernie-3.5-128k": "219",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "219"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "if (parent2.isValidParent(childTag))",
+            "ernie-3.5-128k": "if (stack.size() == 1 && childTag.equals(htmlTag))",
+            "doubao-pro-4k": "for (int i = stack.size() -1; i >= 0; i--)",
+            "deepseek-chat": "if (stack.size() == 1 && childTag.equals(htmlTag))",
+            "gpt-4o-mini": "if (stack.size() == 1 && childTag.equals(htmlTag))"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "stack.add(el);",
+            "ernie-3.5-128k": "if (parent2.isValidParent(childTag)) {",
+            "doubao-pro-4k": "if (parent2.isValidParent(childTag)) {",
+            "deepseek-chat": "if (stack.size() == 1 && childTag.equals(htmlTag))",
+            "gpt-4o-mini": "if (stack.size() == 1 && childTag.equals(htmlTag))"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "assertEquals(\"<table><tr><td>1</td></tr><tr><td>2</td></tr></table>\", TextUtil.stripNewlines(doc.body().html()));",
+            "deepseek-chat": "if (stack.size() == 1 && childTag.equals(htmlTag))",
+            "doubao-pro-4k": "assertEquals(\"<table><tr><td>1</td></tr><tr><td>2</td></tr></table>\", TextUtil.stripNewlines(doc.body().html()));",
+            "ernie-3.5-128k": "assertEquals(\"<table><tr><td>1</td></tr><tr><td>2</td></tr></table>\", TextUtil.stripNewlines(doc.body().html()));",
+            "gpt-4o-mini": "assertEquals(\"<table><tr><td>1</td></tr><tr><td>2</td></tr></table>\", TextUtil.stripNewlines(doc.body().html()));"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "```java\nprivate boolean stackHasValidParent(Tag childTag) {\n    if (stack.size() == 1 && childTag.equals(htmlTag))\n        return true; // root is valid for html node\n\n    // otherwise, look up the stack for valid ancestors\n    for (int i = stack.size() - 1; i >= 0; i--) {\n        Element el = stack.get(i);\n        Tag parent = el.tag();\n        if (parent.isValidParent(childTag)) {\n            return true;\n        }\n    }\n    return false;\n}\n```\n\nIn this corrected version, I have renamed the variable `parent2` to `parent` on line [10] to avoid confusion and ensure the code is clear and consistent.",
+            "deepseek-chat": "private boolean stackHasValidParent(Tag childTag) {\n    if (stack.size() == 1 && childTag.equals(htmlTag))\n        return true; // root is valid for html node\n\n    // otherwise, look up the stack for valid ancestors\n    for (int i = stack.size() - 1; i >= 0; i--) {\n        Element el = stack.get(i);\n        Tag parentTag = el.tag();\n        if (parentTag.isValidParent(childTag)) {\n            return true;\n        }\n    }\n    return false;\n}",
+            "gpt-4o-mini": "private boolean stackHasValidParent(Tag childTag) {\n    if (stack.size() == 1 && childTag.equals(htmlTag))\n        return true; // root is valid for html node\n\n    // otherwise, look up the stack for valid ancestors\n    for (int i = stack.size() - 1; i >= 0; i--) {\n        Element el = stack.get(i);\n        Tag parentTag = el.tag(); // Corrected variable name from 'parent2' to 'parentTag'\n        if (parentTag.isValidParent(childTag)) {\n            return true;\n        }\n    }\n    return false;\n}",
+            "ernie-3.5-128k": "private boolean stackHasValidParent(Tag childTag) {\n        if (stack.size() == 1 && childTag.equals(htmlTag))\n            return true; // root is valid for html node\n\n        // otherwise, look up the stack for valid ancestors\n        for (int i = stack.size() - 1; i >= 0; i--) {\n            Element el = stack.get(i);\n            Tag parentTag = el.tag(); // Corrected variable name from parent2 to parentTag\n            if (parentTag.isValidParent(childTag)) {\n                return true;\n            }\n        }\n        return false;\n    }",
+            "doubao-pro-4k": "private boolean stackHasValidParent(Tag childTag) {\n    if (stack.size() == 1 && childTag.equals(htmlTag))\n        return true; // root is valid for html node\n\n\n    // otherwise, look up the stack for valid ancestors\n    for (int i = stack.size() - 1; i >= 0; i--) {\n        Element el = stack.get(i);\n        Tag parent2 = el.tag();\n        if (parent2.isValidParent(childTag)) {\n            return true;\n        }\n    }\n    return false;\n}"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\nprivate boolean stackHasValidParent(Tag childTag) {\n    if (stack.size() == 1 && childTag.equals(htmlTag))\n        return true; // root is valid for html node\n\n    // otherwise, look up the stack for valid ancestors\n    for (int i = stack.size() - 1; i >= 0; i--) {\n        Element el = stack.get(i);\n        Tag parent = el.tag();\n        if (parent.isValidParent(childTag)) {\n            return true;\n        }\n    }\n    return false;\n}\n```\n\nIn this corrected version, I changed `parent2` to `parent` to ensure consistency and clarity in variable naming. This should resolve the issue you were encountering.",
+            "deepseek-chat": "private boolean stackHasValidParent(Tag childTag) {\n    if (stack.size() == 1 && childTag.equals(htmlTag))\n        return true; // root is valid for html node\n\n    // otherwise, look up the stack for valid ancestors\n    for (int i = stack.size() - 1; i >= 0; i--) {\n        Element el = stack.get(i);\n        Tag parentTag = el.tag();\n        if (childTag.isValidParent(parentTag)) {\n            return true;\n        }\n    }\n    return false;\n}",
+            "gpt-4o-mini": "private boolean stackHasValidParent(Tag childTag) {\n    if (stack.size() == 1 && childTag.equals(htmlTag))\n        return true; // root is valid for html node\n\n    // otherwise, look up the stack for valid ancestors\n    for (int i = stack.size() - 1; i >= 0; i--) {\n        Element el = stack.get(i);\n        Tag parentTag = el.tag();\n        \n        // Fix: Check if parentTag is null or if isValidParent method is applicable\n        if (parentTag != null && parentTag.isValidParent(childTag)) {\n            return true;\n        }\n    }\n    return false;\n}",
+            "doubao-pro-4k": "private boolean stackHasValidParent(Tag childTag) {\n        if (stack.size() == 1 && childTag.equals(htmlTag))\n            return true; // root is valid for html node\n\n\n        // otherwise, look up the stack for valid ancestors\n        for (int i = stack.size() -1; i >= 0; i--) {\n            Element el = stack.get(i);\n            Tag parent2 = el.tag();\n            if (parent2.isValidParentFor(childTag)) { // Fixed the method name here\n                return true;\n            }\n        }\n        return false;\n    }",
+            "ernie-3.5-128k": "Certainly! Here's the complete corrected method with the bug fixed. The issue might arise if `isValidParent` method is not defined in the `Tag` class or if the `Tag` object does not have the correct type. Assuming `isValidParent` is correctly defined in the `Tag` class and taking into account possible null checks, here is the corrected method:\n\nprivate boolean stackHasValidParent(Tag childTag) {\n    if (stack.size() == 1 && childTag.equals(htmlTag))\n        return true; // root is valid for html node\n\n    // otherwise, look up the stack for valid ancestors\n    for (int i = stack.size() - 1; i >= 0; i--) {\n        Element el = stack.get(i);\n        Tag parentTag = el.tag();\n        if (parentTag != null && parentTag.isValidParent(childTag)) {\n            return true;\n        }\n    }\n    return false;\n}\n\nIn this corrected version, I've added a null check for `parentTag` to ensure that `isValidParent` is called only if `parentTag` is not null. This prevents potential `NullPointerException` if `el.tag()` returns null for any reason."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\nprivate boolean stackHasValidParent(Tag childTag) {\n    if (stack.size() == 1 && childTag.equals(htmlTag))\n        return true; // root is valid for html node\n\n    // otherwise, look up the stack for valid ancestors\n    for (int i = stack.size() -1; i >= 0; i--) {\n        Element el = stack.get(i);\n        Tag parent = el.tag();\n        if (parent.isValidParent(childTag)) {\n```",
+            "deepseek-chat": "private boolean stackHasValidParent(Tag childTag) {\n    if (stack.size() == 1 && childTag.equals(htmlTag))\n        return true; // root is valid for html node\n\n    // otherwise, look up the stack for valid ancestors\n    for (int i = stack.size() - 1; i >= 0; i--) {\n        Element el = stack.get(i);\n        Tag parent2 = el.tag();\n        if (parent2.isValidParent(childTag)) {\n            return true;",
+            "doubao-pro-4k": "private boolean stackHasValidParent(Tag childTag) {\n        if (stack.size() == 1 && childTag.equals(htmlTag))\n            return true; // root is valid for html node\n\n\n        // otherwise, look up the stack for valid ancestors\n        for (int i = stack.size() -1; i >= 0; i--) {\n            Element el = stack.get(i);\n            Tag parent2 = el.tag();\n            if (parent2.isValidParentFor(childTag)) { // Bug fixed: changed isValidParent to isValidParentFor\n        }\n    }\n}",
+            "ernie-3.5-128k": "private boolean stackHasValidParent(Tag childTag) {\n        if (stack.size() == 1 && childTag.equals(htmlTag))\n            return true; // root is valid for html node\n\n        // otherwise, look up the stack for valid ancestors\n        for (int i = stack.size() -1; i >= 0; i--) {\n            Element el = stack.get(i);\n            Tag parent2 = el.tag();\n            if (parent2.canContain(childTag)) {",
+            "gpt-4o-mini": "private boolean stackHasValidParent(Tag childTag) {\n        if (stack.size() == 1 && childTag.equals(htmlTag))\n            return true; // root is valid for html node\n\n\n        // otherwise, look up the stack for valid ancestors\n        for (int i = stack.size() - 1; i >= 0; i--) {\n            Element el = stack.get(i);\n            Tag parent2 = el.tag();\n            if (parent2.isValidParent(childTag))"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"return false;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"if (parent2.isValidParent(childTag) || childTag.equals(htmlTag)) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"if (parent2.canBeParentOf(childTag)) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"if (parent2.isValidParent(childTag) || childTag.equals(htmlTag)) {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"if (el != null && parent2 != null && parent2.isValidParent(childTag)) {\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"if (i > 0 && parent2.isValidParent(childTag)) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"if (childTag.isValidParent(parent2)) {\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"if (parent2.isValidParent(childTag) || childTag.equals(parent2)) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"if (parent2.canBeParentOf(childTag)) {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"if (parent2 != null && parent2.isValidParent(childTag)) {\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"if (i > 0 && parent2.isValidParent(childTag))\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"if (parent2.isValidParent(childTag.name())) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"if (parent2.isValidParent(childTag)) { return true; }\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"if (parent2.isValidParentFor(childTag)) {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"if (parent2 != null && parent2.isValidParent(childTag)) {\"\n    }\n]"
+        }
+    }
+]

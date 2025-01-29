@@ -1,0 +1,200 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/lang/time/DateUtils.java
+================== buggy_method ==================
+{'method_name': 'modify', 'method_body': 'private static void modify(Calendar val, int field, boolean round) {\n        if (val.get(Calendar.YEAR) > 280000000) {\n            throw new ArithmeticException("Calendar value too large for accurate calculations");\n        }\n        \n\n        // ----------------- Fix for LANG-59 ---------------------- START ---------------\n        // see http://issues.apache.org/jira/browse/LANG-59\n        //\n        // Manually truncate milliseconds, seconds and minutes, rather than using\n        // Calendar methods.\n\n\n        // truncate milliseconds\n\n        // truncate seconds\n\n        // truncate minutes\n\n        // reset time\n        // ----------------- Fix for LANG-59 ----------------------- END ----------------\n\n        boolean roundUp = false;\n        for (int i = 0; i < fields.length; i++) {\n            for (int j = 0; j < fields[i].length; j++) {\n                if (fields[i][j] == field) {\n                    //This is our field... we stop looping\n                    if (round && roundUp) {\n                        if (field == DateUtils.SEMI_MONTH) {\n                            //This is a special case that\'s hard to generalize\n                            //If the date is 1, we round up to 16, otherwise\n                            //  we subtract 15 days and add 1 month\n                            if (val.get(Calendar.DATE) == 1) {\n                                val.add(Calendar.DATE, 15);\n                            } else {\n                                val.add(Calendar.DATE, -15);\n                                val.add(Calendar.MONTH, 1);\n                            }\n                        } else {\n                            //We need at add one to this field since the\n                            //  last number causes us to round up\n                            val.add(fields[i][0], 1);\n                        }\n                    }\n                    return;\n                }\n            }\n            //We have various fields that are not easy roundings\n            int offset = 0;\n            boolean offsetSet = false;\n            //These are special types of fields that require different rounding rules\n            switch (field) {\n                case DateUtils.SEMI_MONTH:\n                    if (fields[i][0] == Calendar.DATE) {\n                        //If we\'re going to drop the DATE field\'s value,\n                        //  we want to do this our own way.\n                        //We need to subtrace 1 since the date has a minimum of 1\n                        offset = val.get(Calendar.DATE) - 1;\n                        //If we\'re above 15 days adjustment, that means we\'re in the\n                        //  bottom half of the month and should stay accordingly.\n                        if (offset >= 15) {\n                            offset -= 15;\n                        }\n                        //Record whether we\'re in the top or bottom half of that range\n                        roundUp = offset > 7;\n                        offsetSet = true;\n                    }\n                    break;\n                case Calendar.AM_PM:\n                    if (fields[i][0] == Calendar.HOUR_OF_DAY) {\n                        //If we\'re going to drop the HOUR field\'s value,\n                        //  we want to do this our own way.\n                        offset = val.get(Calendar.HOUR_OF_DAY);\n                        if (offset >= 12) {\n                            offset -= 12;\n                        }\n                        roundUp = offset > 6;\n                        offsetSet = true;\n                    }\n                    break;\n            }\n            if (!offsetSet) {\n                int min = val.getActualMinimum(fields[i][0]);\n                int max = val.getActualMaximum(fields[i][0]);\n                //Calculate the offset from the minimum allowed value\n                offset = val.get(fields[i][0]) - min;\n                //Set roundUp if this is more than half way between the minimum and maximum\n                roundUp = offset > ((max - min) / 2);\n            }\n            //We need to remove this field\n                val.set(fields[i][0], val.get(fields[i][0]) - offset);\n        }\n        throw new IllegalArgumentException("The field " + field + " is not supported");\n\n    }', 'start_line': 619, 'end_line': 713, 'buggy_lines': [626, 636, 645, 654, 660, 666]}
+================== buggy_method_src ==================
+private static void modify(Calendar val, int field, boolean round) {
+        if (val.get(Calendar.YEAR) > 280000000) {
+            throw new ArithmeticException("Calendar value too large for accurate calculations");
+        }
+        
+
+        // ----------------- Fix for LANG-59 ---------------------- START ---------------
+        // see http://issues.apache.org/jira/browse/LANG-59
+        //
+        // Manually truncate milliseconds, seconds and minutes, rather than using
+        // Calendar methods.
+
+
+        // truncate milliseconds
+
+        // truncate seconds
+
+        // truncate minutes
+
+        // reset time
+        // ----------------- Fix for LANG-59 ----------------------- END ----------------
+
+        boolean roundUp = false;
+        for (int i = 0; i < fields.length; i++) {
+            for (int j = 0; j < fields[i].length; j++) {
+                if (fields[i][j] == field) {
+                    //This is our field... we stop looping
+                    if (round && roundUp) {
+                        if (field == DateUtils.SEMI_MONTH) {
+                            //This is a special case that's hard to generalize
+                            //If the date is 1, we round up to 16, otherwise
+                            //  we subtract 15 days and add 1 month
+                            if (val.get(Calendar.DATE) == 1) {
+                                val.add(Calendar.DATE, 15);
+                            } else {
+                                val.add(Calendar.DATE, -15);
+                                val.add(Calendar.MONTH, 1);
+                            }
+                        } else {
+                            //We need at add one to this field since the
+                            //  last number causes us to round up
+                            val.add(fields[i][0], 1);
+                        }
+                    }
+                    return;
+                }
+            }
+            //We have various fields that are not easy roundings
+            int offset = 0;
+            boolean offsetSet = false;
+            //These are special types of fields that require different rounding rules
+            switch (field) {
+                case DateUtils.SEMI_MONTH:
+                    if (fields[i][0] == Calendar.DATE) {
+                        //If we're going to drop the DATE field's value,
+                        //  we want to do this our own way.
+                        //We need to subtrace 1 since the date has a minimum of 1
+                        offset = val.get(Calendar.DATE) - 1;
+                        //If we're above 15 days adjustment, that means we're in the
+                        //  bottom half of the month and should stay accordingly.
+                        if (offset >= 15) {
+                            offset -= 15;
+                        }
+                        //Record whether we're in the top or bottom half of that range
+                        roundUp = offset > 7;
+                        offsetSet = true;
+                    }
+                    break;
+                case Calendar.AM_PM:
+                    if (fields[i][0] == Calendar.HOUR_OF_DAY) {
+                        //If we're going to drop the HOUR field's value,
+                        //  we want to do this our own way.
+                        offset = val.get(Calendar.HOUR_OF_DAY);
+                        if (offset >= 12) {
+                            offset -= 12;
+                        }
+                        roundUp = offset > 6;
+                        offsetSet = true;
+                    }
+                    break;
+            }
+            if (!offsetSet) {
+                int min = val.getActualMinimum(fields[i][0]);
+                int max = val.getActualMaximum(fields[i][0]);
+                //Calculate the offset from the minimum allowed value
+                offset = val.get(fields[i][0]) - min;
+                //Set roundUp if this is more than half way between the minimum and maximum
+                roundUp = offset > ((max - min) / 2);
+            }
+            //We need to remove this field
+                val.set(fields[i][0], val.get(fields[i][0]) - offset);
+        }
+        throw new IllegalArgumentException("The field " + field + " is not supported");
+
+    }
+================== test_stack ==================
+org.apache.commons.lang.time.DateUtilsTest::testTruncateLang59
+junit.framework.AssertionFailedError: Truncate Calendar.SECOND expected:<Sun Oct 31 01:02:03 MDT 2004> but was:<Sun Oct 31 01:02:03 MST 2004>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.TestCase.assertEquals(TestCase.java:244)
+	at org.apache.commons.lang.time.DateUtilsTest.testTruncateLang59(DateUtilsTest.java:927)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals("Truncate Calendar.SECOND",
+
+================== buggy_lines_in_method ==================
+[8, 18, 27, 36, 42, 48]
+================== buggy_statements ==================
+['        // see http://issues.apache.org/jira/browse/LANG-59', '        // truncate minutes', '                    //This is our field... we stop looping', '                                val.add(Calendar.DATE, -15);', '                            val.add(fields[i][0], 1);', '            //We have various fields that are not easy roundings']
+================== buggy_method_src_endswith_buggy_statement ==================
+private static void modify(Calendar val, int field, boolean round) {
+        if (val.get(Calendar.YEAR) > 280000000) {
+            throw new ArithmeticException("Calendar value too large for accurate calculations");
+        }
+        
+
+        // ----------------- Fix for LANG-59 ---------------------- START ---------------
+        // see http://issues.apache.org/jira/browse/LANG-59
+        //
+        // Manually truncate milliseconds, seconds and minutes, rather than using
+        // Calendar methods.
+
+
+        // truncate milliseconds
+
+        // truncate seconds
+
+        // truncate minutes
+
+        // reset time
+        // ----------------- Fix for LANG-59 ----------------------- END ----------------
+
+        boolean roundUp = false;
+        for (int i = 0; i < fields.length; i++) {
+            for (int j = 0; j < fields[i].length; j++) {
+                if (fields[i][j] == field) {
+                    //This is our field... we stop looping
+                    if (round && roundUp) {
+                        if (field == DateUtils.SEMI_MONTH) {
+                            //This is a special case that's hard to generalize
+                            //If the date is 1, we round up to 16, otherwise
+                            //  we subtract 15 days and add 1 month
+                            if (val.get(Calendar.DATE) == 1) {
+                                val.add(Calendar.DATE, 15);
+                            } else {
+                                val.add(Calendar.DATE, -15);
+                                val.add(Calendar.MONTH, 1);
+                            }
+                        } else {
+                            //We need at add one to this field since the
+                            //  last number causes us to round up
+                            val.add(fields[i][0], 1);
+                        }
+                    }
+                    return;
+                }
+            }
+            //We have various fields that are not easy roundings

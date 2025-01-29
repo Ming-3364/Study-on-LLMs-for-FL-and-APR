@@ -1,0 +1,108 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/jxpath/ri/model/dom/DOMNodePointer.java
+================== buggy_method ==================
+{'method_name': 'getNamespaceURI', 'method_body': 'public static String getNamespaceURI(Node node) {\n        if (node instanceof Document) {\n            node = ((Document) node).getDocumentElement();\n        }\n\n        Element element = (Element) node;\n\n        String uri = element.getNamespaceURI();\n        if (uri == null) {\n            String prefix = getPrefix(node);\n            String qname = prefix == null ? "xmlns" : "xmlns:" + prefix;\n    \n            Node aNode = node;\n            while (aNode != null) {\n                if (aNode.getNodeType() == Node.ELEMENT_NODE) {\n                    Attr attr = ((Element) aNode).getAttributeNode(qname);\n                    if (attr != null) {\n                        return attr.getValue();\n                    }\n                }\n                aNode = aNode.getParentNode();\n            }\n            return null;\n        }\n        return uri;\n    }', 'start_line': 672, 'end_line': 697, 'buggy_lines': [689, 694, 696]}
+================== buggy_method_src ==================
+public static String getNamespaceURI(Node node) {
+        if (node instanceof Document) {
+            node = ((Document) node).getDocumentElement();
+        }
+
+        Element element = (Element) node;
+
+        String uri = element.getNamespaceURI();
+        if (uri == null) {
+            String prefix = getPrefix(node);
+            String qname = prefix == null ? "xmlns" : "xmlns:" + prefix;
+    
+            Node aNode = node;
+            while (aNode != null) {
+                if (aNode.getNodeType() == Node.ELEMENT_NODE) {
+                    Attr attr = ((Element) aNode).getAttributeNode(qname);
+                    if (attr != null) {
+                        return attr.getValue();
+                    }
+                }
+                aNode = aNode.getParentNode();
+            }
+            return null;
+        }
+        return uri;
+    }
+================== test_stack ==================
+org.apache.commons.jxpath.ri.model.JXPath154Test::testInnerEmptyNamespaceDOM
+junit.framework.ComparisonFailure: expected:</b:foo[1]/[test[1]]> but was:</b:foo[1]/[node()[2]]>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.Assert.assertEquals(Assert.java:107)
+	at junit.framework.TestCase.assertEquals(TestCase.java:269)
+	at org.apache.commons.jxpath.ri.model.JXPath154Test.doTest(JXPath154Test.java:17)
+	at org.apache.commons.jxpath.ri.model.JXPath154Test.testInnerEmptyNamespaceDOM(JXPath154Test.java:21)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+doTest("b:foo/test", DocumentContainer.MODEL_DOM, "/b:foo[1]/test[1]");
+
+================== buggy_lines_in_method ==================
+[18, 23, 25]
+================== buggy_statements ==================
+['                        return attr.getValue();', '            return null;', '        return uri;']
+================== buggy_method_src_endswith_buggy_statement ==================
+public static String getNamespaceURI(Node node) {
+        if (node instanceof Document) {
+            node = ((Document) node).getDocumentElement();
+        }
+
+        Element element = (Element) node;
+
+        String uri = element.getNamespaceURI();
+        if (uri == null) {
+            String prefix = getPrefix(node);
+            String qname = prefix == null ? "xmlns" : "xmlns:" + prefix;
+    
+            Node aNode = node;
+            while (aNode != null) {
+                if (aNode.getNodeType() == Node.ELEMENT_NODE) {
+                    Attr attr = ((Element) aNode).getAttributeNode(qname);
+                    if (attr != null) {
+                        return attr.getValue();
+                    }
+                }
+                aNode = aNode.getParentNode();
+            }
+            return null;
+        }
+        return uri;

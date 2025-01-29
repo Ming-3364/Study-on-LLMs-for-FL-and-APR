@@ -1,0 +1,183 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/LiveVariablesAnalysis.java
+================== buggy_method ==================
+{'method_name': 'computeGenKill', 'method_body': 'private void computeGenKill(Node n, BitSet gen, BitSet kill,\n      boolean conditional) {\n\n    switch (n.getType()) {\n      case Token.SCRIPT:\n      case Token.BLOCK:\n      case Token.FUNCTION:\n        return;\n\n      case Token.WHILE:\n      case Token.DO:\n      case Token.IF:\n        computeGenKill(NodeUtil.getConditionExpression(n), gen, kill,\n            conditional);\n        return;\n\n      case Token.FOR:\n        if (!NodeUtil.isForIn(n)) {\n          computeGenKill(NodeUtil.getConditionExpression(n), gen, kill,\n              conditional);\n        } else {\n          // for(x in y) {...}\n          Node lhs = n.getFirstChild();\n          Node rhs = lhs.getNext();\n          if (NodeUtil.isVar(lhs)) {\n            // for(var x in y) {...}\n            lhs = lhs.getLastChild();\n          }\n            addToSetIfLocal(lhs, kill);\n            addToSetIfLocal(lhs, gen);\n          computeGenKill(rhs, gen, kill, conditional);\n        }\n        return;\n\n      case Token.VAR:\n        for (Node c = n.getFirstChild(); c != null; c = c.getNext()) {\n          if (c.hasChildren()) {\n            computeGenKill(c.getFirstChild(), gen, kill, conditional);\n            if (!conditional) {\n              addToSetIfLocal(c, kill);\n            }\n          }\n        }\n        return;\n\n      case Token.AND:\n      case Token.OR:\n        computeGenKill(n.getFirstChild(), gen, kill, conditional);\n        // May short circuit.\n        computeGenKill(n.getLastChild(), gen, kill, true);\n        return;\n\n      case Token.HOOK:\n        computeGenKill(n.getFirstChild(), gen, kill, conditional);\n        // Assume both sides are conditional.\n        computeGenKill(n.getFirstChild().getNext(), gen, kill, true);\n        computeGenKill(n.getLastChild(), gen, kill, true);\n        return;\n\n      case Token.NAME:\n        if (isArgumentsName(n)) {\n          markAllParametersEscaped();\n        } else {\n          addToSetIfLocal(n, gen);\n        }\n        return;\n\n      default:\n        if (NodeUtil.isAssignmentOp(n) && NodeUtil.isName(n.getFirstChild())) {\n          Node lhs = n.getFirstChild();\n          if (!conditional) {\n            addToSetIfLocal(lhs, kill);\n          }\n          if (!NodeUtil.isAssign(n)) {\n            // assignments such as a += 1 reads a.\n            addToSetIfLocal(lhs, gen);\n          }\n          computeGenKill(lhs.getNext(), gen, kill, conditional);\n        } else {\n          for (Node c = n.getFirstChild(); c != null; c = c.getNext()) {\n            computeGenKill(c, gen, kill, conditional);\n          }\n        }\n        return;\n    }\n  }', 'start_line': 178, 'end_line': 263, 'buggy_lines': [206, 211]}
+================== buggy_method_src ==================
+private void computeGenKill(Node n, BitSet gen, BitSet kill,
+      boolean conditional) {
+
+    switch (n.getType()) {
+      case Token.SCRIPT:
+      case Token.BLOCK:
+      case Token.FUNCTION:
+        return;
+
+      case Token.WHILE:
+      case Token.DO:
+      case Token.IF:
+        computeGenKill(NodeUtil.getConditionExpression(n), gen, kill,
+            conditional);
+        return;
+
+      case Token.FOR:
+        if (!NodeUtil.isForIn(n)) {
+          computeGenKill(NodeUtil.getConditionExpression(n), gen, kill,
+              conditional);
+        } else {
+          // for(x in y) {...}
+          Node lhs = n.getFirstChild();
+          Node rhs = lhs.getNext();
+          if (NodeUtil.isVar(lhs)) {
+            // for(var x in y) {...}
+            lhs = lhs.getLastChild();
+          }
+            addToSetIfLocal(lhs, kill);
+            addToSetIfLocal(lhs, gen);
+          computeGenKill(rhs, gen, kill, conditional);
+        }
+        return;
+
+      case Token.VAR:
+        for (Node c = n.getFirstChild(); c != null; c = c.getNext()) {
+          if (c.hasChildren()) {
+            computeGenKill(c.getFirstChild(), gen, kill, conditional);
+            if (!conditional) {
+              addToSetIfLocal(c, kill);
+            }
+          }
+        }
+        return;
+
+      case Token.AND:
+      case Token.OR:
+        computeGenKill(n.getFirstChild(), gen, kill, conditional);
+        // May short circuit.
+        computeGenKill(n.getLastChild(), gen, kill, true);
+        return;
+
+      case Token.HOOK:
+        computeGenKill(n.getFirstChild(), gen, kill, conditional);
+        // Assume both sides are conditional.
+        computeGenKill(n.getFirstChild().getNext(), gen, kill, true);
+        computeGenKill(n.getLastChild(), gen, kill, true);
+        return;
+
+      case Token.NAME:
+        if (isArgumentsName(n)) {
+          markAllParametersEscaped();
+        } else {
+          addToSetIfLocal(n, gen);
+        }
+        return;
+
+      default:
+        if (NodeUtil.isAssignmentOp(n) && NodeUtil.isName(n.getFirstChild())) {
+          Node lhs = n.getFirstChild();
+          if (!conditional) {
+            addToSetIfLocal(lhs, kill);
+          }
+          if (!NodeUtil.isAssign(n)) {
+            // assignments such as a += 1 reads a.
+            addToSetIfLocal(lhs, gen);
+          }
+          computeGenKill(lhs.getNext(), gen, kill, conditional);
+        } else {
+          for (Node c = n.getFirstChild(); c != null; c = c.getNext()) {
+            computeGenKill(c, gen, kill, conditional);
+          }
+        }
+        return;
+    }
+  }
+================== test_stack ==================
+com.google.javascript.jscomp.LiveVariableAnalysisTest::testExpressionInForIn
+java.lang.IllegalStateException
+	at com.google.common.base.Preconditions.checkState(Preconditions.java:129)
+	at com.google.javascript.jscomp.LiveVariablesAnalysis.addToSetIfLocal(LiveVariablesAnalysis.java:266)
+	at com.google.javascript.jscomp.LiveVariablesAnalysis.computeGenKill(LiveVariablesAnalysis.java:206)
+	at com.google.javascript.jscomp.LiveVariablesAnalysis.flowThrough(LiveVariablesAnalysis.java:159)
+	at com.google.javascript.jscomp.LiveVariablesAnalysis.flowThrough(LiveVariablesAnalysis.java:47)
+	at com.google.javascript.jscomp.DataFlowAnalysis.flow(DataFlowAnalysis.java:275)
+	at com.google.javascript.jscomp.DataFlowAnalysis.analyze(DataFlowAnalysis.java:212)
+	at com.google.javascript.jscomp.DataFlowAnalysis.analyze(DataFlowAnalysis.java:180)
+	at com.google.javascript.jscomp.LiveVariableAnalysisTest.computeLiveness(LiveVariableAnalysisTest.java:366)
+	at com.google.javascript.jscomp.LiveVariableAnalysisTest.getFlowStateAtX(LiveVariableAnalysisTest.java:312)
+	at com.google.javascript.jscomp.LiveVariableAnalysisTest.assertLiveBeforeX(LiveVariableAnalysisTest.java:279)
+	at com.google.javascript.jscomp.LiveVariableAnalysisTest.testExpressionInForIn(LiveVariableAnalysisTest.java:210)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertLiveBeforeX("var a = [0]; X:for (a[1] in foo) { }", "a");
+
+================== buggy_lines_in_method ==================
+[29, 34]
+================== buggy_statements ==================
+['            addToSetIfLocal(lhs, kill);', '']
+================== buggy_method_src_endswith_buggy_statement ==================
+private void computeGenKill(Node n, BitSet gen, BitSet kill,
+      boolean conditional) {
+
+    switch (n.getType()) {
+      case Token.SCRIPT:
+      case Token.BLOCK:
+      case Token.FUNCTION:
+        return;
+
+      case Token.WHILE:
+      case Token.DO:
+      case Token.IF:
+        computeGenKill(NodeUtil.getConditionExpression(n), gen, kill,
+            conditional);
+        return;
+
+      case Token.FOR:
+        if (!NodeUtil.isForIn(n)) {
+          computeGenKill(NodeUtil.getConditionExpression(n), gen, kill,
+              conditional);
+        } else {
+          // for(x in y) {...}
+          Node lhs = n.getFirstChild();
+          Node rhs = lhs.getNext();
+          if (NodeUtil.isVar(lhs)) {
+            // for(var x in y) {...}
+            lhs = lhs.getLastChild();
+          }
+            addToSetIfLocal(lhs, kill);
+            addToSetIfLocal(lhs, gen);
+          computeGenKill(rhs, gen, kill, conditional);
+        }
+        return;

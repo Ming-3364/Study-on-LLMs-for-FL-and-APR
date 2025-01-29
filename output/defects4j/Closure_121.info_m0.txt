@@ -1,0 +1,280 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/InlineVariables.java
+================== buggy_method ==================
+{'method_name': 'inlineNonConstants', 'method_body': "private void inlineNonConstants(\n        Var v, ReferenceCollection referenceInfo,\n        boolean maybeModifiedArguments) {\n      int refCount = referenceInfo.references.size();\n      Reference declaration = referenceInfo.references.get(0);\n      Reference init = referenceInfo.getInitializingReference();\n      int firstRefAfterInit = (declaration == init) ? 2 : 3;\n\n      if (refCount > 1 &&\n          isImmutableAndWellDefinedVariable(v, referenceInfo)) {\n        // if the variable is referenced more than once, we can only\n        // inline it if it's immutable and never defined before referenced.\n        Node value;\n        if (init != null) {\n          value = init.getAssignedValue();\n        } else {\n          // Create a new node for variable that is never initialized.\n          Node srcLocation = declaration.getNode();\n          value = NodeUtil.newUndefinedNode(srcLocation);\n        }\n        Preconditions.checkNotNull(value);\n        inlineWellDefinedVariable(v, value, referenceInfo.references);\n        staleVars.add(v);\n      } else if (refCount == firstRefAfterInit) {\n        // The variable likely only read once, try some more\n        // complex inlining heuristics.\n        Reference reference = referenceInfo.references.get(\n            firstRefAfterInit - 1);\n        if (canInline(declaration, init, reference)) {\n          inline(v, declaration, init, reference);\n          staleVars.add(v);\n        }\n      } else if (declaration != init && refCount == 2) {\n        if (isValidDeclaration(declaration) && isValidInitialization(init)) {\n          // The only reference is the initialization, remove the assignment and\n          // the variable declaration.\n          Node value = init.getAssignedValue();\n          Preconditions.checkNotNull(value);\n          inlineWellDefinedVariable(v, value, referenceInfo.references);\n          staleVars.add(v);\n        }\n      }\n\n      // If this variable was not inlined normally, check if we can\n      // inline an alias of it. (If the variable was inlined, then the\n      // reference data is out of sync. We're better off just waiting for\n      // the next pass.)\n      if (!maybeModifiedArguments &&\n          !staleVars.contains(v) &&\n          referenceInfo.isWellDefined() &&\n          referenceInfo.isAssignedOnceInLifetime()) {\n          // Inlining the variable based solely on well-defined and assigned\n          // once is *NOT* correct. We relax the correctness requirement if\n          // the variable is declared constant.\n        List<Reference> refs = referenceInfo.references;\n        for (int i = 1 /* start from a read */; i < refs.size(); i++) {\n          Node nameNode = refs.get(i).getNode();\n          if (aliasCandidates.containsKey(nameNode)) {\n            AliasCandidate candidate = aliasCandidates.get(nameNode);\n            if (!staleVars.contains(candidate.alias) &&\n                !isVarInlineForbidden(candidate.alias)) {\n              Reference aliasInit;\n              aliasInit = candidate.refInfo.getInitializingReference();\n              Node value = aliasInit.getAssignedValue();\n              Preconditions.checkNotNull(value);\n              inlineWellDefinedVariable(candidate.alias,\n                  value,\n                  candidate.refInfo.references);\n              staleVars.add(candidate.alias);\n            }\n          }\n        }\n      }\n    }", 'start_line': 254, 'end_line': 327, 'buggy_lines': [304]}
+================== buggy_method_src ==================
+private void inlineNonConstants(
+        Var v, ReferenceCollection referenceInfo,
+        boolean maybeModifiedArguments) {
+      int refCount = referenceInfo.references.size();
+      Reference declaration = referenceInfo.references.get(0);
+      Reference init = referenceInfo.getInitializingReference();
+      int firstRefAfterInit = (declaration == init) ? 2 : 3;
+
+      if (refCount > 1 &&
+          isImmutableAndWellDefinedVariable(v, referenceInfo)) {
+        // if the variable is referenced more than once, we can only
+        // inline it if it's immutable and never defined before referenced.
+        Node value;
+        if (init != null) {
+          value = init.getAssignedValue();
+        } else {
+          // Create a new node for variable that is never initialized.
+          Node srcLocation = declaration.getNode();
+          value = NodeUtil.newUndefinedNode(srcLocation);
+        }
+        Preconditions.checkNotNull(value);
+        inlineWellDefinedVariable(v, value, referenceInfo.references);
+        staleVars.add(v);
+      } else if (refCount == firstRefAfterInit) {
+        // The variable likely only read once, try some more
+        // complex inlining heuristics.
+        Reference reference = referenceInfo.references.get(
+            firstRefAfterInit - 1);
+        if (canInline(declaration, init, reference)) {
+          inline(v, declaration, init, reference);
+          staleVars.add(v);
+        }
+      } else if (declaration != init && refCount == 2) {
+        if (isValidDeclaration(declaration) && isValidInitialization(init)) {
+          // The only reference is the initialization, remove the assignment and
+          // the variable declaration.
+          Node value = init.getAssignedValue();
+          Preconditions.checkNotNull(value);
+          inlineWellDefinedVariable(v, value, referenceInfo.references);
+          staleVars.add(v);
+        }
+      }
+
+      // If this variable was not inlined normally, check if we can
+      // inline an alias of it. (If the variable was inlined, then the
+      // reference data is out of sync. We're better off just waiting for
+      // the next pass.)
+      if (!maybeModifiedArguments &&
+          !staleVars.contains(v) &&
+          referenceInfo.isWellDefined() &&
+          referenceInfo.isAssignedOnceInLifetime()) {
+          // Inlining the variable based solely on well-defined and assigned
+          // once is *NOT* correct. We relax the correctness requirement if
+          // the variable is declared constant.
+        List<Reference> refs = referenceInfo.references;
+        for (int i = 1 /* start from a read */; i < refs.size(); i++) {
+          Node nameNode = refs.get(i).getNode();
+          if (aliasCandidates.containsKey(nameNode)) {
+            AliasCandidate candidate = aliasCandidates.get(nameNode);
+            if (!staleVars.contains(candidate.alias) &&
+                !isVarInlineForbidden(candidate.alias)) {
+              Reference aliasInit;
+              aliasInit = candidate.refInfo.getInitializingReference();
+              Node value = aliasInit.getAssignedValue();
+              Preconditions.checkNotNull(value);
+              inlineWellDefinedVariable(candidate.alias,
+                  value,
+                  candidate.refInfo.references);
+              staleVars.add(candidate.alias);
+            }
+          }
+        }
+      }
+    }
+================== test_stack ==================
+com.google.javascript.jscomp.InlineVariablesTest::testExternalIssue1053
+junit.framework.AssertionFailedError:
+Expected: var u;function f(){u=Random();var x=u;f();alert(x===u)}
+Result: var u;function f(){u=Random();f();alert(u===u)}
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        VAR 1 [source_file: expected0]
+            NAME u 1 [source_file: expected0]
+        FUNCTION f 1 [source_file: expected0]
+            NAME f 1 [source_file: expected0]
+            PARAM_LIST 1 [source_file: expected0]
+            BLOCK 1 [source_file: expected0]
+                EXPR_RESULT 1 [source_file: expected0]
+                    ASSIGN 1 [source_file: expected0]
+                        NAME u 1 [source_file: expected0]
+                        CALL 1 [free_call: 1] [source_file: expected0]
+                            NAME Random 1 [source_file: expected0]
+                VAR 1 [source_file: expected0]
+                    NAME x 1 [source_file: expected0]
+                        NAME u 1 [source_file: expected0]
+                EXPR_RESULT 1 [source_file: expected0]
+                    CALL 1 [free_call: 1] [source_file: expected0]
+                        NAME f 1 [source_file: expected0]
+                EXPR_RESULT 1 [source_file: expected0]
+                    CALL 1 [free_call: 1] [source_file: expected0]
+                        NAME alert 1 [source_file: expected0]
+                        SHEQ 1 [source_file: expected0]
+                            NAME x 1 [source_file: expected0]
+                            NAME u 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        VAR 1 [source_file: testcode]
+            NAME u 1 [source_file: testcode]
+        FUNCTION f 1 [source_file: testcode]
+            NAME f 1 [source_file: testcode]
+            PARAM_LIST 1 [source_file: testcode]
+            BLOCK 1 [source_file: testcode]
+                EXPR_RESULT 1 [source_file: testcode]
+                    ASSIGN 1 [source_file: testcode]
+                        NAME u 1 [source_file: testcode]
+                        CALL 1 [free_call: 1] [source_file: testcode]
+                            NAME Random 1 [source_file: testcode]
+                EXPR_RESULT 1 [source_file: testcode]
+                    CALL 1 [free_call: 1] [source_file: testcode]
+                        NAME f 1 [source_file: testcode]
+                EXPR_RESULT 1 [source_file: testcode]
+                    CALL 1 [free_call: 1] [source_file: testcode]
+                        NAME alert 1 [source_file: testcode]
+                        SHEQ 1 [source_file: testcode]
+                            NAME u 1 [source_file: testcode]
+                            NAME u 1 [source_file: testcode]
+
+
+Subtree1: BLOCK 1 [source_file: expected0]
+    EXPR_RESULT 1 [source_file: expected0]
+        ASSIGN 1 [source_file: expected0]
+            NAME u 1 [source_file: expected0]
+            CALL 1 [free_call: 1] [source_file: expected0]
+                NAME Random 1 [source_file: expected0]
+    VAR 1 [source_file: expected0]
+        NAME x 1 [source_file: expected0]
+            NAME u 1 [source_file: expected0]
+    EXPR_RESULT 1 [source_file: expected0]
+        CALL 1 [free_call: 1] [source_file: expected0]
+            NAME f 1 [source_file: expected0]
+    EXPR_RESULT 1 [source_file: expected0]
+        CALL 1 [free_call: 1] [source_file: expected0]
+            NAME alert 1 [source_file: expected0]
+            SHEQ 1 [source_file: expected0]
+                NAME x 1 [source_file: expected0]
+                NAME u 1 [source_file: expected0]
+
+
+Subtree2: BLOCK 1 [source_file: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        ASSIGN 1 [source_file: testcode]
+            NAME u 1 [source_file: testcode]
+            CALL 1 [free_call: 1] [source_file: testcode]
+                NAME Random 1 [source_file: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        CALL 1 [free_call: 1] [source_file: testcode]
+            NAME f 1 [source_file: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        CALL 1 [free_call: 1] [source_file: testcode]
+            NAME alert 1 [source_file: testcode]
+            SHEQ 1 [source_file: testcode]
+                NAME u 1 [source_file: testcode]
+                NAME u 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.CompilerTestCase.testSame(CompilerTestCase.java:599)
+	at com.google.javascript.jscomp.InlineVariablesTest.testExternalIssue1053(InlineVariablesTest.java:1069)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+testSame(
+
+================== buggy_lines_in_method ==================
+[51]
+================== buggy_statements ==================
+['          referenceInfo.isAssignedOnceInLifetime()) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+private void inlineNonConstants(
+        Var v, ReferenceCollection referenceInfo,
+        boolean maybeModifiedArguments) {
+      int refCount = referenceInfo.references.size();
+      Reference declaration = referenceInfo.references.get(0);
+      Reference init = referenceInfo.getInitializingReference();
+      int firstRefAfterInit = (declaration == init) ? 2 : 3;
+
+      if (refCount > 1 &&
+          isImmutableAndWellDefinedVariable(v, referenceInfo)) {
+        // if the variable is referenced more than once, we can only
+        // inline it if it's immutable and never defined before referenced.
+        Node value;
+        if (init != null) {
+          value = init.getAssignedValue();
+        } else {
+          // Create a new node for variable that is never initialized.
+          Node srcLocation = declaration.getNode();
+          value = NodeUtil.newUndefinedNode(srcLocation);
+        }
+        Preconditions.checkNotNull(value);
+        inlineWellDefinedVariable(v, value, referenceInfo.references);
+        staleVars.add(v);
+      } else if (refCount == firstRefAfterInit) {
+        // The variable likely only read once, try some more
+        // complex inlining heuristics.
+        Reference reference = referenceInfo.references.get(
+            firstRefAfterInit - 1);
+        if (canInline(declaration, init, reference)) {
+          inline(v, declaration, init, reference);
+          staleVars.add(v);
+        }
+      } else if (declaration != init && refCount == 2) {
+        if (isValidDeclaration(declaration) && isValidInitialization(init)) {
+          // The only reference is the initialization, remove the assignment and
+          // the variable declaration.
+          Node value = init.getAssignedValue();
+          Preconditions.checkNotNull(value);
+          inlineWellDefinedVariable(v, value, referenceInfo.references);
+          staleVars.add(v);
+        }
+      }
+
+      // If this variable was not inlined normally, check if we can
+      // inline an alias of it. (If the variable was inlined, then the
+      // reference data is out of sync. We're better off just waiting for
+      // the next pass.)
+      if (!maybeModifiedArguments &&
+          !staleVars.contains(v) &&
+          referenceInfo.isWellDefined() &&
+          referenceInfo.isAssignedOnceInLifetime()) {

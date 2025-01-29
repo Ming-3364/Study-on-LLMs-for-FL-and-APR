@@ -1,0 +1,239 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/math3/util/FastMath.java
+================== buggy_method ==================
+{'method_name': 'sinh', 'method_body': 'public static double sinh(double x) {\n      boolean negate = false;\n      if (x != x) {\n          return x;\n      }\n\n      // sinh[z] = (exp(z) - exp(-z) / 2\n\n      // for values of z larger than about 20,\n      // exp(-z) can be ignored in comparison with exp(z)\n\n      if (x > 20) {\n              // Avoid overflow (MATH-905).\n              return 0.5 * exp(x);\n          }\n      if (x < -20) {\n              // Avoid overflow (MATH-905).\n              return -0.5 * exp(-x);\n      }\n\n      if (x == 0) {\n          return x;\n      }\n\n      if (x < 0.0) {\n          x = -x;\n          negate = true;\n      }\n\n      double result;\n\n      if (x > 0.25) {\n          double hiPrec[] = new double[2];\n          exp(x, 0.0, hiPrec);\n\n          double ya = hiPrec[0] + hiPrec[1];\n          double yb = -(ya - hiPrec[0] - hiPrec[1]);\n\n          double temp = ya * HEX_40000000;\n          double yaa = ya + temp - temp;\n          double yab = ya - yaa;\n\n          // recip = 1/y\n          double recip = 1.0/ya;\n          temp = recip * HEX_40000000;\n          double recipa = recip + temp - temp;\n          double recipb = recip - recipa;\n\n          // Correct for rounding in division\n          recipb += (1.0 - yaa*recipa - yaa*recipb - yab*recipa - yab*recipb) * recip;\n          // Account for yb\n          recipb += -yb * recip * recip;\n\n          recipa = -recipa;\n          recipb = -recipb;\n\n          // y = y + 1/y\n          temp = ya + recipa;\n          yb += -(temp - ya - recipa);\n          ya = temp;\n          temp = ya + recipb;\n          yb += -(temp - ya - recipb);\n          ya = temp;\n\n          result = ya + yb;\n          result *= 0.5;\n      }\n      else {\n          double hiPrec[] = new double[2];\n          expm1(x, hiPrec);\n\n          double ya = hiPrec[0] + hiPrec[1];\n          double yb = -(ya - hiPrec[0] - hiPrec[1]);\n\n          /* Compute expm1(-x) = -expm1(x) / (expm1(x) + 1) */\n          double denom = 1.0 + ya;\n          double denomr = 1.0 / denom;\n          double denomb = -(denom - 1.0 - ya) + yb;\n          double ratio = ya * denomr;\n          double temp = ratio * HEX_40000000;\n          double ra = ratio + temp - temp;\n          double rb = ratio - ra;\n\n          temp = denom * HEX_40000000;\n          double za = denom + temp - temp;\n          double zb = denom - za;\n\n          rb += (ya - za*ra - za*rb - zb*ra - zb*rb) * denomr;\n\n          // Adjust for yb\n          rb += yb*denomr;                        // numerator\n          rb += -ya * denomb * denomr * denomr;   // denominator\n\n          // y = y - 1/y\n          temp = ya + ra;\n          yb += -(temp - ya - ra);\n          ya = temp;\n          temp = ya + rb;\n          yb += -(temp - ya - rb);\n          ya = temp;\n\n          result = ya + yb;\n          result *= 0.5;\n      }\n\n      if (negate) {\n          result = -result;\n      }\n\n      return result;\n    }', 'start_line': 443, 'end_line': 553, 'buggy_lines': [458]}
+================== buggy_method_src ==================
+public static double sinh(double x) {
+      boolean negate = false;
+      if (x != x) {
+          return x;
+      }
+
+      // sinh[z] = (exp(z) - exp(-z) / 2
+
+      // for values of z larger than about 20,
+      // exp(-z) can be ignored in comparison with exp(z)
+
+      if (x > 20) {
+              // Avoid overflow (MATH-905).
+              return 0.5 * exp(x);
+          }
+      if (x < -20) {
+              // Avoid overflow (MATH-905).
+              return -0.5 * exp(-x);
+      }
+
+      if (x == 0) {
+          return x;
+      }
+
+      if (x < 0.0) {
+          x = -x;
+          negate = true;
+      }
+
+      double result;
+
+      if (x > 0.25) {
+          double hiPrec[] = new double[2];
+          exp(x, 0.0, hiPrec);
+
+          double ya = hiPrec[0] + hiPrec[1];
+          double yb = -(ya - hiPrec[0] - hiPrec[1]);
+
+          double temp = ya * HEX_40000000;
+          double yaa = ya + temp - temp;
+          double yab = ya - yaa;
+
+          // recip = 1/y
+          double recip = 1.0/ya;
+          temp = recip * HEX_40000000;
+          double recipa = recip + temp - temp;
+          double recipb = recip - recipa;
+
+          // Correct for rounding in division
+          recipb += (1.0 - yaa*recipa - yaa*recipb - yab*recipa - yab*recipb) * recip;
+          // Account for yb
+          recipb += -yb * recip * recip;
+
+          recipa = -recipa;
+          recipb = -recipb;
+
+          // y = y + 1/y
+          temp = ya + recipa;
+          yb += -(temp - ya - recipa);
+          ya = temp;
+          temp = ya + recipb;
+          yb += -(temp - ya - recipb);
+          ya = temp;
+
+          result = ya + yb;
+          result *= 0.5;
+      }
+      else {
+          double hiPrec[] = new double[2];
+          expm1(x, hiPrec);
+
+          double ya = hiPrec[0] + hiPrec[1];
+          double yb = -(ya - hiPrec[0] - hiPrec[1]);
+
+          /* Compute expm1(-x) = -expm1(x) / (expm1(x) + 1) */
+          double denom = 1.0 + ya;
+          double denomr = 1.0 / denom;
+          double denomb = -(denom - 1.0 - ya) + yb;
+          double ratio = ya * denomr;
+          double temp = ratio * HEX_40000000;
+          double ra = ratio + temp - temp;
+          double rb = ratio - ra;
+
+          temp = denom * HEX_40000000;
+          double za = denom + temp - temp;
+          double zb = denom - za;
+
+          rb += (ya - za*ra - za*rb - zb*ra - zb*rb) * denomr;
+
+          // Adjust for yb
+          rb += yb*denomr;                        // numerator
+          rb += -ya * denomb * denomr * denomr;   // denominator
+
+          // y = y - 1/y
+          temp = ya + ra;
+          yb += -(temp - ya - ra);
+          ya = temp;
+          temp = ya + rb;
+          yb += -(temp - ya - rb);
+          ya = temp;
+
+          result = ya + yb;
+          result *= 0.5;
+      }
+
+      if (negate) {
+          result = -result;
+      }
+
+      return result;
+    }
+================== test_stack ==================
+org.apache.commons.math3.util.FastMathTest::testMath905LargePositive
+junit.framework.AssertionFailedError: expected:<0.0> but was:<Infinity>
+	at org.junit.Assert.fail(Assert.java:88)
+	at org.junit.Assert.failNotEquals(Assert.java:743)
+	at org.junit.Assert.assertEquals(Assert.java:494)
+	at org.junit.Assert.assertEquals(Assert.java:592)
+	at org.apache.commons.math3.util.FastMathTest.testMath905LargePositive(FastMathTest.java:172)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.apache.commons.math3.util.FastMathTest::testMath905LargeNegative
+junit.framework.AssertionFailedError: expected:<0.0> but was:<Infinity>
+	at org.junit.Assert.fail(Assert.java:88)
+	at org.junit.Assert.failNotEquals(Assert.java:743)
+	at org.junit.Assert.assertEquals(Assert.java:494)
+	at org.junit.Assert.assertEquals(Assert.java:592)
+	at org.apache.commons.math3.util.FastMathTest.testMath905LargeNegative(FastMathTest.java:194)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+Assert.assertEquals(0, maxErr, 3);
+
+================== buggy_lines_in_method ==================
+[16]
+================== buggy_statements ==================
+['      if (x < -20) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+public static double sinh(double x) {
+      boolean negate = false;
+      if (x != x) {
+          return x;
+      }
+
+      // sinh[z] = (exp(z) - exp(-z) / 2
+
+      // for values of z larger than about 20,
+      // exp(-z) can be ignored in comparison with exp(z)
+
+      if (x > 20) {
+              // Avoid overflow (MATH-905).
+              return 0.5 * exp(x);
+          }
+      if (x < -20) {

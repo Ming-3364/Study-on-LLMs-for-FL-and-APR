@@ -1,0 +1,174 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "3",
+            "qwen-turbo": "2",
+            "ernie-3.5-128k": "**5**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "3"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "3",
+            "qwen-turbo": "102",
+            "ernie-3.5-128k": "**102**",
+            "deepseek-chat": "102",
+            "gpt-4o-mini": "102"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "102",
+            "ernie-3.5-128k": "**102**",
+            "deepseek-chat": "102",
+            "gpt-4o-mini": "102"
+        },
+        "prompt_fl_4": {
+            "doubao-pro-4k": "return constructType(type, constructType(contextClass));",
+            "qwen-turbo": "return constructType(type, constructType(contextClass));",
+            "ernie-3.5-128k": "public JavaType constructType(Type type, Class<?> contextClass) {",
+            "deepseek-chat": "return constructType(type, constructType(contextClass));",
+            "gpt-4o-mini": "return constructType(type, constructType(contextClass));"
+        },
+        "prompt_fl_5": {
+            "doubao-pro-4k": "constructType(type, constructType(contextClass));",
+            "qwen-turbo": "constructType(contextClass)",
+            "ernie-3.5-128k": "return constructType(type, constructType(contextClass));",
+            "deepseek-chat": "return constructType(type, constructType(contextClass));",
+            "gpt-4o-mini": "return constructType(type, constructType(contextClass));"
+        },
+        "prompt_fl_6": {
+            "doubao-pro-4k": "return constructType(type, constructType(contextClass));",
+            "qwen-turbo": "JavaType t2 = tf.constructType(Point.class, (Class<?>) null);",
+            "ernie-3.5-128k": "JavaType t2 = tf.constructType(Point.class, (Class<?>) null);",
+            "deepseek-chat": "JavaType t2 = tf.constructType(Point.class, (Class<?>) null);",
+            "gpt-4o-mini": "JavaType t2 = tf.constructType(Point.class, (Class<?>) null);"
+        },
+        "prompt_apr_1": {
+            "doubao-pro-4k": "@Deprecated\n    public JavaType constructType(Type type, Class<?> contextClass) {\n        return constructType(type, contextClass);\n    }",
+            "qwen-turbo": "Sure, here is the corrected method:\n\n```java\n@Deprecated\npublic JavaType constructType(Type type, Class<?> contextClass) {\n    return constructType(type);\n}\n```\n\nIn this correction, the recursive call to `constructType` with `contextClass` as an argument is removed because it seems unnecessary and might be causing the bug. If there's a specific reason for needing the context class, please provide more details so I can adjust the solution accordingly.",
+            "gpt-4o-mini": "@Deprecated\npublic JavaType constructType(Type type, Class<?> contextClass) {\n    return constructType(type, constructType(contextClass, contextClass));\n}",
+            "deepseek-chat": "The bug in the code is that the `constructType` method is being called recursively without proper handling of the `contextClass` parameter. The `contextClass` should be passed directly to the `constructType` method that takes a `Class<?>` parameter. Here is the corrected method:\n\n@Deprecated\npublic JavaType constructType(Type type, Class<?> contextClass) {\n    return constructType(type, constructType(contextClass, null));\n}\n\nIn this corrected version, the `contextClass` is passed directly to the `constructType` method that accepts a `Class<?>` and a `TypeBindings` parameter (assuming `null` for the `TypeBindings` parameter if it's not needed). This ensures that the `contextClass` is properly handled and avoids the recursive call issue.",
+            "ernie-3.5-128k": "Sure, here is the complete corrected method. The issue with line 3 is that it attempts to call `constructType(type, constructType(contextClass))`, but `constructType(Class<?>)` might not be an overloaded method in the current context, leading to a compilation error. Assuming you have another method `constructType(Class<?>)` that correctly constructs a `JavaType` from a `Class<?>`, here's how you can fix it:\n\nFirst, ensure you have a method signature for `constructType(Class<?>)`. If you don't have it, you need to define it. Assuming you have it, here's the corrected method:\n\npublic JavaType constructType(Type type, Class<?> contextClass) {\n    JavaType contextJavaType = constructType(contextClass);\n    return constructType(type, contextJavaType);\n}\n\nThis way, you first construct the `JavaType` for the `contextClass` and then use that result to call the other `constructType` method with both `type` and `contextJavaType`."
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\n@Deprecated\npublic JavaType constructType(Type type, Class<?> contextClass) {\n    return constructType(type, TypeFactory.rawClass(contextClass));\n}\n```",
+            "doubao-pro-4k": "@Deprecated\npublic JavaType constructType(Type type, Class<?> contextClass) {\n    return constructType(type, contextClass);\n}",
+            "gpt-4o-mini": "@Deprecated\npublic JavaType constructType(Type type, Class<?> contextClass) {\n    if (type == null) {\n        throw new IllegalArgumentException(\"Type cannot be null\");\n    }\n    if (contextClass == null) {\n        throw new IllegalArgumentException(\"Context class cannot be null\");\n    }\n    return constructType(type, constructType(contextClass, contextClass.getClassLoader()));\n}",
+            "deepseek-chat": "The bug in the code is likely due to the fact that `constructType(contextClass)` is being passed as the second argument to `constructType(type, ...)`, but the second argument should be a `JavaType` representing the context class, not a `Class<?>` object. \n\nHere is the corrected method:\n\n@Deprecated\npublic JavaType constructType(Type type, Class<?> contextClass) {\n    JavaType contextType = constructType(contextClass);\n    return constructType(type, contextType);\n}\n\nIn this corrected version, `constructType(contextClass)` is first called to convert the `Class<?>` object into a `JavaType`, and then this `JavaType` is passed as the second argument to the `constructType(type, ...)` method. This ensures that the method signature is correctly followed and the types are properly handled.",
+            "ernie-3.5-128k": "Sure, to properly address the issue in the provided method, we need to ensure that the `constructType` method being called within itself is properly defined to handle both `Type` and `Class<?>` parameters. Since the method signature you've provided does not show the full context, including the overloaded methods of `constructType`, I'll assume typical scenarios.\n\nAssuming there are overloaded versions of `constructType` that accept either a `Type` or a `Class<?>`, the issue might arise if the method resolution is ambiguous or incorrect. Here's a possible correction assuming typical implementations:\n\n1. One version of `constructType` accepts a `Type`.\n2. Another version of `constructType` accepts a `Class<?>`.\n\nHere is the corrected method with proper calls to these assumed overloaded methods:\n\n```java\n@Deprecated\npublic JavaType constructType(Type type, Class<?> contextClass) {\n    // Assuming there's another method constructType(Type type)\n    JavaType typeJavaType = constructTypeFromType(type); \n    \n    // Assuming there's another method constructType(Class<?> clazz)\n    JavaType contextJavaType = constructTypeFromClass(contextClass); \n    \n    // Then you might want to combine or process these JavaTypes as needed\n    // For simplicity, let's assume you just want to return one of them\n    // or process them further (this part depends on your actual requirements)\n    \n    // Example: returning the JavaType constructed from the type parameter\n    return typeJavaType;\n    \n    // If you need to combine or use both, you'd need additional logic here\n    // For instance:\n    // return combineJavaTypes(typeJavaType, contextJavaType);\n}\n\n// Assuming these are the actual implementations you might have\nprivate JavaType constructTypeFromType(Type type) {\n    // Logic to construct JavaType from Type\n    return null; // Placeholder for actual implementation\n}\n\nprivate JavaType constructTypeFromClass(Class<?> clazz) {\n    // Logic to construct JavaType from Class\n    return null; // Placeholder for actual implementation\n}\n\n// Example of a method that might combine two JavaTypes (if needed)\nprivate JavaType combineJavaTypes(JavaType typeJavaType, JavaType contextJavaType) {\n    // Logic to combine two JavaTypes\n    return null; // Placeholder for actual implementation\n}\n```\n\nNote:\n- I've renamed the internal method calls to `constructTypeFromType` and `constructTypeFromClass` to avoid ambiguity and clearly indicate their purpose.\n- You should replace the placeholder implementations (`return null;`) with your actual logic to construct `JavaType` from `Type` and `Class<?>`.\n- The `combineJavaTypes` method is an example of how you might combine the two `JavaType` instances if needed; adjust as per your requirements.\n\nThis structure ensures clarity and correctness in method resolution and usage."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "@Deprecated\npublic JavaType constructType(Type type, Class<?> contextClass) {\n    return constructType(type, constructType(contextClass));",
+            "doubao-pro-4k": "@Deprecated\npublic JavaType constructType(Type type, Class<?> contextClass) {\n    return constructType(type, contextClass);\n}",
+            "ernie-3.5-128k": "public JavaType constructType(Type type, Class<?> contextClass) {\n    return constructType(type, constructJavaType(contextClass));\n}",
+            "deepseek-chat": "@Deprecated\n    public JavaType constructType(Type type, Class<?> contextClass) {\n        return constructType(type, constructType(contextClass, null));",
+            "gpt-4o-mini": "@Deprecated\n    public JavaType constructType(Type type, Class<?> contextClass) {\n        return constructType(type, constructType(contextClass.getGenericSuperclass()));\n"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"return constructType(type);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"return constructType(type, contextClass);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"return constructType(type, contextClass != null ? constructType(contextClass) : null);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"return constructType(type, _typeFactory.constructType(contextClass));\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"return constructType(type, contextClass);\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return constructType(type);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"return constructType(type, contextClass);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"        return constructType(type, _typeFactory.constructType(contextClass));\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"return constructType(type, new JavaType(constructType(contextClass)));\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"return constructType(type, contextClass);\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return constructType(type);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"return constructType(type, contextClass);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"return constructType(type, TypeFactory.defaultInstance().constructType(contextClass));\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"return constructType(type, contextClass != null ? constructType(contextClass) : null);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return constructType(type, contextClass);\"\n    }\n]"
+        }
+    },
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "3",
+            "qwen-turbo": "2",
+            "ernie-3.5-128k": "**5**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "3"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "102",
+            "ernie-3.5-128k": "**566**",
+            "gpt-4o-mini": "102",
+            "deepseek-chat": "1"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "102",
+            "ernie-3.5-128k": "**102**",
+            "deepseek-chat": "102",
+            "gpt-4o-mini": "102"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "@Deprecated\npublic JavaType constructType(Type type, JavaType contextType) {\n    return _fromAny(null, type, contextType.getBindings());\n}",
+            "ernie-3.5-128k": "return _fromAny(null, type, contextType.getBindings());",
+            "doubao-pro-4k": "return _fromAny(null, type, contextType.getBindings());",
+            "deepseek-chat": "`return _fromAny(null, type, contextType.getBindings());`",
+            "gpt-4o-mini": "return _fromAny(null, type, contextType.getBindings());"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "@Deprecated\npublic JavaType constructType(Type type, JavaType contextType) {\n    return _fromAny(null, type, contextType.getBindings());\n}",
+            "doubao-pro-4k": "return _fromAny(null, type, contextType.getBindings());",
+            "ernie-3.5-128k": "return _fromAny(null, type, contextType.getBindings());",
+            "deepseek-chat": "return _fromAny(null, type, contextType.getBindings());",
+            "gpt-4o-mini": "return _fromAny(null, type, contextType.getBindings());"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "JavaType t2 = tf.constructType(Point.class, (Class<?>) null);",
+            "ernie-3.5-128k": "JavaType t2 = tf.constructType(Point.class, (Class<?>) null);",
+            "doubao-pro-4k": "JavaType t2 = tf.constructType(Point.class, (Class<?>) null);",
+            "deepseek-chat": "JavaType t2 = tf.constructType(Point.class, (Class<?>) null);",
+            "gpt-4o-mini": "JavaType t2 = tf.constructType(Point.class, (Class<?>) null);"
+        },
+        "prompt_apr_1": {
+            "doubao-pro-4k": "@Deprecated\n    public JavaType constructType(Type type, JavaType contextType) {\n        return _fromAny(null, type, contextType.getBindings());\n    }",
+            "qwen-turbo": "Certainly, based on the provided snippet and the reference to a bug in line 3, I assume you want to ensure that the `contextType` is properly handled if it is not null. Here's the complete corrected method:\n\n```java\n@Deprecated\npublic JavaType constructType(Type type, JavaType contextType) {\n    return _fromAny(contextType != null ? contextType.getBindings() : null, type, contextType != null ? contextType.getBindings() : null);\n}\n```\n\nThis ensures that if `contextType` is not null, its bindings are passed to `_fromAny`. If `contextType` is null, then null is passed instead. This should address the issue you mentioned.",
+            "gpt-4o-mini": "@Deprecated\n    public JavaType constructType(Type type, JavaType contextType) {\n        if (type == null || contextType == null) {\n            throw new IllegalArgumentException(\"Type and contextType must not be null\");\n        }\n        return _fromAny(null, type, contextType.getBindings());\n    }",
+            "ernie-3.5-128k": "Sure, here is the complete corrected method with the bug fixed:\n\npublic JavaType constructType(Type type, JavaType contextType) {\n    return _fromAny(null, type, contextType != null ? contextType.getBindings() : null);\n}\n\nThe issue in line 3 was that it could potentially throw a NullPointerException if `contextType` was null. The fix ensures that `contextType.getBindings()` is only called if `contextType` is not null.",
+            "deepseek-chat": "@Deprecated\npublic JavaType constructType(Type type, JavaType contextType) {\n    if (contextType == null) {\n        throw new IllegalArgumentException(\"contextType cannot be null\");\n    }\n    return _fromAny(null, type, contextType.getBindings());\n}\n\nThe bug in the original code is that it does not check if `contextType` is null before calling `contextType.getBindings()`. This can lead to a `NullPointerException` if `contextType` is null. The corrected code includes a null check for `contextType` and throws an `IllegalArgumentException` if it is null. This ensures that the method will not fail with a `NullPointerException` and provides a clear error message if `contextType` is null."
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\n@Deprecated\npublic JavaType constructType(Type type, JavaType contextType) {\n    if (contextType == null) {\n        throw new IllegalArgumentException(\"contextType must not be null\");\n    }\n    return _fromAny(null, type, contextType.getBindings());\n}\n```",
+            "doubao-pro-4k": "@Deprecated\npublic JavaType constructType(Type type, JavaType contextType) {\n    return _fromAny(null, type, contextType.getBindings());\n}\n\n// It's not clear what the specific bug is from the provided information. Without more details, it's difficult to provide a specific fix. You need to further clarify the bug for a more targeted correction.",
+            "deepseek-chat": "@Deprecated\npublic JavaType constructType(Type type, JavaType contextType) {\n    if (contextType == null) {\n        throw new IllegalArgumentException(\"contextType cannot be null\");\n    }\n    return _fromAny(null, type, contextType.getBindings());\n}\n\nThe bug in the original code is that it does not check if `contextType` is null before calling `contextType.getBindings()`. If `contextType` is null, this would result in a `NullPointerException`. The corrected method includes a null check for `contextType` and throws an `IllegalArgumentException` if it is null. This ensures that the method handles the null case gracefully and provides a meaningful error message.",
+            "gpt-4o-mini": "Sure! Here's the complete corrected method:\n\n@Deprecated\npublic JavaType constructType(Type type, JavaType contextType) {\n    if (type == null) {\n        throw new IllegalArgumentException(\"Type cannot be null\");\n    }\n    if (contextType == null) {\n        throw new IllegalArgumentException(\"Context type cannot be null\");\n    }\n    return _fromAny(null, type, contextType.getBindings());\n} \n\nExplanation:\n1. **Null checks**: The original code didn't handle potential `null` values for the `type` or `contextType` parameters. In the corrected code, I've added checks to throw `IllegalArgumentException` when either of those is `null`.\n2. The logic and structure of your method remain unchanged as the only potential issue was handling invalid inputs more gracefully.",
+            "ernie-3.5-128k": "To address the bug in the provided method, we need to ensure that the `_fromAny` method is called with appropriate parameters. The issue might arise if `_fromAny` is expecting a non-null value for the first parameter or if the logic for handling `null` is not properly implemented within `_fromAny`.\n\nSince the method is deprecated and we are trying to fix a potential issue, let's assume that the first parameter should not be `null` unless `_fromAny` explicitly handles it. However, without more context about `_fromAny`'s implementation, we can make a reasonable guess that we might want to pass a meaningful value or a default instance if available.\n\nHere's a corrected version of the method, assuming that we might have a default instance or a way to derive a non-null value for the first parameter. Since we don't have that context, I'll illustrate with a placeholder comment where you should provide the appropriate value:\n\n```java\n@Deprecated\npublic JavaType constructType(Type type, JavaType contextType) {\n    // Replace 'defaultInstanceOrValue' with an appropriate non-null value or instance.\n    // This could be a new instance of a specific class, a static method call, etc.\n    // Example: Object defaultInstanceOrValue = getDefaultInstance();\n    \n    // Placeholder for the correct non-null value\n    Object defaultInstanceOrValue = null; // Replace with actual logic to get a non-null value\n    \n    // Ensure that defaultInstanceOrValue is not null before passing it to _fromAny\n    if (defaultInstanceOrValue == null) {\n        throw new IllegalArgumentException(\"defaultInstanceOrValue cannot be null\");\n    }\n    \n    return _fromAny(defaultInstanceOrValue, type, contextType.getBindings());\n}\n```\n\n**Important Note**: You need to replace `defaultInstanceOrValue` with an actual, appropriate non-null value based on your application's logic.\n\nIf `_fromAny` can indeed handle `null` as its first parameter and you just want to keep it simple, you could re-use the `null` value but be aware of the implications:\n\n```java\n@Deprecated\npublic JavaType constructType(Type type, JavaType contextType) {\n    // If _fromAny can handle null as the first parameter, you can keep it as null\n    return _fromAny(null, type, contextType.getBindings());\n}\n```\n\nHowever, this would only be acceptable if `_fromAny` is designed to handle `null` gracefully. Always ensure you understand the implications of passing `null` to methods in your codebase."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "@Deprecated\npublic JavaType constructType(Type type, JavaType contextType) {\n    return _fromAny(null, type, contextType.getBindings());",
+            "doubao-pro-4k": "@Deprecated\npublic JavaType constructType(Type type, JavaType contextType) {\n    return _fromAny(null, type, contextType.getBindings());\n}",
+            "ernie-3.5-128k": "public JavaType constructType(Type type, JavaType contextType) {\n    return _fromAny(null, type, contextType != null ? contextType.getBindings() : null);",
+            "deepseek-chat": "@Deprecated\n    public JavaType constructType(Type type, JavaType contextType) {\n        return _fromAny(null, type, contextType == null ? null : contextType.getBindings());",
+            "gpt-4o-mini": "@Deprecated  \npublic JavaType constructType(Type type, JavaType contextType) {  \n    return _fromAny(null, type, contextType.getBindings());  \n}  "
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"return _fromAny(null, type, contextType.getBindings().getBindings());\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"return _fromAny(type, contextType, contextType.getBindings());\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"return _fromAny(contextType, type, contextType.getBindings());\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"return _fromAny(null, type, contextType != null ? contextType.getBindings() : null);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"return _fromAny(null, type, contextType.getBindings(), null);\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return _fromAny(null, type, contextType.getBindings());\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"return _fromAny(null, type, contextType == null? null : contextType.getBindings());\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"        return _fromAny(null, type, contextType != null ? contextType.getBindings() : null);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"return _fromAny(type, contextType, contextType.getBindings());\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return _fromAny(null, type, contextType != null ? contextType.getBindings() : null);\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return _fromAny(null, type, contextType.getBindings());\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"return _fromAny(null, type, contextType);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"return _fromAny(null, type, contextType);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"return _fromAny(type, contextType, contextType.getBindings());\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"return _fromAny(null, type, contextType.getBindings());\"\n    }\n]"
+        }
+    }
+]

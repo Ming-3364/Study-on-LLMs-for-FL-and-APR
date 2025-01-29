@@ -1,0 +1,88 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/lang/Entities.java
+================== buggy_method ==================
+{'method_name': 'escape', 'method_body': 'en; i++) {\n            char c = str.charAt(i);\n            String entityName = this.entityName(c);\n            if (entityName == null) {\n                if (c > 0x7F) {\n                    writer.write("&#");\n                    writer.write(Integer.toString(c, 10));\n                    writer.write(\';\');\n                } else {\n                    writer.write(c);\n                }\n            } else {\n                writer.write(\'&\');\n                writer.write(entityName);\n                writer.write(\';\');\n            }\n        }\n    }\n\n    /**\n     * <p>\n     * Unescapes the entities in a <code>String</code>.\n     * </p>\n     * \n     * <p>\n     * For example, ', 'start_line': 825, 'end_line': 844, 'buggy_lines': [828, 831]}
+================== buggy_method_src ==================
+en; i++) {
+            char c = str.charAt(i);
+            String entityName = this.entityName(c);
+            if (entityName == null) {
+                if (c > 0x7F) {
+                    writer.write("&#");
+                    writer.write(Integer.toString(c, 10));
+                    writer.write(';');
+                } else {
+                    writer.write(c);
+                }
+            } else {
+                writer.write('&');
+                writer.write(entityName);
+                writer.write(';');
+            }
+        }
+    }
+
+    /**
+     * <p>
+     * Unescapes the entities in a <code>String</code>.
+     * </p>
+     * 
+     * <p>
+     * For example, 
+================== test_stack ==================
+org.apache.commons.lang.StringEscapeUtilsTest::testEscapeHtmlHighUnicode
+junit.framework.ComparisonFailure: High unicode was not escaped correctly expected:<&#[119650];> but was:<&#[55348;&#57186];>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.TestCase.assertEquals(TestCase.java:261)
+	at org.apache.commons.lang.StringEscapeUtilsTest.testEscapeHtmlHighUnicode(StringEscapeUtilsTest.java:430)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals( "High unicode was not escaped correctly", "&#119650;", escaped);
+
+================== buggy_lines_in_method ==================
+[4, 7]
+================== buggy_statements ==================
+['            if (entityName == null) {', '                    writer.write(Integer.toString(c, 10));']
+================== buggy_method_src_endswith_buggy_statement ==================
+en; i++) {
+            char c = str.charAt(i);
+            String entityName = this.entityName(c);
+            if (entityName == null) {
+                if (c > 0x7F) {
+                    writer.write("&#");
+                    writer.write(Integer.toString(c, 10));

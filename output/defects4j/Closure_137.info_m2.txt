@@ -1,0 +1,559 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/MakeDeclaredNamesUnique.java
+================== buggy_method ==================
+{'method_name': 'visit', 'method_body': '@Override\n    public void visit(NodeTraversal t, Node node, Node parent) {\n      if (node.getType() == Token.NAME) {\n        String oldName = node.getString();\n        if (containsSeparator(oldName)) {\n          Scope scope = t.getScope();\n          Var var = t.getScope().getVar(oldName);\n          if (var == null || var.isGlobal()) {\n        return;\n      }\n\n          if (nameMap.containsKey(var)) {\n            node.setString(nameMap.get(var));\n          } else {\n            int index = indexOfSeparator(oldName);\n            String newName = getOrginalNameInternal(oldName, index);\n            String suffix = getNameSuffix(oldName, index);\n\n      // Merge any names that were referenced but not declared in the current\n      // scope.\n      // If there isn\'t anything left in the stack we will be going into the\n      // global scope: don\'t try to build a set of referenced names for the\n      // global scope.\n            boolean recurseScopes = false;\n            if (!suffix.matches("\\\\d+")) {\n              recurseScopes = true;\n            }\n\n    /**\n     * For the Var declared in the current scope determine if it is possible\n     * to revert the name to its orginal form without conflicting with other\n     * values.\n     */\n        // Check if the new name is valid and if it would cause conflicts.\n            if (var.scope.isDeclared(newName, recurseScopes) ||\n                !TokenStream.isJSIdentifier(newName)) {\n              newName = oldName;\n            } else {\n              var.scope.declare(newName, var.nameNode, null, null);\n          // Adding a reference to the new name to prevent either the parent\n          // scopes or the current scope renaming another var to this new name.\n              Node parentNode = var.getParentNode();\n              if (parentNode.getType() == Token.FUNCTION &&\n                  parentNode == var.scope.getRootNode()) {\n                var.getNameNode().setString(newName);\n              }\n              node.setString(newName);\n          compiler.reportCodeChange();\n        }\n\n            nameMap.put(var, newName);\n\n      }\n\n        // Add all referenced names to the set so it is possible to check for\n        // conflicts.\n        // Store only references to candidate names in the node map.\n        }\n      }\n    }', 'start_line': 284, 'end_line': 343, 'buggy_lines': [284, 285, 286, 287, 288, 289, 290, 291, 295, 296, 297, 298, 299, 300, 307, 308, 309, 310, 318, 319, 320, 321, 322, 325, 326, 327, 328, 329, 330, 334]}
+================== buggy_method_src ==================
+@Override
+    public void visit(NodeTraversal t, Node node, Node parent) {
+      if (node.getType() == Token.NAME) {
+        String oldName = node.getString();
+        if (containsSeparator(oldName)) {
+          Scope scope = t.getScope();
+          Var var = t.getScope().getVar(oldName);
+          if (var == null || var.isGlobal()) {
+        return;
+      }
+
+          if (nameMap.containsKey(var)) {
+            node.setString(nameMap.get(var));
+          } else {
+            int index = indexOfSeparator(oldName);
+            String newName = getOrginalNameInternal(oldName, index);
+            String suffix = getNameSuffix(oldName, index);
+
+      // Merge any names that were referenced but not declared in the current
+      // scope.
+      // If there isn't anything left in the stack we will be going into the
+      // global scope: don't try to build a set of referenced names for the
+      // global scope.
+            boolean recurseScopes = false;
+            if (!suffix.matches("\\d+")) {
+              recurseScopes = true;
+            }
+
+    /**
+     * For the Var declared in the current scope determine if it is possible
+     * to revert the name to its orginal form without conflicting with other
+     * values.
+     */
+        // Check if the new name is valid and if it would cause conflicts.
+            if (var.scope.isDeclared(newName, recurseScopes) ||
+                !TokenStream.isJSIdentifier(newName)) {
+              newName = oldName;
+            } else {
+              var.scope.declare(newName, var.nameNode, null, null);
+          // Adding a reference to the new name to prevent either the parent
+          // scopes or the current scope renaming another var to this new name.
+              Node parentNode = var.getParentNode();
+              if (parentNode.getType() == Token.FUNCTION &&
+                  parentNode == var.scope.getRootNode()) {
+                var.getNameNode().setString(newName);
+              }
+              node.setString(newName);
+          compiler.reportCodeChange();
+        }
+
+            nameMap.put(var, newName);
+
+      }
+
+        // Add all referenced names to the set so it is possible to check for
+        // conflicts.
+        // Store only references to candidate names in the node map.
+        }
+      }
+    }
+================== test_stack ==================
+com.google.javascript.jscomp.MakeDeclaredNamesUniqueTest::testOnlyInversion3
+junit.framework.AssertionFailedError:
+Expected: function x1(){var a$$1;function x2(){var a}function x3(){var a}}
+Result: function x1(){var a;function x2(){var a}function x3(){var a}}
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT [source name: null] [encoded source length: 0] [base line: -1] [end line: -1] 1 [sourcename: expected0] [synthetic: 1]
+        FUNCTION x1 1 [sourcename: expected0]
+            NAME x1 1
+            LP 1
+            BLOCK 1
+                VAR 1
+                    NAME a$$1 1
+                FUNCTION x2 1 [sourcename: expected0]
+                    NAME x2 1
+                    LP 1
+                    BLOCK 1
+                        VAR 1
+                            NAME a 1
+                FUNCTION x3 1 [sourcename: expected0]
+                    NAME x3 1
+                    LP 1
+                    BLOCK 1
+                        VAR 1
+                            NAME a 1
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT [source name: null] [encoded source length: 0] [base line: -1] [end line: -1] 1 [sourcename: testcode] [synthetic: 1]
+        FUNCTION x1 1 [sourcename: testcode]
+            NAME x1 1
+            LP 1
+            BLOCK 1
+                VAR 1
+                    NAME a 1
+                FUNCTION x2 1 [sourcename: testcode]
+                    NAME x2 1
+                    LP 1
+                    BLOCK 1
+                        VAR 1
+                            NAME a 1
+                FUNCTION x3 1 [sourcename: testcode]
+                    NAME x3 1
+                    LP 1
+                    BLOCK 1
+                        VAR 1
+                            NAME a 1
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:782)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:302)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:271)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:259)
+	at com.google.javascript.jscomp.MakeDeclaredNamesUniqueTest.testOnlyInversion3(MakeDeclaredNamesUniqueTest.java:282)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.MakeDeclaredNamesUniqueTest::testOnlyInversion4
+junit.framework.AssertionFailedError:
+Expected: function x1(){var a$$1;function x2(){var a;a$$1++}}
+Result: function x1(){var a;function x2(){var a;a++}}
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT [source name: null] [encoded source length: 0] [base line: -1] [end line: -1] 1 [sourcename: expected0] [synthetic: 1]
+        FUNCTION x1 1 [sourcename: expected0]
+            NAME x1 1
+            LP 1
+            BLOCK 1
+                VAR 1
+                    NAME a$$1 1
+                FUNCTION x2 1 [sourcename: expected0]
+                    NAME x2 1
+                    LP 1
+                    BLOCK 1
+                        VAR 1
+                            NAME a 1
+                        EXPR_RESULT 1
+                            INC 1 [incrdecr: 1]
+                                NAME a$$1 1
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT [source name: null] [encoded source length: 0] [base line: -1] [end line: -1] 1 [sourcename: testcode] [synthetic: 1]
+        FUNCTION x1 1 [sourcename: testcode]
+            NAME x1 1
+            LP 1
+            BLOCK 1
+                VAR 1
+                    NAME a 1
+                FUNCTION x2 1 [sourcename: testcode]
+                    NAME x2 1
+                    LP 1
+                    BLOCK 1
+                        VAR 1
+                            NAME a 1
+                        EXPR_RESULT 1
+                            INC 1 [incrdecr: 1]
+                                NAME a 1
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:782)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:302)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:271)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:259)
+	at com.google.javascript.jscomp.MakeDeclaredNamesUniqueTest.testOnlyInversion4(MakeDeclaredNamesUniqueTest.java:305)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.MakeDeclaredNamesUniqueTest::testArguments
+junit.framework.AssertionFailedError:
+Expected: function foo(){var arguments;function bar(){var arguments}}
+Result: function foo(){var arguments;function bar(){var arguments$$1}}
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT [source name: null] [encoded source length: 0] [base line: -1] [end line: -1] 1 [sourcename: expected0] [synthetic: 1]
+        FUNCTION foo 1 [sourcename: expected0]
+            NAME foo 1
+            LP 1
+            BLOCK 1
+                VAR 1
+                    NAME arguments 1
+                FUNCTION bar 1 [sourcename: expected0]
+                    NAME bar 1
+                    LP 1
+                    BLOCK 1
+                        VAR 1
+                            NAME arguments 1
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT [source name: null] [encoded source length: 0] [base line: -1] [end line: -1] 1 [sourcename: testcode] [synthetic: 1]
+        FUNCTION foo 1 [sourcename: testcode]
+            NAME foo 1
+            LP 1
+            BLOCK 1
+                VAR 1
+                    NAME arguments 1
+                FUNCTION bar 1 [sourcename: testcode]
+                    NAME bar 1
+                    LP 1
+                    BLOCK 1
+                        VAR 1
+                            NAME arguments$$1 1
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:782)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.testSame(CompilerTestCase.java:544)
+	at com.google.javascript.jscomp.CompilerTestCase.testSame(CompilerTestCase.java:525)
+	at com.google.javascript.jscomp.MakeDeclaredNamesUniqueTest.testSameWithInversion(MakeDeclaredNamesUniqueTest.java:82)
+	at com.google.javascript.jscomp.MakeDeclaredNamesUniqueTest.testSameWithInversion(MakeDeclaredNamesUniqueTest.java:89)
+	at com.google.javascript.jscomp.MakeDeclaredNamesUniqueTest.testArguments(MakeDeclaredNamesUniqueTest.java:210)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.MakeDeclaredNamesUniqueTest::testMakeLocalNamesUniqueWithContext1
+junit.framework.AssertionFailedError:
+Expected: var a;function foo(){var a}
+Result: var a;function foo(){var a$$inline_1}
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT [source name: null] [encoded source length: 0] [base line: -1] [end line: -1] 1 [sourcename: expected0] [synthetic: 1]
+        VAR 1
+            NAME a 1
+        FUNCTION foo 1 [sourcename: expected0]
+            NAME foo 1
+            LP 1
+            BLOCK 1
+                VAR 1
+                    NAME a 1
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT [source name: null] [encoded source length: 0] [base line: -1] [end line: -1] 1 [sourcename: testcode] [synthetic: 1]
+        VAR 1
+            NAME a 1
+        FUNCTION foo 1 [sourcename: testcode]
+            NAME foo 1
+            LP 1
+            BLOCK 1
+                VAR 1
+                    NAME a$$inline_1 1
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:782)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:302)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:271)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:259)
+	at com.google.javascript.jscomp.MakeDeclaredNamesUniqueTest.testMakeLocalNamesUniqueWithContext1(MakeDeclaredNamesUniqueTest.java:112)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.NormalizeTest::testRemoveDuplicateVarDeclarations2
+junit.framework.AssertionFailedError:
+Expected: var e=1;function f(){try{}catch(e$$2){}var e$$1=2}
+Result: var e=1;function f(){try{}catch(e$$1){}e=2}
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT [source name: null] [encoded source length: 0] [base line: -1] [end line: -1] 1 [sourcename: expected0] [synthetic: 1]
+        VAR 1
+            NAME e 1
+                NUMBER 1.0 1
+        FUNCTION f 1 [sourcename: expected0]
+            NAME f 1
+            LP 1
+            BLOCK 1
+                TRY 1
+                    BLOCK 1
+                    BLOCK 1
+                        CATCH 1
+                            NAME e$$2 1
+                            EMPTY 1
+                            BLOCK 1
+                VAR 1
+                    NAME e$$1 1
+                        NUMBER 2.0 1
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT [source name: null] [encoded source length: 0] [base line: -1] [end line: -1] 1 [sourcename: testcode] [synthetic: 1]
+        VAR 1
+            NAME e 1
+                NUMBER 1.0 1
+        FUNCTION f 1 [sourcename: testcode]
+            NAME f 1
+            LP 1
+            BLOCK 1
+                TRY 1
+                    BLOCK 1
+                    BLOCK 1
+                        CATCH 1
+                            NAME e$$1 1
+                            EMPTY 1
+                            BLOCK 1
+                EXPR_RESULT 1
+                    ASSIGN
+                        NAME e 1
+                        NUMBER 2.0 1
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:782)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:302)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:271)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:259)
+	at com.google.javascript.jscomp.NormalizeTest.testRemoveDuplicateVarDeclarations2(NormalizeTest.java:204)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+test(
+
+================== buggy_lines_in_method ==================
+[1, 2, 3, 4, 5, 6, 7, 8, 12, 13, 14, 15, 16, 17, 24, 25, 26, 27, 35, 36, 37, 38, 39, 42, 43, 44, 45, 46, 47, 51]
+================== buggy_statements ==================
+['@Override', '    public void visit(NodeTraversal t, Node node, Node parent) {', '      if (node.getType() == Token.NAME) {', '        String oldName = node.getString();', '        if (containsSeparator(oldName)) {', '          Scope scope = t.getScope();', '          Var var = t.getScope().getVar(oldName);', '          if (var == null || var.isGlobal()) {', '          if (nameMap.containsKey(var)) {', '            node.setString(nameMap.get(var));', '          } else {', '            int index = indexOfSeparator(oldName);', '            String newName = getOrginalNameInternal(oldName, index);', '            String suffix = getNameSuffix(oldName, index);', '            boolean recurseScopes = false;', '            if (!suffix.matches("\\\\d+")) {', '              recurseScopes = true;', '            }', '            if (var.scope.isDeclared(newName, recurseScopes) ||', '                !TokenStream.isJSIdentifier(newName)) {', '              newName = oldName;', '            } else {', '              var.scope.declare(newName, var.nameNode, null, null);', '              Node parentNode = var.getParentNode();', '              if (parentNode.getType() == Token.FUNCTION &&', '                  parentNode == var.scope.getRootNode()) {', '                var.getNameNode().setString(newName);', '              }', '              node.setString(newName);', '            nameMap.put(var, newName);']
+================== buggy_method_src_endswith_buggy_statement ==================
+@Override
+    public void visit(NodeTraversal t, Node node, Node parent) {
+      if (node.getType() == Token.NAME) {
+        String oldName = node.getString();
+        if (containsSeparator(oldName)) {
+          Scope scope = t.getScope();
+          Var var = t.getScope().getVar(oldName);
+          if (var == null || var.isGlobal()) {
+        return;
+      }
+
+          if (nameMap.containsKey(var)) {
+            node.setString(nameMap.get(var));
+          } else {
+            int index = indexOfSeparator(oldName);
+            String newName = getOrginalNameInternal(oldName, index);
+            String suffix = getNameSuffix(oldName, index);
+
+      // Merge any names that were referenced but not declared in the current
+      // scope.
+      // If there isn't anything left in the stack we will be going into the
+      // global scope: don't try to build a set of referenced names for the
+      // global scope.
+            boolean recurseScopes = false;
+            if (!suffix.matches("\\d+")) {
+              recurseScopes = true;
+            }
+
+    /**
+     * For the Var declared in the current scope determine if it is possible
+     * to revert the name to its orginal form without conflicting with other
+     * values.
+     */
+        // Check if the new name is valid and if it would cause conflicts.
+            if (var.scope.isDeclared(newName, recurseScopes) ||
+                !TokenStream.isJSIdentifier(newName)) {
+              newName = oldName;
+            } else {
+              var.scope.declare(newName, var.nameNode, null, null);
+          // Adding a reference to the new name to prevent either the parent
+          // scopes or the current scope renaming another var to this new name.
+              Node parentNode = var.getParentNode();
+              if (parentNode.getType() == Token.FUNCTION &&
+                  parentNode == var.scope.getRootNode()) {
+                var.getNameNode().setString(newName);
+              }
+              node.setString(newName);
+          compiler.reportCodeChange();
+        }
+
+            nameMap.put(var, newName);

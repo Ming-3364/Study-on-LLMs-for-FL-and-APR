@@ -1,0 +1,198 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/deser/BeanDeserializer.java
+================== buggy_method ==================
+{'method_name': 'deserializeUsingPropertyBasedWithUnwrapped', 'method_body': '@SuppressWarnings("resource")\n    protected Object deserializeUsingPropertyBasedWithUnwrapped(JsonParser p, DeserializationContext ctxt)\n        throws IOException\n    {\n        // 01-Dec-2016, tatu: Note: This IS legal to call, but only when unwrapped\n        //    value itself is NOT passed via `CreatorProperty` (which isn\'t supported).\n        //    Ok however to pass via setter or field.\n        \n        final PropertyBasedCreator creator = _propertyBasedCreator;\n        PropertyValueBuffer buffer = creator.startBuilding(p, ctxt, _objectIdReader);\n\n        TokenBuffer tokens = new TokenBuffer(p, ctxt);\n        tokens.writeStartObject();\n\n        JsonToken t = p.getCurrentToken();\n        for (; t == JsonToken.FIELD_NAME; t = p.nextToken()) {\n            String propName = p.getCurrentName();\n            p.nextToken(); // to point to value\n            // creator property?\n            SettableBeanProperty creatorProp = creator.findCreatorProperty(propName);\n            if (creatorProp != null) {\n                // Last creator property to set?\n                if (buffer.assignParameter(creatorProp,\n                        _deserializeWithErrorWrapping(p, ctxt, creatorProp))) {\n                    t = p.nextToken(); // to move to following FIELD_NAME/END_OBJECT\n                    Object bean;\n                    try {\n                        bean = creator.build(ctxt, buffer);\n                    } catch (Exception e) {\n                        bean = wrapInstantiationProblem(e, ctxt);\n                    }\n                    // [databind#631]: Assign current value, to be accessible by custom serializers\n                    p.setCurrentValue(bean);\n                    // if so, need to copy all remaining tokens into buffer\n                    while (t == JsonToken.FIELD_NAME) {\n                        // NOTE: do NOT skip name as it needs to be copied; `copyCurrentStructure` does that\n                        p.nextToken();\n                        tokens.copyCurrentStructure(p);\n                        t = p.nextToken();\n                    }\n                    // 28-Aug-2018, tatu: Let\'s add sanity check here, easier to catch off-by-some\n                    //    problems if we maintain invariants\n                    tokens.writeEndObject();\n                    if (bean.getClass() != _beanType.getRawClass()) {\n                        // !!! 08-Jul-2011, tatu: Could probably support; but for now\n                        //   it\'s too complicated, so bail out\n                        ctxt.reportInputMismatch(creatorProp,\n                                "Cannot create polymorphic instances with unwrapped values");\n                        return null;\n                    }\n                    return _unwrappedPropertyHandler.processUnwrapped(p, ctxt, bean, tokens);\n                }\n                continue;\n            }\n            // Object Id property?\n            if (buffer.readIdProperty(propName)) {\n                continue;\n            }\n            // regular property? needs buffering\n            SettableBeanProperty prop = _beanProperties.find(propName);\n            if (prop != null) {\n                buffer.bufferProperty(prop, _deserializeWithErrorWrapping(p, ctxt, prop));\n                continue;\n            }\n            // Things marked as ignorable should not be passed to any setter\n            if (_ignorableProps != null && _ignorableProps.contains(propName)) {\n                handleIgnoredProperty(p, ctxt, handledType(), propName);\n                continue;\n            }\n            // 29-Nov-2016, tatu: probably should try to avoid sending content\n            //    both to any setter AND buffer... but, for now, the only thing\n            //    we can do.\n            // how about any setter? We\'ll get copies but...\n            if (_anySetter == null) {\n                // but... others should be passed to unwrapped property deserializers\n                tokens.writeFieldName(propName);\n                tokens.copyCurrentStructure(p);\n            } else {\n                // Need to copy to a separate buffer first\n                TokenBuffer b2 = TokenBuffer.asCopyOfValue(p);\n                tokens.writeFieldName(propName);\n                tokens.append(b2);\n                try {\n                    buffer.bufferAnyProperty(_anySetter, propName,\n                            _anySetter.deserialize(b2.asParserOnFirstToken(), ctxt));\n                } catch (Exception e) {\n                    wrapAndThrow(e, _beanType.getRawClass(), propName, ctxt);\n                }\n                continue;\n            }\n        }\n\n        // We hit END_OBJECT, so:\n        Object bean;\n        try {\n            bean = creator.build(ctxt, buffer);\n        } catch (Exception e) {\n            wrapInstantiationProblem(e, ctxt);\n            return null; // never gets here\n        }\n        return _unwrappedPropertyHandler.processUnwrapped(p, ctxt, bean, tokens);\n    }', 'start_line': 735, 'end_line': 836, 'buggy_lines': [771]}
+================== buggy_method_src ==================
+@SuppressWarnings("resource")
+    protected Object deserializeUsingPropertyBasedWithUnwrapped(JsonParser p, DeserializationContext ctxt)
+        throws IOException
+    {
+        // 01-Dec-2016, tatu: Note: This IS legal to call, but only when unwrapped
+        //    value itself is NOT passed via `CreatorProperty` (which isn't supported).
+        //    Ok however to pass via setter or field.
+        
+        final PropertyBasedCreator creator = _propertyBasedCreator;
+        PropertyValueBuffer buffer = creator.startBuilding(p, ctxt, _objectIdReader);
+
+        TokenBuffer tokens = new TokenBuffer(p, ctxt);
+        tokens.writeStartObject();
+
+        JsonToken t = p.getCurrentToken();
+        for (; t == JsonToken.FIELD_NAME; t = p.nextToken()) {
+            String propName = p.getCurrentName();
+            p.nextToken(); // to point to value
+            // creator property?
+            SettableBeanProperty creatorProp = creator.findCreatorProperty(propName);
+            if (creatorProp != null) {
+                // Last creator property to set?
+                if (buffer.assignParameter(creatorProp,
+                        _deserializeWithErrorWrapping(p, ctxt, creatorProp))) {
+                    t = p.nextToken(); // to move to following FIELD_NAME/END_OBJECT
+                    Object bean;
+                    try {
+                        bean = creator.build(ctxt, buffer);
+                    } catch (Exception e) {
+                        bean = wrapInstantiationProblem(e, ctxt);
+                    }
+                    // [databind#631]: Assign current value, to be accessible by custom serializers
+                    p.setCurrentValue(bean);
+                    // if so, need to copy all remaining tokens into buffer
+                    while (t == JsonToken.FIELD_NAME) {
+                        // NOTE: do NOT skip name as it needs to be copied; `copyCurrentStructure` does that
+                        p.nextToken();
+                        tokens.copyCurrentStructure(p);
+                        t = p.nextToken();
+                    }
+                    // 28-Aug-2018, tatu: Let's add sanity check here, easier to catch off-by-some
+                    //    problems if we maintain invariants
+                    tokens.writeEndObject();
+                    if (bean.getClass() != _beanType.getRawClass()) {
+                        // !!! 08-Jul-2011, tatu: Could probably support; but for now
+                        //   it's too complicated, so bail out
+                        ctxt.reportInputMismatch(creatorProp,
+                                "Cannot create polymorphic instances with unwrapped values");
+                        return null;
+                    }
+                    return _unwrappedPropertyHandler.processUnwrapped(p, ctxt, bean, tokens);
+                }
+                continue;
+            }
+            // Object Id property?
+            if (buffer.readIdProperty(propName)) {
+                continue;
+            }
+            // regular property? needs buffering
+            SettableBeanProperty prop = _beanProperties.find(propName);
+            if (prop != null) {
+                buffer.bufferProperty(prop, _deserializeWithErrorWrapping(p, ctxt, prop));
+                continue;
+            }
+            // Things marked as ignorable should not be passed to any setter
+            if (_ignorableProps != null && _ignorableProps.contains(propName)) {
+                handleIgnoredProperty(p, ctxt, handledType(), propName);
+                continue;
+            }
+            // 29-Nov-2016, tatu: probably should try to avoid sending content
+            //    both to any setter AND buffer... but, for now, the only thing
+            //    we can do.
+            // how about any setter? We'll get copies but...
+            if (_anySetter == null) {
+                // but... others should be passed to unwrapped property deserializers
+                tokens.writeFieldName(propName);
+                tokens.copyCurrentStructure(p);
+            } else {
+                // Need to copy to a separate buffer first
+                TokenBuffer b2 = TokenBuffer.asCopyOfValue(p);
+                tokens.writeFieldName(propName);
+                tokens.append(b2);
+                try {
+                    buffer.bufferAnyProperty(_anySetter, propName,
+                            _anySetter.deserialize(b2.asParserOnFirstToken(), ctxt));
+                } catch (Exception e) {
+                    wrapAndThrow(e, _beanType.getRawClass(), propName, ctxt);
+                }
+                continue;
+            }
+        }
+
+        // We hit END_OBJECT, so:
+        Object bean;
+        try {
+            bean = creator.build(ctxt, buffer);
+        } catch (Exception e) {
+            wrapInstantiationProblem(e, ctxt);
+            return null; // never gets here
+        }
+        return _unwrappedPropertyHandler.processUnwrapped(p, ctxt, bean, tokens);
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.struct.TestUnwrapped::testIssue2088UnwrappedFieldsAfterLastCreatorProp
+junit.framework.AssertionFailedError: expected:<4> but was:<0>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.Assert.assertEquals(Assert.java:241)
+	at junit.framework.TestCase.assertEquals(TestCase.java:409)
+	at com.fasterxml.jackson.databind.struct.TestUnwrapped.testIssue2088UnwrappedFieldsAfterLastCreatorProp(TestUnwrapped.java:254)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals(4, bean.w.b);
+
+================== buggy_lines_in_method ==================
+[37]
+================== buggy_statements ==================
+['                        p.nextToken();']
+================== buggy_method_src_endswith_buggy_statement ==================
+@SuppressWarnings("resource")
+    protected Object deserializeUsingPropertyBasedWithUnwrapped(JsonParser p, DeserializationContext ctxt)
+        throws IOException
+    {
+        // 01-Dec-2016, tatu: Note: This IS legal to call, but only when unwrapped
+        //    value itself is NOT passed via `CreatorProperty` (which isn't supported).
+        //    Ok however to pass via setter or field.
+        
+        final PropertyBasedCreator creator = _propertyBasedCreator;
+        PropertyValueBuffer buffer = creator.startBuilding(p, ctxt, _objectIdReader);
+
+        TokenBuffer tokens = new TokenBuffer(p, ctxt);
+        tokens.writeStartObject();
+
+        JsonToken t = p.getCurrentToken();
+        for (; t == JsonToken.FIELD_NAME; t = p.nextToken()) {
+            String propName = p.getCurrentName();
+            p.nextToken(); // to point to value
+            // creator property?
+            SettableBeanProperty creatorProp = creator.findCreatorProperty(propName);
+            if (creatorProp != null) {
+                // Last creator property to set?
+                if (buffer.assignParameter(creatorProp,
+                        _deserializeWithErrorWrapping(p, ctxt, creatorProp))) {
+                    t = p.nextToken(); // to move to following FIELD_NAME/END_OBJECT
+                    Object bean;
+                    try {
+                        bean = creator.build(ctxt, buffer);
+                    } catch (Exception e) {
+                        bean = wrapInstantiationProblem(e, ctxt);
+                    }
+                    // [databind#631]: Assign current value, to be accessible by custom serializers
+                    p.setCurrentValue(bean);
+                    // if so, need to copy all remaining tokens into buffer
+                    while (t == JsonToken.FIELD_NAME) {
+                        // NOTE: do NOT skip name as it needs to be copied; `copyCurrentStructure` does that
+                        p.nextToken();

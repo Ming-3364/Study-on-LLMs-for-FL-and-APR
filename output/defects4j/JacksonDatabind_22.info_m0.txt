@@ -1,0 +1,222 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/ser/BasicSerializerFactory.java
+================== buggy_method ==================
+{'method_name': 'buildContainerSerializer', 'method_body': 'protected JsonSerializer<?> buildContainerSerializer(SerializerProvider prov,\n            JavaType type, BeanDescription beanDesc, boolean staticTyping)\n        throws JsonMappingException\n    {\n        final SerializationConfig config = prov.getConfig();\n\n        /* [databind#23], 15-Mar-2013, tatu: must force static handling of root value type,\n         *   with just one important exception: if value type is "untyped", let\'s\n         *   leave it as is; no clean way to make it work.\n         */\n        if (!staticTyping && type.useStaticType()) {\n            if (!type.isContainerType() || type.getContentType().getRawClass() != Object.class) {\n                staticTyping = true;\n            }\n        }\n        \n        // Let\'s see what we can learn about element/content/value type, type serializer for it:\n        JavaType elementType = type.getContentType();\n        TypeSerializer elementTypeSerializer = createTypeSerializer(config,\n                elementType);\n\n        // if elements have type serializer, can not force static typing:\n        if (elementTypeSerializer != null) {\n            staticTyping = false;\n        }\n        JsonSerializer<Object> elementValueSerializer = _findContentSerializer(prov,\n                beanDesc.getClassInfo());\n        if (type.isMapLikeType()) { // implements java.util.Map\n            MapLikeType mlt = (MapLikeType) type;\n            /* 29-Sep-2012, tatu: This is actually too early to (try to) find\n             *  key serializer from property annotations, and can lead to caching\n             *  issues (see [databind#75]). Instead, must be done from \'createContextual()\' call.\n             *  But we do need to check class annotations.\n             */\n            JsonSerializer<Object> keySerializer = _findKeySerializer(prov, beanDesc.getClassInfo());\n            if (mlt.isTrueMapType()) {\n                return buildMapSerializer(config, (MapType) mlt, beanDesc, staticTyping,\n                        keySerializer, elementTypeSerializer, elementValueSerializer);\n            }\n            // With Map-like, just 2 options: (1) Custom, (2) Annotations\n            JsonSerializer<?> ser = null;\n            for (Serializers serializers : customSerializers()) { // (1) Custom\n                MapLikeType mlType = (MapLikeType) type;\n                ser = serializers.findMapLikeSerializer(config,\n                        mlType, beanDesc, keySerializer, elementTypeSerializer, elementValueSerializer);\n            if (ser != null) {\n                if (_factoryConfig.hasSerializerModifiers()) {\n                    for (BeanSerializerModifier mod : _factoryConfig.serializerModifiers()) {\n                        ser = mod.modifyMapLikeSerializer(config, mlType, beanDesc, ser);\n                    }\n                    }\n                    return ser;\n                }\n            }\n            return null;\n        }\n        if (type.isCollectionLikeType()) {\n            CollectionLikeType clt = (CollectionLikeType) type;\n            if (clt.isTrueCollectionType()) {\n                return buildCollectionSerializer(config,  (CollectionType) clt, beanDesc, staticTyping,\n                        elementTypeSerializer, elementValueSerializer);\n            }\n            // With Map-like, just 2 options: (1) Custom, (2) Annotations\n            JsonSerializer<?> ser = null;\n            CollectionLikeType clType = (CollectionLikeType) type;\n            for (Serializers serializers : customSerializers()) { // (1) Custom\n                ser = serializers.findCollectionLikeSerializer(config,\n                        clType, beanDesc, elementTypeSerializer, elementValueSerializer);\n            if (ser != null) {\n                if (_factoryConfig.hasSerializerModifiers()) {\n                    for (BeanSerializerModifier mod : _factoryConfig.serializerModifiers()) {\n                        ser = mod.modifyCollectionLikeSerializer(config, clType, beanDesc, ser);\n                        }\n                    }\n                    return ser;\n                }\n            }\n            return null;\n        }\n        if (type.isArrayType()) {\n            return buildArraySerializer(config, (ArrayType) type, beanDesc, staticTyping,\n                    elementTypeSerializer, elementValueSerializer);\n        }\n        return null;\n    }', 'start_line': 544, 'end_line': 628, 'buggy_lines': [580, 586, 594, 595, 598, 603, 616, 618, 621, 624]}
+================== buggy_method_src ==================
+protected JsonSerializer<?> buildContainerSerializer(SerializerProvider prov,
+            JavaType type, BeanDescription beanDesc, boolean staticTyping)
+        throws JsonMappingException
+    {
+        final SerializationConfig config = prov.getConfig();
+
+        /* [databind#23], 15-Mar-2013, tatu: must force static handling of root value type,
+         *   with just one important exception: if value type is "untyped", let's
+         *   leave it as is; no clean way to make it work.
+         */
+        if (!staticTyping && type.useStaticType()) {
+            if (!type.isContainerType() || type.getContentType().getRawClass() != Object.class) {
+                staticTyping = true;
+            }
+        }
+        
+        // Let's see what we can learn about element/content/value type, type serializer for it:
+        JavaType elementType = type.getContentType();
+        TypeSerializer elementTypeSerializer = createTypeSerializer(config,
+                elementType);
+
+        // if elements have type serializer, can not force static typing:
+        if (elementTypeSerializer != null) {
+            staticTyping = false;
+        }
+        JsonSerializer<Object> elementValueSerializer = _findContentSerializer(prov,
+                beanDesc.getClassInfo());
+        if (type.isMapLikeType()) { // implements java.util.Map
+            MapLikeType mlt = (MapLikeType) type;
+            /* 29-Sep-2012, tatu: This is actually too early to (try to) find
+             *  key serializer from property annotations, and can lead to caching
+             *  issues (see [databind#75]). Instead, must be done from 'createContextual()' call.
+             *  But we do need to check class annotations.
+             */
+            JsonSerializer<Object> keySerializer = _findKeySerializer(prov, beanDesc.getClassInfo());
+            if (mlt.isTrueMapType()) {
+                return buildMapSerializer(config, (MapType) mlt, beanDesc, staticTyping,
+                        keySerializer, elementTypeSerializer, elementValueSerializer);
+            }
+            // With Map-like, just 2 options: (1) Custom, (2) Annotations
+            JsonSerializer<?> ser = null;
+            for (Serializers serializers : customSerializers()) { // (1) Custom
+                MapLikeType mlType = (MapLikeType) type;
+                ser = serializers.findMapLikeSerializer(config,
+                        mlType, beanDesc, keySerializer, elementTypeSerializer, elementValueSerializer);
+            if (ser != null) {
+                if (_factoryConfig.hasSerializerModifiers()) {
+                    for (BeanSerializerModifier mod : _factoryConfig.serializerModifiers()) {
+                        ser = mod.modifyMapLikeSerializer(config, mlType, beanDesc, ser);
+                    }
+                    }
+                    return ser;
+                }
+            }
+            return null;
+        }
+        if (type.isCollectionLikeType()) {
+            CollectionLikeType clt = (CollectionLikeType) type;
+            if (clt.isTrueCollectionType()) {
+                return buildCollectionSerializer(config,  (CollectionType) clt, beanDesc, staticTyping,
+                        elementTypeSerializer, elementValueSerializer);
+            }
+            // With Map-like, just 2 options: (1) Custom, (2) Annotations
+            JsonSerializer<?> ser = null;
+            CollectionLikeType clType = (CollectionLikeType) type;
+            for (Serializers serializers : customSerializers()) { // (1) Custom
+                ser = serializers.findCollectionLikeSerializer(config,
+                        clType, beanDesc, elementTypeSerializer, elementValueSerializer);
+            if (ser != null) {
+                if (_factoryConfig.hasSerializerModifiers()) {
+                    for (BeanSerializerModifier mod : _factoryConfig.serializerModifiers()) {
+                        ser = mod.modifyCollectionLikeSerializer(config, clType, beanDesc, ser);
+                        }
+                    }
+                    return ser;
+                }
+            }
+            return null;
+        }
+        if (type.isArrayType()) {
+            return buildArraySerializer(config, (ArrayType) type, beanDesc, staticTyping,
+                    elementTypeSerializer, elementValueSerializer);
+        }
+        return null;
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.ser.TestJsonValue::testJsonValueWithCustomOverride
+junit.framework.ComparisonFailure: expected:<[42]> but was:<["value"]>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.Assert.assertEquals(Assert.java:107)
+	at junit.framework.TestCase.assertEquals(TestCase.java:269)
+	at com.fasterxml.jackson.databind.ser.TestJsonValue.testJsonValueWithCustomOverride(TestJsonValue.java:282)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals("42", mapper.writeValueAsString(INPUT));
+
+================== buggy_lines_in_method ==================
+[37, 43, 51, 52, 55, 60, 73, 75, 78, 81]
+================== buggy_statements ==================
+['                return buildMapSerializer(config, (MapType) mlt, beanDesc, staticTyping,', '                MapLikeType mlType = (MapLikeType) type;', '                    }', '                    return ser;', '            return null;', '                return buildCollectionSerializer(config,  (CollectionType) clt, beanDesc, staticTyping,', '                        }', '                    return ser;', '            return null;', '            return buildArraySerializer(config, (ArrayType) type, beanDesc, staticTyping,']
+================== buggy_method_src_endswith_buggy_statement ==================
+protected JsonSerializer<?> buildContainerSerializer(SerializerProvider prov,
+            JavaType type, BeanDescription beanDesc, boolean staticTyping)
+        throws JsonMappingException
+    {
+        final SerializationConfig config = prov.getConfig();
+
+        /* [databind#23], 15-Mar-2013, tatu: must force static handling of root value type,
+         *   with just one important exception: if value type is "untyped", let's
+         *   leave it as is; no clean way to make it work.
+         */
+        if (!staticTyping && type.useStaticType()) {
+            if (!type.isContainerType() || type.getContentType().getRawClass() != Object.class) {
+                staticTyping = true;
+            }
+        }
+        
+        // Let's see what we can learn about element/content/value type, type serializer for it:
+        JavaType elementType = type.getContentType();
+        TypeSerializer elementTypeSerializer = createTypeSerializer(config,
+                elementType);
+
+        // if elements have type serializer, can not force static typing:
+        if (elementTypeSerializer != null) {
+            staticTyping = false;
+        }
+        JsonSerializer<Object> elementValueSerializer = _findContentSerializer(prov,
+                beanDesc.getClassInfo());
+        if (type.isMapLikeType()) { // implements java.util.Map
+            MapLikeType mlt = (MapLikeType) type;
+            /* 29-Sep-2012, tatu: This is actually too early to (try to) find
+             *  key serializer from property annotations, and can lead to caching
+             *  issues (see [databind#75]). Instead, must be done from 'createContextual()' call.
+             *  But we do need to check class annotations.
+             */
+            JsonSerializer<Object> keySerializer = _findKeySerializer(prov, beanDesc.getClassInfo());
+            if (mlt.isTrueMapType()) {
+                return buildMapSerializer(config, (MapType) mlt, beanDesc, staticTyping,
+                        keySerializer, elementTypeSerializer, elementValueSerializer);
+            }
+            // With Map-like, just 2 options: (1) Custom, (2) Annotations
+            JsonSerializer<?> ser = null;
+            for (Serializers serializers : customSerializers()) { // (1) Custom
+                MapLikeType mlType = (MapLikeType) type;
+                ser = serializers.findMapLikeSerializer(config,
+                        mlType, beanDesc, keySerializer, elementTypeSerializer, elementValueSerializer);
+            if (ser != null) {
+                if (_factoryConfig.hasSerializerModifiers()) {
+                    for (BeanSerializerModifier mod : _factoryConfig.serializerModifiers()) {
+                        ser = mod.modifyMapLikeSerializer(config, mlType, beanDesc, ser);
+                    }
+                    }
+                    return ser;
+                }
+            }
+            return null;
+        }
+        if (type.isCollectionLikeType()) {
+            CollectionLikeType clt = (CollectionLikeType) type;
+            if (clt.isTrueCollectionType()) {
+                return buildCollectionSerializer(config,  (CollectionType) clt, beanDesc, staticTyping,
+                        elementTypeSerializer, elementValueSerializer);
+            }
+            // With Map-like, just 2 options: (1) Custom, (2) Annotations
+            JsonSerializer<?> ser = null;
+            CollectionLikeType clType = (CollectionLikeType) type;
+            for (Serializers serializers : customSerializers()) { // (1) Custom
+                ser = serializers.findCollectionLikeSerializer(config,
+                        clType, beanDesc, elementTypeSerializer, elementValueSerializer);
+            if (ser != null) {
+                if (_factoryConfig.hasSerializerModifiers()) {
+                    for (BeanSerializerModifier mod : _factoryConfig.serializerModifiers()) {
+                        ser = mod.modifyCollectionLikeSerializer(config, clType, beanDesc, ser);
+                        }
+                    }
+                    return ser;
+                }
+            }
+            return null;
+        }
+        if (type.isArrayType()) {
+            return buildArraySerializer(config, (ArrayType) type, beanDesc, staticTyping,

@@ -1,0 +1,263 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/CodeGenerator.java
+================== buggy_method ==================
+{'method_name': 'unrollBinaryOperator', 'method_body': 'private void unrollBinaryOperator(\n      Node n, int op, String opStr, Context context,\n      Context rhsContext, int leftPrecedence, int rightPrecedence) {\n    Node firstNonOperator = n.getFirstChild();\n    while (firstNonOperator.getType() == op) {\n      firstNonOperator = firstNonOperator.getFirstChild();\n    }\n\n    addExpr(firstNonOperator, leftPrecedence, context);\n\n    Node current = firstNonOperator;\n    do {\n      current = current.getParent();\n      cc.listSeparator();\n      addExpr(current.getFirstChild().getNext(), rightPrecedence, rhsContext);\n    } while (current != n);\n  }', 'start_line': 741, 'end_line': 757, 'buggy_lines': [754]}
+================== buggy_method_src ==================
+private void unrollBinaryOperator(
+      Node n, int op, String opStr, Context context,
+      Context rhsContext, int leftPrecedence, int rightPrecedence) {
+    Node firstNonOperator = n.getFirstChild();
+    while (firstNonOperator.getType() == op) {
+      firstNonOperator = firstNonOperator.getFirstChild();
+    }
+
+    addExpr(firstNonOperator, leftPrecedence, context);
+
+    Node current = firstNonOperator;
+    do {
+      current = current.getParent();
+      cc.listSeparator();
+      addExpr(current.getFirstChild().getNext(), rightPrecedence, rhsContext);
+    } while (current != n);
+  }
+================== test_stack ==================
+com.google.javascript.jscomp.CodePrinterTest::testManyAdds
+java.lang.StackOverflowError
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:102)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+	at com.google.javascript.jscomp.CodeGenerator.addExpr(CodeGenerator.java:891)
+	at com.google.javascript.jscomp.CodeGenerator.add(CodeGenerator.java:122)
+
+================== test_assert ==================
+public void testManyAdds() {
+    int numAdds = 10000;
+    List<String> numbers = Lists.newArrayList("0", "1");
+    Node current = new Node(Token.ADD, Node.newNumber(0), Node.newNumber(1));
+    for (int i = 2; i < numAdds; i++) {
+      current = new Node(Token.ADD, current);
+
+      // 1000 is printed as 1E3, and screws up our test.
+      int num = i % 1000;
+      numbers.add(String.valueOf(num));
+      current.addChildToBack(Node.newNumber(num));
+    }
+
+    String expected = Joiner.on("+").join(numbers);
+    String actual = printNode(current).replace("\n", "");
+    assertEquals(expected, actual);
+  }
+================== buggy_lines_in_method ==================
+[14]
+================== buggy_statements ==================
+['      cc.listSeparator();']
+================== buggy_method_src_endswith_buggy_statement ==================
+private void unrollBinaryOperator(
+      Node n, int op, String opStr, Context context,
+      Context rhsContext, int leftPrecedence, int rightPrecedence) {
+    Node firstNonOperator = n.getFirstChild();
+    while (firstNonOperator.getType() == op) {
+      firstNonOperator = firstNonOperator.getFirstChild();
+    }
+
+    addExpr(firstNonOperator, leftPrecedence, context);
+
+    Node current = firstNonOperator;
+    do {
+      current = current.getParent();
+      cc.listSeparator();

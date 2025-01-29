@@ -1,0 +1,381 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/lang3/math/NumberUtils.java
+================== buggy_method ==================
+{'method_name': 'createNumber', 'method_body': 'public static Number createNumber(final String str) throws NumberFormatException {\n        if (str == null) {\n            return null;\n        }\n        if (StringUtils.isBlank(str)) {\n            throw new NumberFormatException("A blank string is not a valid number");\n        }\n        // Need to deal with all possible hex prefixes here\n        final String[] hex_prefixes = {"0x", "0X", "-0x", "-0X", "#", "-#"};\n        int pfxLen = 0;\n        for(final String pfx : hex_prefixes) {\n            if (str.startsWith(pfx)) {\n                pfxLen += pfx.length();\n                break;\n            }\n        }\n        if (pfxLen > 0) { // we have a hex number\n            final int hexDigits = str.length() - pfxLen;\n            if (hexDigits > 16) { // too many for Long\n                return createBigInteger(str);\n            }\n            if (hexDigits > 8) { // too many for an int\n                return createLong(str);\n            }\n            return createInteger(str);\n        }\n        final char lastChar = str.charAt(str.length() - 1);\n        String mant;\n        String dec;\n        String exp;\n        final int decPos = str.indexOf(\'.\');\n        final int expPos = str.indexOf(\'e\') + str.indexOf(\'E\') + 1; // assumes both not present\n        // if both e and E are present, this is caught by the checks on expPos (which prevent IOOBE)\n        // and the parsing which will detect if e or E appear in a number due to using the wrong offset\n\n        int numDecimals = 0; // Check required precision (LANG-693)\n        if (decPos > -1) { // there is a decimal point\n\n            if (expPos > -1) { // there is an exponent\n                if (expPos < decPos || expPos > str.length()) { // prevents double exponent causing IOOBE\n                    throw new NumberFormatException(str + " is not a valid number.");\n                }\n                dec = str.substring(decPos + 1, expPos);\n            } else {\n                dec = str.substring(decPos + 1);\n            }\n            mant = str.substring(0, decPos);\n            numDecimals = dec.length(); // gets number of digits past the decimal to ensure no loss of precision for floating point numbers.\n        } else {\n            if (expPos > -1) {\n                if (expPos > str.length()) { // prevents double exponent causing IOOBE\n                    throw new NumberFormatException(str + " is not a valid number.");\n                }\n                mant = str.substring(0, expPos);\n            } else {\n                mant = str;\n            }\n            dec = null;\n        }\n        if (!Character.isDigit(lastChar) && lastChar != \'.\') {\n            if (expPos > -1 && expPos < str.length() - 1) {\n                exp = str.substring(expPos + 1, str.length() - 1);\n            } else {\n                exp = null;\n            }\n            //Requesting a specific type..\n            final String numeric = str.substring(0, str.length() - 1);\n            final boolean allZeros = isAllZeros(mant) && isAllZeros(exp);\n            switch (lastChar) {\n                case \'l\' :\n                case \'L\' :\n                    if (dec == null\n                        && exp == null\n                        && (numeric.charAt(0) == \'-\' && isDigits(numeric.substring(1)) || isDigits(numeric))) {\n                        try {\n                            return createLong(numeric);\n                        } catch (final NumberFormatException nfe) { // NOPMD\n                            // Too big for a long\n                        }\n                        return createBigInteger(numeric);\n\n                    }\n                    throw new NumberFormatException(str + " is not a valid number.");\n                case \'f\' :\n                case \'F\' :\n                    try {\n                        final Float f = NumberUtils.createFloat(numeric);\n                        if (!(f.isInfinite() || (f.floatValue() == 0.0F && !allZeros))) {\n                            //If it\'s too big for a float or the float value = 0 and the string\n                            //has non-zeros in it, then float does not have the precision we want\n                            return f;\n                        }\n\n                    } catch (final NumberFormatException nfe) { // NOPMD\n                        // ignore the bad number\n                    }\n                    //$FALL-THROUGH$\n                case \'d\' :\n                case \'D\' :\n                    try {\n                        final Double d = NumberUtils.createDouble(numeric);\n                        if (!(d.isInfinite() || (d.floatValue() == 0.0D && !allZeros))) {\n                            return d;\n                        }\n                    } catch (final NumberFormatException nfe) { // NOPMD\n                        // ignore the bad number\n                    }\n                    try {\n                        return createBigDecimal(numeric);\n                    } catch (final NumberFormatException e) { // NOPMD\n                        // ignore the bad number\n                    }\n                    //$FALL-THROUGH$\n                default :\n                    throw new NumberFormatException(str + " is not a valid number.");\n\n            }\n        }\n        //User doesn\'t have a preference on the return type, so let\'s start\n        //small and go from there...\n        if (expPos > -1 && expPos < str.length() - 1) {\n            exp = str.substring(expPos + 1, str.length());\n        } else {\n            exp = null;\n        }\n        if (dec == null && exp == null) { // no decimal point and no exponent\n            //Must be an Integer, Long, Biginteger\n            try {\n                return createInteger(str);\n            } catch (final NumberFormatException nfe) { // NOPMD\n                // ignore the bad number\n            }\n            try {\n                return createLong(str);\n            } catch (final NumberFormatException nfe) { // NOPMD\n                // ignore the bad number\n            }\n            return createBigInteger(str);\n        }\n\n        //Must be a Float, Double, BigDecimal\n        final boolean allZeros = isAllZeros(mant) && isAllZeros(exp);\n        try {\n                final Float f = createFloat(str);\n                if (!(f.isInfinite() || (f.floatValue() == 0.0F && !allZeros))) {\n                    return f;\n                }\n        } catch (final NumberFormatException nfe) { // NOPMD\n            // ignore the bad number\n        }\n        try {\n                final Double d = createDouble(str);\n                if (!(d.isInfinite() || (d.doubleValue() == 0.0D && !allZeros))) {\n                    return d;\n                }\n        } catch (final NumberFormatException nfe) { // NOPMD\n            // ignore the bad number\n        }\n\n        return createBigDecimal(str);\n    }', 'start_line': 450, 'end_line': 610, 'buggy_lines': [593, 598, 603, 608]}
+================== buggy_method_src ==================
+public static Number createNumber(final String str) throws NumberFormatException {
+        if (str == null) {
+            return null;
+        }
+        if (StringUtils.isBlank(str)) {
+            throw new NumberFormatException("A blank string is not a valid number");
+        }
+        // Need to deal with all possible hex prefixes here
+        final String[] hex_prefixes = {"0x", "0X", "-0x", "-0X", "#", "-#"};
+        int pfxLen = 0;
+        for(final String pfx : hex_prefixes) {
+            if (str.startsWith(pfx)) {
+                pfxLen += pfx.length();
+                break;
+            }
+        }
+        if (pfxLen > 0) { // we have a hex number
+            final int hexDigits = str.length() - pfxLen;
+            if (hexDigits > 16) { // too many for Long
+                return createBigInteger(str);
+            }
+            if (hexDigits > 8) { // too many for an int
+                return createLong(str);
+            }
+            return createInteger(str);
+        }
+        final char lastChar = str.charAt(str.length() - 1);
+        String mant;
+        String dec;
+        String exp;
+        final int decPos = str.indexOf('.');
+        final int expPos = str.indexOf('e') + str.indexOf('E') + 1; // assumes both not present
+        // if both e and E are present, this is caught by the checks on expPos (which prevent IOOBE)
+        // and the parsing which will detect if e or E appear in a number due to using the wrong offset
+
+        int numDecimals = 0; // Check required precision (LANG-693)
+        if (decPos > -1) { // there is a decimal point
+
+            if (expPos > -1) { // there is an exponent
+                if (expPos < decPos || expPos > str.length()) { // prevents double exponent causing IOOBE
+                    throw new NumberFormatException(str + " is not a valid number.");
+                }
+                dec = str.substring(decPos + 1, expPos);
+            } else {
+                dec = str.substring(decPos + 1);
+            }
+            mant = str.substring(0, decPos);
+            numDecimals = dec.length(); // gets number of digits past the decimal to ensure no loss of precision for floating point numbers.
+        } else {
+            if (expPos > -1) {
+                if (expPos > str.length()) { // prevents double exponent causing IOOBE
+                    throw new NumberFormatException(str + " is not a valid number.");
+                }
+                mant = str.substring(0, expPos);
+            } else {
+                mant = str;
+            }
+            dec = null;
+        }
+        if (!Character.isDigit(lastChar) && lastChar != '.') {
+            if (expPos > -1 && expPos < str.length() - 1) {
+                exp = str.substring(expPos + 1, str.length() - 1);
+            } else {
+                exp = null;
+            }
+            //Requesting a specific type..
+            final String numeric = str.substring(0, str.length() - 1);
+            final boolean allZeros = isAllZeros(mant) && isAllZeros(exp);
+            switch (lastChar) {
+                case 'l' :
+                case 'L' :
+                    if (dec == null
+                        && exp == null
+                        && (numeric.charAt(0) == '-' && isDigits(numeric.substring(1)) || isDigits(numeric))) {
+                        try {
+                            return createLong(numeric);
+                        } catch (final NumberFormatException nfe) { // NOPMD
+                            // Too big for a long
+                        }
+                        return createBigInteger(numeric);
+
+                    }
+                    throw new NumberFormatException(str + " is not a valid number.");
+                case 'f' :
+                case 'F' :
+                    try {
+                        final Float f = NumberUtils.createFloat(numeric);
+                        if (!(f.isInfinite() || (f.floatValue() == 0.0F && !allZeros))) {
+                            //If it's too big for a float or the float value = 0 and the string
+                            //has non-zeros in it, then float does not have the precision we want
+                            return f;
+                        }
+
+                    } catch (final NumberFormatException nfe) { // NOPMD
+                        // ignore the bad number
+                    }
+                    //$FALL-THROUGH$
+                case 'd' :
+                case 'D' :
+                    try {
+                        final Double d = NumberUtils.createDouble(numeric);
+                        if (!(d.isInfinite() || (d.floatValue() == 0.0D && !allZeros))) {
+                            return d;
+                        }
+                    } catch (final NumberFormatException nfe) { // NOPMD
+                        // ignore the bad number
+                    }
+                    try {
+                        return createBigDecimal(numeric);
+                    } catch (final NumberFormatException e) { // NOPMD
+                        // ignore the bad number
+                    }
+                    //$FALL-THROUGH$
+                default :
+                    throw new NumberFormatException(str + " is not a valid number.");
+
+            }
+        }
+        //User doesn't have a preference on the return type, so let's start
+        //small and go from there...
+        if (expPos > -1 && expPos < str.length() - 1) {
+            exp = str.substring(expPos + 1, str.length());
+        } else {
+            exp = null;
+        }
+        if (dec == null && exp == null) { // no decimal point and no exponent
+            //Must be an Integer, Long, Biginteger
+            try {
+                return createInteger(str);
+            } catch (final NumberFormatException nfe) { // NOPMD
+                // ignore the bad number
+            }
+            try {
+                return createLong(str);
+            } catch (final NumberFormatException nfe) { // NOPMD
+                // ignore the bad number
+            }
+            return createBigInteger(str);
+        }
+
+        //Must be a Float, Double, BigDecimal
+        final boolean allZeros = isAllZeros(mant) && isAllZeros(exp);
+        try {
+                final Float f = createFloat(str);
+                if (!(f.isInfinite() || (f.floatValue() == 0.0F && !allZeros))) {
+                    return f;
+                }
+        } catch (final NumberFormatException nfe) { // NOPMD
+            // ignore the bad number
+        }
+        try {
+                final Double d = createDouble(str);
+                if (!(d.isInfinite() || (d.doubleValue() == 0.0D && !allZeros))) {
+                    return d;
+                }
+        } catch (final NumberFormatException nfe) { // NOPMD
+            // ignore the bad number
+        }
+
+        return createBigDecimal(str);
+    }
+================== test_stack ==================
+org.apache.commons.lang3.math.NumberUtilsTest::testStringCreateNumberEnsureNoPrecisionLoss
+junit.framework.AssertionFailedError
+	at org.junit.Assert.fail(Assert.java:86)
+	at org.junit.Assert.assertTrue(Assert.java:41)
+	at org.junit.Assert.assertTrue(Assert.java:52)
+	at org.apache.commons.lang3.math.NumberUtilsTest.testStringCreateNumberEnsureNoPrecisionLoss(NumberUtilsTest.java:129)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertTrue(NumberUtils.createNumber(shouldBeDouble) instanceof Double);
+
+================== buggy_lines_in_method ==================
+[144, 149, 154, 159]
+================== buggy_statements ==================
+['                final Float f = createFloat(str);', '            // ignore the bad number', '                    return d;', '']
+================== buggy_method_src_endswith_buggy_statement ==================
+public static Number createNumber(final String str) throws NumberFormatException {
+        if (str == null) {
+            return null;
+        }
+        if (StringUtils.isBlank(str)) {
+            throw new NumberFormatException("A blank string is not a valid number");
+        }
+        // Need to deal with all possible hex prefixes here
+        final String[] hex_prefixes = {"0x", "0X", "-0x", "-0X", "#", "-#"};
+        int pfxLen = 0;
+        for(final String pfx : hex_prefixes) {
+            if (str.startsWith(pfx)) {
+                pfxLen += pfx.length();
+                break;
+            }
+        }
+        if (pfxLen > 0) { // we have a hex number
+            final int hexDigits = str.length() - pfxLen;
+            if (hexDigits > 16) { // too many for Long
+                return createBigInteger(str);
+            }
+            if (hexDigits > 8) { // too many for an int
+                return createLong(str);
+            }
+            return createInteger(str);
+        }
+        final char lastChar = str.charAt(str.length() - 1);
+        String mant;
+        String dec;
+        String exp;
+        final int decPos = str.indexOf('.');
+        final int expPos = str.indexOf('e') + str.indexOf('E') + 1; // assumes both not present
+        // if both e and E are present, this is caught by the checks on expPos (which prevent IOOBE)
+        // and the parsing which will detect if e or E appear in a number due to using the wrong offset
+
+        int numDecimals = 0; // Check required precision (LANG-693)
+        if (decPos > -1) { // there is a decimal point
+
+            if (expPos > -1) { // there is an exponent
+                if (expPos < decPos || expPos > str.length()) { // prevents double exponent causing IOOBE
+                    throw new NumberFormatException(str + " is not a valid number.");
+                }
+                dec = str.substring(decPos + 1, expPos);
+            } else {
+                dec = str.substring(decPos + 1);
+            }
+            mant = str.substring(0, decPos);
+            numDecimals = dec.length(); // gets number of digits past the decimal to ensure no loss of precision for floating point numbers.
+        } else {
+            if (expPos > -1) {
+                if (expPos > str.length()) { // prevents double exponent causing IOOBE
+                    throw new NumberFormatException(str + " is not a valid number.");
+                }
+                mant = str.substring(0, expPos);
+            } else {
+                mant = str;
+            }
+            dec = null;
+        }
+        if (!Character.isDigit(lastChar) && lastChar != '.') {
+            if (expPos > -1 && expPos < str.length() - 1) {
+                exp = str.substring(expPos + 1, str.length() - 1);
+            } else {
+                exp = null;
+            }
+            //Requesting a specific type..
+            final String numeric = str.substring(0, str.length() - 1);
+            final boolean allZeros = isAllZeros(mant) && isAllZeros(exp);
+            switch (lastChar) {
+                case 'l' :
+                case 'L' :
+                    if (dec == null
+                        && exp == null
+                        && (numeric.charAt(0) == '-' && isDigits(numeric.substring(1)) || isDigits(numeric))) {
+                        try {
+                            return createLong(numeric);
+                        } catch (final NumberFormatException nfe) { // NOPMD
+                            // Too big for a long
+                        }
+                        return createBigInteger(numeric);
+
+                    }
+                    throw new NumberFormatException(str + " is not a valid number.");
+                case 'f' :
+                case 'F' :
+                    try {
+                        final Float f = NumberUtils.createFloat(numeric);
+                        if (!(f.isInfinite() || (f.floatValue() == 0.0F && !allZeros))) {
+                            //If it's too big for a float or the float value = 0 and the string
+                            //has non-zeros in it, then float does not have the precision we want
+                            return f;
+                        }
+
+                    } catch (final NumberFormatException nfe) { // NOPMD
+                        // ignore the bad number
+                    }
+                    //$FALL-THROUGH$
+                case 'd' :
+                case 'D' :
+                    try {
+                        final Double d = NumberUtils.createDouble(numeric);
+                        if (!(d.isInfinite() || (d.floatValue() == 0.0D && !allZeros))) {
+                            return d;
+                        }
+                    } catch (final NumberFormatException nfe) { // NOPMD
+                        // ignore the bad number
+                    }
+                    try {
+                        return createBigDecimal(numeric);
+                    } catch (final NumberFormatException e) { // NOPMD
+                        // ignore the bad number
+                    }
+                    //$FALL-THROUGH$
+                default :
+                    throw new NumberFormatException(str + " is not a valid number.");
+
+            }
+        }
+        //User doesn't have a preference on the return type, so let's start
+        //small and go from there...
+        if (expPos > -1 && expPos < str.length() - 1) {
+            exp = str.substring(expPos + 1, str.length());
+        } else {
+            exp = null;
+        }
+        if (dec == null && exp == null) { // no decimal point and no exponent
+            //Must be an Integer, Long, Biginteger
+            try {
+                return createInteger(str);
+            } catch (final NumberFormatException nfe) { // NOPMD
+                // ignore the bad number
+            }
+            try {
+                return createLong(str);
+            } catch (final NumberFormatException nfe) { // NOPMD
+                // ignore the bad number
+            }
+            return createBigInteger(str);
+        }
+
+        //Must be a Float, Double, BigDecimal
+        final boolean allZeros = isAllZeros(mant) && isAllZeros(exp);
+        try {
+                final Float f = createFloat(str);
+                if (!(f.isInfinite() || (f.floatValue() == 0.0F && !allZeros))) {
+                    return f;
+                }
+        } catch (final NumberFormatException nfe) { // NOPMD
+            // ignore the bad number
+        }
+        try {
+                final Double d = createDouble(str);
+                if (!(d.isInfinite() || (d.doubleValue() == 0.0D && !allZeros))) {
+                    return d;
+                }
+        } catch (final NumberFormatException nfe) { // NOPMD
+            // ignore the bad number
+        }

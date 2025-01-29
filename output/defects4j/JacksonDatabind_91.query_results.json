@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "7",
+            "qwen-turbo": "5",
+            "ernie-3.5-128k": "**10**",
+            "deepseek-chat": "6",
+            "gpt-4o-mini": "8"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "**10**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "18"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "49",
+            "ernie-3.5-128k": "**20**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "49"
+        },
+        "prompt_fl_4": {
+            "doubao-pro-4k": "return (ct.getValueHandler()!= null) || (ct.getTypeHandler()!= null);",
+            "qwen-turbo": "return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null);",
+            "ernie-3.5-128k": "if (ct.getValueHandler() != null) || (ct.getTypeHandler() != null);",
+            "deepseek-chat": "if (ct != null) {\n    return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null);\n// Second: map(-like) types may have value handler for key (but not type; keys are untyped)\n}",
+            "gpt-4o-mini": "if (ct != null) {"
+        },
+        "prompt_fl_5": {
+            "doubao-pro-4k": "return false;",
+            "qwen-turbo": "return false;",
+            "deepseek-chat": "return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null);",
+            "ernie-3.5-128k": "return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null);",
+            "gpt-4o-mini": "return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null);"
+        },
+        "prompt_fl_6": {
+            "doubao-pro-4k": "return false;",
+            "qwen-turbo": "_hasCustomHandlers(t)",
+            "ernie-3.5-128k": "return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null);",
+            "deepseek-chat": "return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null);",
+            "gpt-4o-mini": "fail(\"Not using custom key deserializer for input: \"+json+\"; resulted in: \"+model2.data);"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "```java\nprivate boolean _hasCustomHandlers(JavaType t) {\n    if (t.isContainerType()) {\n        // First: value types may have both value and type handlers\n        JavaType ct = t.getContentType();\n        if (ct != null) {\n            return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null);\n        }\n        // Second: map(-like) types may have value handler for key (but not type; keys are untyped)\n        if (t.isMapLikeType()) {\n            JavaType kt = t.getKeyType();\n            return kt != null && kt.getValueHandler() != null;\n        }\n    }\n    return false;\n}\n```\n\nIn this corrected version, I added a check to determine if the `JavaType` is a map-like type and then checked if the key type has a value handler. This should address the bug you mentioned.",
+            "deepseek-chat": "private boolean _hasCustomHandlers(JavaType t) {\n    if (t.isContainerType()) {\n        // First: value types may have both value and type handlers\n        JavaType ct = t.getContentType();\n        if (ct != null) {\n            return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null);\n        }\n        // Second: map(-like) types may have value handler for key (but not type; keys are untyped)\n        if (t.isMapLikeType()) {\n            JavaType keyType = t.getKeyType();\n            return (keyType != null && keyType.getValueHandler() != null);\n        }\n    }\n    return false;\n}",
+            "doubao-pro-4k": "private boolean _hasCustomHandlers(JavaType t) {\n    if (t.isContainerType()) {\n        // First: value types may have both value and type handlers\n        JavaType ct = t.getContentType();\n        if (ct!= null) {\n            return (ct.getValueHandler()!= null) || (ct.getTypeHandler()!= null);\n        }\n        // Second: map(-like) types may have value handler for key (but not type; keys are untyped)\n    }\n    return false;\n}",
+            "gpt-4o-mini": "private boolean _hasCustomHandlers(JavaType t) {\n    if (t.isContainerType()) {\n        // First: value types may have both value and type handlers\n        JavaType ct = t.getContentType();\n        if (ct != null) {\n            return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null);\n        }\n        // Second: map(-like) types may have value handler for key (but not type; keys are untyped)\n        JavaType keyType = t.getKeyType();  // Added check for key type in case of map-like types\n        if (keyType != null) {\n            return keyType.getValueHandler() != null;\n        }\n    }\n    return false;\n}",
+            "ernie-3.5-128k": "private boolean _hasCustomHandlers(JavaType t) {\n        if (t.isContainerType()) {\n            // First: value types may have both value and type handlers\n            JavaType ct = t.getContentType();\n            if (ct != null) {\n                return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null);\n            }\n            // Second: map(-like) types may have value handler for key (but not type; keys are untyped)\n            // Check for map-like types and their key handlers\n            if (t.isMapType()) {\n                JavaType kt = t.getKeyType();\n                if (kt != null) {\n                    return kt.getValueHandler() != null;\n                }\n            }\n        }\n        return false;\n    }"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\nprivate boolean _hasCustomHandlers(JavaType t) {\n    if (t.isContainerType()) {\n        // First: value types may have both value and type handlers\n        JavaType ct = t.getContentType();\n        if (ct != null) {\n            return (ct.getValueHandler() != null) || (t.getTypeHandler() != null);\n        // Second: map(-like) types may have value handler for key (but not type; keys are untyped)\n        }\n    }\n    return false;\n}\n```\n\nIn this corrected version, I changed the condition to check `t.getTypeHandler()` instead of `ct.getTypeHandler()` to ensure that the type handler is checked at the container level rather than the content type level. This aligns with the logic that map-like types can have a type handler at the container level for keys.",
+            "deepseek-chat": "private boolean _hasCustomHandlers(JavaType t) {\n    if (t.isContainerType()) {\n        // First: value types may have both value and type handlers\n        JavaType ct = t.getContentType();\n        if (ct != null) {\n            return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null);\n        }\n        // Second: map(-like) types may have value handler for key (but not type; keys are untyped)\n        if (t.isMapLikeType()) {\n            JavaType keyType = t.getKeyType();\n            if (keyType != null) {\n                return (keyType.getValueHandler() != null);\n            }\n        }\n    }\n    return false;\n}",
+            "doubao-pro-4k": "private boolean _hasCustomHandlers(JavaType t) {\n        if (t.isContainerType()) {\n            // First: value types may have both value and type handlers\n            JavaType ct = t.getContentType();\n            if (ct!= null) {\n                return (ct.getValueHandler()!= null || ct.getTypeHandler()!= null);\n            // Second: map(-like) types may have value handler for key (but not type; keys are untyped)\n            }\n        }\n        return false;\n    }",
+            "gpt-4o-mini": "private boolean _hasCustomHandlers(JavaType t) {\n    if (t.isContainerType()) {\n        // First: value types may have both value and type handlers\n        JavaType ct = t.getContentType();\n        if (ct != null) {\n            // The issue is that we're checking for valueHandler and typeHandler for the content type, \n            // but not considering the case where the content type itself might be a Map-like container\n            // with handlers attached at the key level instead of the value level.\n            return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null) || \n                   (t.getKeyType() != null && (t.getKeyType().getValueHandler() != null || t.getKeyType().getTypeHandler() != null));\n        }\n        // Second: map(-like) types may have value handler for key (but not type; keys are untyped)\n    }\n    return false;\n}",
+            "ernie-3.5-128k": "Certainly! The issue in the provided code is that the return statement inside the `if (ct != null)` block is not properly indented under the `if (t.isContainerType())` condition, and it lacks handling for map-like types where the key might have a value handler. Here's the corrected method:\n\nprivate boolean _hasCustomHandlers(JavaType t) {\n    if (t.isContainerType()) {\n        JavaType ct = t.getContentType();\n        if (ct != null) {\n            // For collection-like types, check both value and type handlers\n            if (t.isMapType() || t.isArrayType() || t.isCollectionLikeType()) {\n                // Map(-like) types and collections: check value handler\n                return ct.getValueHandler() != null;\n            } else if (t.isReferenceType()) {\n                // For other container types (like custom container types), check both value and type handlers\n                return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null);\n            }\n            // If it's not a map, array, collection-like, or reference type, we don't expect custom handlers here\n        }\n        // Additionally, for map-like types, check the key type handler (though typically keys are untyped and won't have one)\n        JavaType kt = t.getKeyType(null);  // Assuming null is okay or replace with appropriate parameter if needed\n        if (kt != null && t.isMapType()) {\n            // Note: typically keys do not have type handlers, but just in case, you can add a check here\n            // However, since keys are usually basic types or Strings, this is usually unnecessary\n            // return kt.getValueHandler() != null; // Uncomment if you need to check key value handlers explicitly\n        }\n    }\n    return false;\n}\n\nNote:\n1. I've added checks for `isArrayType()` and `isCollectionLikeType()` to cover more container types.\n2. I've added a conditional block to handle `isReferenceType()`, assuming you might have custom container types that are references and might need both value and type handlers.\n3. I've included a comment and placeholder for checking key type handlers in map-like types, but typically this is unnecessary since keys are usually primitive types or Strings that don't have custom handlers. Uncomment the key handler check if needed.\n4. The indentation and structure have been corrected to ensure the logic flows correctly within the `if (t.isContainerType())` block."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\nprivate boolean _hasCustomHandlers(JavaType t) {\n    if (t.isContainerType()) {\n        // First: value types may have both value and type handlers\n        JavaType ct = t.getContentType();\n        if (ct != null) {\n            return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null);\n```",
+            "ernie-3.5-128k": "private boolean _hasCustomHandlers(JavaType t) {\n        if (t.isContainerType()) {\n            JavaType ct = t.getContentType();\n            if (ct != null) {\n                return (ct.getValueHandler() != null && ct != t) || (ct.getTypeHandler() != null && ct != t);",
+            "doubao-pro-4k": "private boolean _hasCustomHandlers(JavaType t) {\n        if (t.isContainerType()) {\n            // First: value types may have both value and type handlers\n            JavaType ct = t.getContentType();\n            if (ct!= null) {\n                return (ct.getValueHandler()!= null || ct.getTypeHandler()!= null);\n            }\n        }\n    }",
+            "deepseek-chat": "private boolean _hasCustomHandlers(JavaType t) {\n    if (t.isContainerType()) {\n        // First: value types may have both value and type handlers\n        JavaType ct = t.getContentType();\n        if (ct != null) {\n            return (t.getValueHandler() != null) || (t.getTypeHandler() != null) || (ct.getValueHandler() != null) || (ct.getTypeHandler() != null);",
+            "gpt-4o-mini": "private boolean _hasCustomHandlers(JavaType t) {\n    if (t.isContainerType()) {\n        // First: value types may have both value and type handlers\n        JavaType ct = t.getContentType();\n        if (ct != null) {\n            return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null);\n        }\n    }"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"            } else if (t.isMapLikeType()) {\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return (ct.getValueHandler()!= null || ct.getTypeHandler()!= null);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"                } else if (t.isMapType()) {\\n                    JavaType kt = t.getKeyType();\\n                    return kt.getValueHandler() != null;\\n                }\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null) || (t.getKeyType() != null && t.getKeyType().getValueHandler() != null);\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null) || _hasCustomHandlers(ct);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"return (ct.getValueHandler()!= null || ct.getTypeHandler()!= null);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"return (ct.getValueHandler() != null) || (ct.getContentTypeHandler() != null);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null) || (t.getKeyType() != null && t.getKeyType().getValueHandler() != null);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"if (ct.isContainerType()) { return (ct.getValueHandler() != null) || (ct.getTypeHandler() != null); } else { return (t.getValueHandler() != null) || (t.getTypeHandler() != null); }\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return ((ct.getValueHandler() != null) || (ct.getTypeHandler() != null)) || super._hasCustomHandlers(t);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"return (ct.getValueHandler()!= null) || (ct.getTypeHandler()!= null) || false;\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"return (_hasCustomHandlers(ct) || ct.getValueHandler() != null || ct.getTypeHandler() != null);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"return (t.getValueHandler() != null) || (t.getTypeHandler() != null) || (ct.getValueHandler() != null) || (ct.getTypeHandler() != null);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return (ct != null) && (ct.getValueHandler() != null || ct.getTypeHandler() != null);\"\n    }\n]"
+        }
+    }
+]

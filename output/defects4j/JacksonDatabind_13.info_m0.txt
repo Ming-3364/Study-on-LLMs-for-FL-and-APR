@@ -1,0 +1,130 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/deser/DefaultDeserializationContext.java
+================== buggy_method ==================
+{'method_name': 'findObjectId', 'method_body': "@Override\n    public ReadableObjectId findObjectId(Object id, ObjectIdGenerator<?> gen, ObjectIdResolver resolverType)\n    {\n        /* 02-Apr-2015, tatu: As per [databind#742] should allow 'null', similar to how\n         *   missing id already works.\n         */\n\n        final ObjectIdGenerator.IdKey key = gen.key(id);\n\n        if (_objectIds == null) {\n            _objectIds = new LinkedHashMap<ObjectIdGenerator.IdKey,ReadableObjectId>();\n        } else {\n            ReadableObjectId entry = _objectIds.get(key);\n            if (entry != null) {\n                return entry;\n            }\n        }\n\n        // Not seen yet, must create entry and configure resolver.\n        ObjectIdResolver resolver = null;\n\n        if (_objectIdResolvers == null) {\n            _objectIdResolvers = new ArrayList<ObjectIdResolver>(8);\n        } else {\n            for (ObjectIdResolver res : _objectIdResolvers) {\n                if (res.canUseFor(resolverType)) {\n                    resolver = res;\n                    break;\n                }\n            }\n        }\n\n        if (resolver == null) {\n            resolver = resolverType.newForDeserialization(this);\n            // 19-Dec-2014, tatu: For final 2.5.0, remove temporary (2.4.x) work-around\n            //   needed to clear state between calls.\n            // !!! 18-Jun-2014, pgelinas: Temporary fix for [#490] until real\n            //    fix (for jackson-annotations, SimpleObjectIdResolver) can be added.\n            /*\n            if (resolverType.getClass() == SimpleObjectIdResolver.class) {\n                resolver = new SimpleObjectIdResolver();\n            }\n            */\n            _objectIdResolvers.add(resolver);\n        }\n\n        ReadableObjectId entry = new ReadableObjectId(key);\n        entry.setResolver(resolver);\n        _objectIds.put(key, entry);\n        return entry;\n    }", 'start_line': 81, 'end_line': 131, 'buggy_lines': [89]}
+================== buggy_method_src ==================
+@Override
+    public ReadableObjectId findObjectId(Object id, ObjectIdGenerator<?> gen, ObjectIdResolver resolverType)
+    {
+        /* 02-Apr-2015, tatu: As per [databind#742] should allow 'null', similar to how
+         *   missing id already works.
+         */
+
+        final ObjectIdGenerator.IdKey key = gen.key(id);
+
+        if (_objectIds == null) {
+            _objectIds = new LinkedHashMap<ObjectIdGenerator.IdKey,ReadableObjectId>();
+        } else {
+            ReadableObjectId entry = _objectIds.get(key);
+            if (entry != null) {
+                return entry;
+            }
+        }
+
+        // Not seen yet, must create entry and configure resolver.
+        ObjectIdResolver resolver = null;
+
+        if (_objectIdResolvers == null) {
+            _objectIdResolvers = new ArrayList<ObjectIdResolver>(8);
+        } else {
+            for (ObjectIdResolver res : _objectIdResolvers) {
+                if (res.canUseFor(resolverType)) {
+                    resolver = res;
+                    break;
+                }
+            }
+        }
+
+        if (resolver == null) {
+            resolver = resolverType.newForDeserialization(this);
+            // 19-Dec-2014, tatu: For final 2.5.0, remove temporary (2.4.x) work-around
+            //   needed to clear state between calls.
+            // !!! 18-Jun-2014, pgelinas: Temporary fix for [#490] until real
+            //    fix (for jackson-annotations, SimpleObjectIdResolver) can be added.
+            /*
+            if (resolverType.getClass() == SimpleObjectIdResolver.class) {
+                resolver = new SimpleObjectIdResolver();
+            }
+            */
+            _objectIdResolvers.add(resolver);
+        }
+
+        ReadableObjectId entry = new ReadableObjectId(key);
+        entry.setResolver(resolver);
+        _objectIds.put(key, entry);
+        return entry;
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.struct.TestObjectIdDeserialization::testNullObjectId
+com.fasterxml.jackson.databind.JsonMappingException: (was java.lang.NullPointerException) (through reference chain: com.fasterxml.jackson.databind.struct.Identifiable["id"])
+	at com.fasterxml.jackson.databind.JsonMappingException.wrapWithPath(JsonMappingException.java:210)
+	at com.fasterxml.jackson.databind.JsonMappingException.wrapWithPath(JsonMappingException.java:177)
+	at com.fasterxml.jackson.databind.deser.impl.BeanPropertyMap.wrapAndThrow(BeanPropertyMap.java:439)
+	at com.fasterxml.jackson.databind.deser.impl.BeanPropertyMap._findDeserializeAndSet2(BeanPropertyMap.java:315)
+	at com.fasterxml.jackson.databind.deser.impl.BeanPropertyMap.findDeserializeAndSet(BeanPropertyMap.java:291)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializer.deserializeFromObject(BeanDeserializer.java:335)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.deserializeWithObjectId(BeanDeserializerBase.java:1045)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializer.deserialize(BeanDeserializer.java:140)
+	at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:3562)
+	at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:2578)
+	at com.fasterxml.jackson.databind.struct.TestObjectIdDeserialization.testNullObjectId(TestObjectIdDeserialization.java:464)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+Caused by: java.lang.NullPointerException
+	at com.fasterxml.jackson.annotation.ObjectIdGenerator$IdKey.<init>(ObjectIdGenerator.java:158)
+	at com.fasterxml.jackson.annotation.ObjectIdGenerators$IntSequenceGenerator.key(ObjectIdGenerators.java:95)
+	at com.fasterxml.jackson.databind.deser.DefaultDeserializationContext.findObjectId(DefaultDeserializationContext.java:88)
+	at com.fasterxml.jackson.databind.deser.impl.ObjectIdValueProperty.deserializeSetAndReturn(ObjectIdValueProperty.java:93)
+	at com.fasterxml.jackson.databind.deser.impl.ObjectIdValueProperty.deserializeAndSet(ObjectIdValueProperty.java:77)
+	at com.fasterxml.jackson.databind.deser.impl.BeanPropertyMap._findDeserializeAndSet2(BeanPropertyMap.java:313)
+	... 41 more
+
+================== test_assert ==================
+Identifiable value = MAPPER.readValue
+
+================== buggy_lines_in_method ==================
+[9]
+================== buggy_statements ==================
+['']
+================== buggy_method_src_endswith_buggy_statement ==================
+@Override
+    public ReadableObjectId findObjectId(Object id, ObjectIdGenerator<?> gen, ObjectIdResolver resolverType)
+    {
+        /* 02-Apr-2015, tatu: As per [databind#742] should allow 'null', similar to how
+         *   missing id already works.
+         */
+
+        final ObjectIdGenerator.IdKey key = gen.key(id);

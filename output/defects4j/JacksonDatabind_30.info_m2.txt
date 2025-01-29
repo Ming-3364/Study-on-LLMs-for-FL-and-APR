@@ -1,0 +1,197 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/util/TokenBuffer.java
+================== buggy_method ==================
+{'method_name': 'copyCurrentEvent', 'method_body': '@Override\n    public void copyCurrentEvent(JsonParser p) throws IOException\n    {\n        if (_mayHaveNativeIds) {\n            _checkNativeIds(p);\n        }\n        switch (p.getCurrentToken()) {\n        case START_OBJECT:\n            writeStartObject();\n            break;\n        case END_OBJECT:\n            writeEndObject();\n            break;\n        case START_ARRAY:\n            writeStartArray();\n            break;\n        case END_ARRAY:\n            writeEndArray();\n            break;\n        case FIELD_NAME:\n            writeFieldName(p.getCurrentName());\n            break;\n        case VALUE_STRING:\n            if (p.hasTextCharacters()) {\n                writeString(p.getTextCharacters(), p.getTextOffset(), p.getTextLength());\n            } else {\n                writeString(p.getText());\n            }\n            break;\n        case VALUE_NUMBER_INT:\n            switch (p.getNumberType()) {\n            case INT:\n                writeNumber(p.getIntValue());\n                break;\n            case BIG_INTEGER:\n                writeNumber(p.getBigIntegerValue());\n                break;\n            default:\n                writeNumber(p.getLongValue());\n            }\n            break;\n        case VALUE_NUMBER_FLOAT:\n                /* 10-Oct-2015, tatu: Ideally we would first determine whether underlying\n                 *   number is already decoded into a number (in which case might as well\n                 *   access as number); or is still retained as text (in which case we\n                 *   should further defer decoding that may not need BigDecimal):\n                 */\n                switch (p.getNumberType()) {\n                case BIG_DECIMAL:\n                    writeNumber(p.getDecimalValue());\n                    break;\n                case FLOAT:\n                    writeNumber(p.getFloatValue());\n                    break;\n                default:\n                    writeNumber(p.getDoubleValue());\n            }\n            break;\n        case VALUE_TRUE:\n            writeBoolean(true);\n            break;\n        case VALUE_FALSE:\n            writeBoolean(false);\n            break;\n        case VALUE_NULL:\n            writeNull();\n            break;\n        case VALUE_EMBEDDED_OBJECT:\n            writeObject(p.getEmbeddedObject());\n            break;\n        default:\n            throw new RuntimeException("Internal error: should never end up through this code path");\n        }\n    }', 'start_line': 917, 'end_line': 990, 'buggy_lines': [966, 973, 983]}
+================== buggy_method_src ==================
+@Override
+    public void copyCurrentEvent(JsonParser p) throws IOException
+    {
+        if (_mayHaveNativeIds) {
+            _checkNativeIds(p);
+        }
+        switch (p.getCurrentToken()) {
+        case START_OBJECT:
+            writeStartObject();
+            break;
+        case END_OBJECT:
+            writeEndObject();
+            break;
+        case START_ARRAY:
+            writeStartArray();
+            break;
+        case END_ARRAY:
+            writeEndArray();
+            break;
+        case FIELD_NAME:
+            writeFieldName(p.getCurrentName());
+            break;
+        case VALUE_STRING:
+            if (p.hasTextCharacters()) {
+                writeString(p.getTextCharacters(), p.getTextOffset(), p.getTextLength());
+            } else {
+                writeString(p.getText());
+            }
+            break;
+        case VALUE_NUMBER_INT:
+            switch (p.getNumberType()) {
+            case INT:
+                writeNumber(p.getIntValue());
+                break;
+            case BIG_INTEGER:
+                writeNumber(p.getBigIntegerValue());
+                break;
+            default:
+                writeNumber(p.getLongValue());
+            }
+            break;
+        case VALUE_NUMBER_FLOAT:
+                /* 10-Oct-2015, tatu: Ideally we would first determine whether underlying
+                 *   number is already decoded into a number (in which case might as well
+                 *   access as number); or is still retained as text (in which case we
+                 *   should further defer decoding that may not need BigDecimal):
+                 */
+                switch (p.getNumberType()) {
+                case BIG_DECIMAL:
+                    writeNumber(p.getDecimalValue());
+                    break;
+                case FLOAT:
+                    writeNumber(p.getFloatValue());
+                    break;
+                default:
+                    writeNumber(p.getDoubleValue());
+            }
+            break;
+        case VALUE_TRUE:
+            writeBoolean(true);
+            break;
+        case VALUE_FALSE:
+            writeBoolean(false);
+            break;
+        case VALUE_NULL:
+            writeNull();
+            break;
+        case VALUE_EMBEDDED_OBJECT:
+            writeObject(p.getEmbeddedObject());
+            break;
+        default:
+            throw new RuntimeException("Internal error: should never end up through this code path");
+        }
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.jsontype.TestExternalId::testBigDecimal965
+junit.framework.AssertionFailedError: Expected BigDecimal = -10000000000.0000000001; got back BigDecimal = -1.0E+10
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.TestCase.assertTrue(TestCase.java:192)
+	at com.fasterxml.jackson.databind.jsontype.TestExternalId.testBigDecimal965(TestExternalId.java:564)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertTrue(String.format("Expected %s = %s; got back %s = %s",
+
+================== buggy_lines_in_method ==================
+[50, 57, 67]
+================== buggy_statements ==================
+['                    writeNumber(p.getDecimalValue());', '            }', '            break;']
+================== buggy_method_src_endswith_buggy_statement ==================
+@Override
+    public void copyCurrentEvent(JsonParser p) throws IOException
+    {
+        if (_mayHaveNativeIds) {
+            _checkNativeIds(p);
+        }
+        switch (p.getCurrentToken()) {
+        case START_OBJECT:
+            writeStartObject();
+            break;
+        case END_OBJECT:
+            writeEndObject();
+            break;
+        case START_ARRAY:
+            writeStartArray();
+            break;
+        case END_ARRAY:
+            writeEndArray();
+            break;
+        case FIELD_NAME:
+            writeFieldName(p.getCurrentName());
+            break;
+        case VALUE_STRING:
+            if (p.hasTextCharacters()) {
+                writeString(p.getTextCharacters(), p.getTextOffset(), p.getTextLength());
+            } else {
+                writeString(p.getText());
+            }
+            break;
+        case VALUE_NUMBER_INT:
+            switch (p.getNumberType()) {
+            case INT:
+                writeNumber(p.getIntValue());
+                break;
+            case BIG_INTEGER:
+                writeNumber(p.getBigIntegerValue());
+                break;
+            default:
+                writeNumber(p.getLongValue());
+            }
+            break;
+        case VALUE_NUMBER_FLOAT:
+                /* 10-Oct-2015, tatu: Ideally we would first determine whether underlying
+                 *   number is already decoded into a number (in which case might as well
+                 *   access as number); or is still retained as text (in which case we
+                 *   should further defer decoding that may not need BigDecimal):
+                 */
+                switch (p.getNumberType()) {
+                case BIG_DECIMAL:
+                    writeNumber(p.getDecimalValue());
+                    break;
+                case FLOAT:
+                    writeNumber(p.getFloatValue());
+                    break;
+                default:
+                    writeNumber(p.getDoubleValue());
+            }
+            break;
+        case VALUE_TRUE:
+            writeBoolean(true);
+            break;
+        case VALUE_FALSE:
+            writeBoolean(false);
+            break;
+        case VALUE_NULL:
+            writeNull();
+            break;

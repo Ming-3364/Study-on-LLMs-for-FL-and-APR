@@ -1,0 +1,125 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/jsontype/impl/StdSubtypeResolver.java
+================== buggy_method ==================
+{'method_name': 'collectAndResolveSubtypesByClass', 'method_body': '@Override\n    public Collection<NamedType> collectAndResolveSubtypesByClass(MapperConfig<?> config, \n            AnnotatedMember property, JavaType baseType)\n    {\n        final AnnotationIntrospector ai = config.getAnnotationIntrospector();\n        // for backwards compatibility, must allow null here:\n        Class<?> rawBase = (baseType == null) ? property.getRawType() : baseType.getRawClass();\n        \n        HashMap<NamedType, NamedType> collected = new HashMap<NamedType, NamedType>();\n        // start with registered subtypes (which have precedence)\n        if (_registeredSubtypes != null) {\n            for (NamedType subtype : _registeredSubtypes) {\n                // is it a subtype of root type?\n                if (rawBase.isAssignableFrom(subtype.getType())) { // yes\n                    AnnotatedClass curr = AnnotatedClassResolver.resolveWithoutSuperTypes(config,\n                            subtype.getType());\n                    _collectAndResolve(curr, subtype, config, ai, collected);\n                }\n            }\n        }\n        \n        // then annotated types for property itself\n            Collection<NamedType> st = ai.findSubtypes(property);\n            if (st != null) {\n                for (NamedType nt : st) {\n                    AnnotatedClass ac = AnnotatedClassResolver.resolveWithoutSuperTypes(config,\n                            nt.getType());\n                    _collectAndResolve(ac, nt, config, ai, collected);\n                }            \n        }\n\n        NamedType rootType = new NamedType(rawBase, null);\n        AnnotatedClass ac = AnnotatedClassResolver.resolveWithoutSuperTypes(config, rawBase);\n            \n        // and finally subtypes via annotations from base type (recursively)\n        _collectAndResolve(ac, rootType, config, ai, collected);\n\n        return new ArrayList<NamedType>(collected.values());\n    }', 'start_line': 57, 'end_line': 95, 'buggy_lines': [79, 87]}
+================== buggy_method_src ==================
+@Override
+    public Collection<NamedType> collectAndResolveSubtypesByClass(MapperConfig<?> config, 
+            AnnotatedMember property, JavaType baseType)
+    {
+        final AnnotationIntrospector ai = config.getAnnotationIntrospector();
+        // for backwards compatibility, must allow null here:
+        Class<?> rawBase = (baseType == null) ? property.getRawType() : baseType.getRawClass();
+        
+        HashMap<NamedType, NamedType> collected = new HashMap<NamedType, NamedType>();
+        // start with registered subtypes (which have precedence)
+        if (_registeredSubtypes != null) {
+            for (NamedType subtype : _registeredSubtypes) {
+                // is it a subtype of root type?
+                if (rawBase.isAssignableFrom(subtype.getType())) { // yes
+                    AnnotatedClass curr = AnnotatedClassResolver.resolveWithoutSuperTypes(config,
+                            subtype.getType());
+                    _collectAndResolve(curr, subtype, config, ai, collected);
+                }
+            }
+        }
+        
+        // then annotated types for property itself
+            Collection<NamedType> st = ai.findSubtypes(property);
+            if (st != null) {
+                for (NamedType nt : st) {
+                    AnnotatedClass ac = AnnotatedClassResolver.resolveWithoutSuperTypes(config,
+                            nt.getType());
+                    _collectAndResolve(ac, nt, config, ai, collected);
+                }            
+        }
+
+        NamedType rootType = new NamedType(rawBase, null);
+        AnnotatedClass ac = AnnotatedClassResolver.resolveWithoutSuperTypes(config, rawBase);
+            
+        // and finally subtypes via annotations from base type (recursively)
+        _collectAndResolve(ac, rootType, config, ai, collected);
+
+        return new ArrayList<NamedType>(collected.values());
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.jsontype.TestTypeNames::testBaseTypeId1616
+java.lang.NullPointerException
+	at com.fasterxml.jackson.databind.AnnotationIntrospector._findAnnotation(AnnotationIntrospector.java:1336)
+	at com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector.findSubtypes(JacksonAnnotationIntrospector.java:556)
+	at com.fasterxml.jackson.databind.jsontype.impl.StdSubtypeResolver.collectAndResolveSubtypesByTypeId(StdSubtypeResolver.java:145)
+	at com.fasterxml.jackson.databind.jsontype.TestTypeNames.testBaseTypeId1616(TestTypeNames.java:47)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+Collection<NamedType> subtypes = new StdSubtypeResolver().collectAndResolveSubtypesByTypeId(
+
+================== buggy_lines_in_method ==================
+[23, 31]
+================== buggy_statements ==================
+['            Collection<NamedType> st = ai.findSubtypes(property);', '']
+================== buggy_method_src_endswith_buggy_statement ==================
+@Override
+    public Collection<NamedType> collectAndResolveSubtypesByClass(MapperConfig<?> config, 
+            AnnotatedMember property, JavaType baseType)
+    {
+        final AnnotationIntrospector ai = config.getAnnotationIntrospector();
+        // for backwards compatibility, must allow null here:
+        Class<?> rawBase = (baseType == null) ? property.getRawType() : baseType.getRawClass();
+        
+        HashMap<NamedType, NamedType> collected = new HashMap<NamedType, NamedType>();
+        // start with registered subtypes (which have precedence)
+        if (_registeredSubtypes != null) {
+            for (NamedType subtype : _registeredSubtypes) {
+                // is it a subtype of root type?
+                if (rawBase.isAssignableFrom(subtype.getType())) { // yes
+                    AnnotatedClass curr = AnnotatedClassResolver.resolveWithoutSuperTypes(config,
+                            subtype.getType());
+                    _collectAndResolve(curr, subtype, config, ai, collected);
+                }
+            }
+        }
+        
+        // then annotated types for property itself
+            Collection<NamedType> st = ai.findSubtypes(property);
+            if (st != null) {
+                for (NamedType nt : st) {
+                    AnnotatedClass ac = AnnotatedClassResolver.resolveWithoutSuperTypes(config,
+                            nt.getType());
+                    _collectAndResolve(ac, nt, config, ai, collected);
+                }            
+        }

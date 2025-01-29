@@ -1,0 +1,141 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/ser/BeanSerializerFactory.java
+================== buggy_method ==================
+{'method_name': 'createSerializer', 'method_body': '@Override\n    @SuppressWarnings("unchecked")\n    public JsonSerializer<Object> createSerializer(SerializerProvider prov,\n            JavaType origType)\n        throws JsonMappingException\n    {\n        // Very first thing, let\'s check if there is explicit serializer annotation:\n        final SerializationConfig config = prov.getConfig();\n        BeanDescription beanDesc = config.introspect(origType);\n        JsonSerializer<?> ser = findSerializerFromAnnotation(prov, beanDesc.getClassInfo());\n        if (ser != null) {\n            return (JsonSerializer<Object>) ser;\n        }\n        boolean staticTyping;\n        // Next: we may have annotations that further define types to use...\n        JavaType type = modifyTypeByAnnotation(config, beanDesc.getClassInfo(), origType);\n        if (type == origType) { // no changes, won\'t force static typing\n            staticTyping = false;\n        } else { // changes; assume static typing; plus, need to re-introspect if class differs\n            staticTyping = true;\n            if (!type.hasRawClass(origType.getRawClass())) {\n                beanDesc = config.introspect(type);\n            }\n        }\n        // Slight detour: do we have a Converter to consider?\n        Converter<Object,Object> conv = beanDesc.findSerializationConverter();\n        if (conv == null) { // no, simple\n            return (JsonSerializer<Object>) _createSerializer2(prov, type, beanDesc, staticTyping);\n        }\n        JavaType delegateType = conv.getOutputType(prov.getTypeFactory());\n        \n        // One more twist, as per [Issue#288]; probably need to get new BeanDesc\n        if (!delegateType.hasRawClass(type.getRawClass())) {\n            beanDesc = config.introspect(delegateType);\n            // [#359]: explicitly check (again) for @JsonSerializer...\n            ser = findSerializerFromAnnotation(prov, beanDesc.getClassInfo());\n        }\n        // [databind#731]: Should skip if nominally java.lang.Object\n        if (ser == null) {\n            ser = _createSerializer2(prov, delegateType, beanDesc, true);\n        }\n        return new StdDelegatingSerializer(conv, delegateType, ser);\n    }', 'start_line': 125, 'end_line': 167, 'buggy_lines': [163]}
+================== buggy_method_src ==================
+@Override
+    @SuppressWarnings("unchecked")
+    public JsonSerializer<Object> createSerializer(SerializerProvider prov,
+            JavaType origType)
+        throws JsonMappingException
+    {
+        // Very first thing, let's check if there is explicit serializer annotation:
+        final SerializationConfig config = prov.getConfig();
+        BeanDescription beanDesc = config.introspect(origType);
+        JsonSerializer<?> ser = findSerializerFromAnnotation(prov, beanDesc.getClassInfo());
+        if (ser != null) {
+            return (JsonSerializer<Object>) ser;
+        }
+        boolean staticTyping;
+        // Next: we may have annotations that further define types to use...
+        JavaType type = modifyTypeByAnnotation(config, beanDesc.getClassInfo(), origType);
+        if (type == origType) { // no changes, won't force static typing
+            staticTyping = false;
+        } else { // changes; assume static typing; plus, need to re-introspect if class differs
+            staticTyping = true;
+            if (!type.hasRawClass(origType.getRawClass())) {
+                beanDesc = config.introspect(type);
+            }
+        }
+        // Slight detour: do we have a Converter to consider?
+        Converter<Object,Object> conv = beanDesc.findSerializationConverter();
+        if (conv == null) { // no, simple
+            return (JsonSerializer<Object>) _createSerializer2(prov, type, beanDesc, staticTyping);
+        }
+        JavaType delegateType = conv.getOutputType(prov.getTypeFactory());
+        
+        // One more twist, as per [Issue#288]; probably need to get new BeanDesc
+        if (!delegateType.hasRawClass(type.getRawClass())) {
+            beanDesc = config.introspect(delegateType);
+            // [#359]: explicitly check (again) for @JsonSerializer...
+            ser = findSerializerFromAnnotation(prov, beanDesc.getClassInfo());
+        }
+        // [databind#731]: Should skip if nominally java.lang.Object
+        if (ser == null) {
+            ser = _createSerializer2(prov, delegateType, beanDesc, true);
+        }
+        return new StdDelegatingSerializer(conv, delegateType, ser);
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.convert.TestConvertingSerializer::testIssue731
+com.fasterxml.jackson.databind.JsonMappingException: No serializer found for class com.fasterxml.jackson.databind.convert.TestConvertingSerializer$DummyBean and no properties discovered to create BeanSerializer (to avoid exception, disable SerializationFeature.FAIL_ON_EMPTY_BEANS) )
+	at com.fasterxml.jackson.databind.ser.impl.UnknownSerializer.failForEmpty(UnknownSerializer.java:59)
+	at com.fasterxml.jackson.databind.ser.impl.UnknownSerializer.serialize(UnknownSerializer.java:26)
+	at com.fasterxml.jackson.databind.ser.std.StdDelegatingSerializer.serialize(StdDelegatingSerializer.java:161)
+	at com.fasterxml.jackson.databind.ser.DefaultSerializerProvider.serializeValue(DefaultSerializerProvider.java:129)
+	at com.fasterxml.jackson.databind.ObjectWriter._configAndWriteValue(ObjectWriter.java:1052)
+	at com.fasterxml.jackson.databind.ObjectWriter.writeValueAsString(ObjectWriter.java:923)
+	at com.fasterxml.jackson.databind.convert.TestConvertingSerializer.testIssue731(TestConvertingSerializer.java:201)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+String json = objectWriter().writeValueAsString(new ConvertingBeanWithUntypedConverter(1, 2));
+
+================== buggy_lines_in_method ==================
+[39]
+================== buggy_statements ==================
+['        if (ser == null) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+@Override
+    @SuppressWarnings("unchecked")
+    public JsonSerializer<Object> createSerializer(SerializerProvider prov,
+            JavaType origType)
+        throws JsonMappingException
+    {
+        // Very first thing, let's check if there is explicit serializer annotation:
+        final SerializationConfig config = prov.getConfig();
+        BeanDescription beanDesc = config.introspect(origType);
+        JsonSerializer<?> ser = findSerializerFromAnnotation(prov, beanDesc.getClassInfo());
+        if (ser != null) {
+            return (JsonSerializer<Object>) ser;
+        }
+        boolean staticTyping;
+        // Next: we may have annotations that further define types to use...
+        JavaType type = modifyTypeByAnnotation(config, beanDesc.getClassInfo(), origType);
+        if (type == origType) { // no changes, won't force static typing
+            staticTyping = false;
+        } else { // changes; assume static typing; plus, need to re-introspect if class differs
+            staticTyping = true;
+            if (!type.hasRawClass(origType.getRawClass())) {
+                beanDesc = config.introspect(type);
+            }
+        }
+        // Slight detour: do we have a Converter to consider?
+        Converter<Object,Object> conv = beanDesc.findSerializationConverter();
+        if (conv == null) { // no, simple
+            return (JsonSerializer<Object>) _createSerializer2(prov, type, beanDesc, staticTyping);
+        }
+        JavaType delegateType = conv.getOutputType(prov.getTypeFactory());
+        
+        // One more twist, as per [Issue#288]; probably need to get new BeanDesc
+        if (!delegateType.hasRawClass(type.getRawClass())) {
+            beanDesc = config.introspect(delegateType);
+            // [#359]: explicitly check (again) for @JsonSerializer...
+            ser = findSerializerFromAnnotation(prov, beanDesc.getClassInfo());
+        }
+        // [databind#731]: Should skip if nominally java.lang.Object
+        if (ser == null) {

@@ -1,0 +1,174 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "8",
+            "qwen-turbo": "8",
+            "ernie-3.5-128k": "**11**",
+            "deepseek-chat": "6",
+            "gpt-4o-mini": "16"
+        },
+        "prompt_fl_2": {
+            "qwen-turbo": "4",
+            "deepseek-chat": "35",
+            "ernie-3.5-128k": "**35**",
+            "gpt-4o-mini": "35",
+            "doubao-pro-4k": "4"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "35",
+            "qwen-turbo": "3",
+            "ernie-3.5-128k": "**35**",
+            "deepseek-chat": "35",
+            "gpt-4o-mini": "35"
+        },
+        "prompt_fl_4": {
+            "doubao-pro-4k": "return ToStringSerializer.instance;",
+            "ernie-3.5-128k": "return ToStringSerializer.instance;",
+            "qwen-turbo": "return ToStringSerializer.instance;",
+            "deepseek-chat": "return ToStringSerializer.instance;",
+            "gpt-4o-mini": "```java\nreturn this;\n```"
+        },
+        "prompt_fl_5": {
+            "doubao-pro-4k": "return ToStringSerializer.instance;",
+            "qwen-turbo": "return ToStringSerializer.instance;",
+            "ernie-3.5-128k": "return ToStringSerializer.instance;",
+            "deepseek-chat": "return ToStringSerializer.instance;",
+            "gpt-4o-mini": "return ToStringSerializer.instance;"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "assertEquals(\"{\\\"value\\\":\\\"\"+NORM_VALUE+\"\\\"}\", m.writeValueAsString(INPUT));",
+            "doubao-pro-4k": "assertEquals(\"{\\\"value\\\":\\\"\"+NORM_VALUE+\"\\\"}\", m.writeValueAsString(INPUT));",
+            "ernie-3.5-128k": "assertEquals(\"{\\\"value\\\":\\\"\"+NORM_VALUE+\"\\\"}\", m.writeValueAsString(INPUT));",
+            "deepseek-chat": "return ToStringSerializer.instance;",
+            "gpt-4o-mini": "assertEquals(\"{\\\"value\\\":\\\"\" + NORM_VALUE + \"\\\"}\", m.writeValueAsString(INPUT));"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "Certainly! The bug you mentioned seems to be related to the missing handling for cases other than `STRING`. To fix this, we need to ensure that the default case does something meaningful or handle other possible shapes appropriately.\n\nHere is the complete corrected method:\n\n```java\n@Override\npublic JsonSerializer<?> createContextual(SerializerProvider prov, BeanProperty property) throws JsonMappingException {\n    JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n    if (format != null) {\n        switch (format.getShape()) {\n            case STRING:\n                // [databind#2264]: Need special handling for `BigDecimal`\n                return ToStringSerializer.instance;\n            default:\n                // Handle other shapes or return the current serializer\n                return this;\n        }\n    }\n    return this;\n}\n```\n\nIn this corrected version, the default case now explicitly returns `this` to maintain the current serializer when no specific handling is required. This ensures that the method behaves correctly for all cases.",
+            "doubao-pro-4k": "@Override\npublic JsonSerializer<?> createContextual(SerializerProvider prov,\n        BeanProperty property) throws JsonMappingException {\n    JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n    if (format!= null) {\n        switch (format.getShape()) {\n        case STRING:\n            // [databind#2264]: Need special handling for `BigDecimal`\n            return ToStringSerializer.instance;\n        default:\n        }\n    }\n    return this;\n}",
+            "deepseek-chat": "@Override\n    public JsonSerializer<?> createContextual(SerializerProvider prov,\n            BeanProperty property) throws JsonMappingException\n    {\n        JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n        if (format != null) {\n            switch (format.getShape()) {\n            case STRING:\n                // [databind#2264]: Need special handling for `BigDecimal`\n                return ToStringSerializer.instance;\n            default:\n                break;\n            }\n        }\n        return this;\n    }\n\nThe bug in line 13 was that the `default` case in the `switch` statement was missing a `break` statement. This has been corrected by adding `break;` in the `default` case. The rest of the code remains unchanged.",
+            "gpt-4o-mini": "@Override\n    public JsonSerializer<?> createContextual(SerializerProvider prov,\n            BeanProperty property) throws JsonMappingException\n    {\n        JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n        if (format != null) {\n            switch (format.getShape()) {\n            case STRING:\n                // [databind#2264]: Need special handling for `BigDecimal`\n                return ToStringSerializer.instance;\n            default:\n                break; // Adding a break here to avoid falling through to the default case\n            }\n        }\n        return this;\n    }",
+            "ernie-3.5-128k": "Sure, here is the complete corrected method with the fix for line 13:\n\npublic JsonSerializer<?> createContextual(SerializerProvider prov,\n        BeanProperty property) throws JsonMappingException\n{\n    JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n    if (format != null) {\n        switch (format.getShape()) {\n        case STRING:\n            // [databind#2264]: Need special handling for `BigDecimal`\n            return ToStringSerializer.instance;\n        default:\n            // Return 'this' for default or unhandled shapes\n            return this;\n        }\n    }\n    return this;\n}"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\n@Override\npublic JsonSerializer<?> createContextual(SerializerProvider prov,\n        BeanProperty property) throws JsonMappingException\n{\n    JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n    if (format != null) {\n        switch (format.getShape()) {\n        case STRING:\n            // [databind#2264]: Need special handling for `BigDecimal`\n            return ToStringSerializer.instance;\n        default:\n            break; // Added break statement to avoid compiler warning\n        }\n    }\n    return this;\n}\n```\n\nThe bug was the missing `break` statement in the `default` case of the `switch`. This has been added to ensure that the control flow behaves as expected.",
+            "deepseek-chat": "@Override\n    public JsonSerializer<?> createContextual(SerializerProvider prov,\n            BeanProperty property) throws JsonMappingException\n    {\n        JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n        if (format != null) {\n            switch (format.getShape()) {\n            case STRING:\n                // [databind#2264]: Need special handling for `BigDecimal`\n                return ToStringSerializer.instance;\n            default:\n                break;\n            }\n        }\n        return this;\n    }",
+            "ernie-3.5-128k": "Sure, here is the complete corrected method:\n\npublic JsonSerializer<?> createContextual(SerializerProvider prov,\n        BeanProperty property) throws JsonMappingException\n{\n    JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n    if (format != null) {\n        switch (format.getShape()) {\n        case STRING:\n            // [databind#2264]: Need special handling for `BigDecimal`\n            return ToStringSerializer.instance;\n        default:\n            break;\n        }\n    }\n    return this;\n}",
+            "gpt-4o-mini": "@Override\n    public JsonSerializer<?> createContextual(SerializerProvider prov,\n            BeanProperty property) throws JsonMappingException\n    {\n        JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n        if (format != null) {\n            switch (format.getShape()) {\n            case STRING:\n                // [databind#2264]: Need special handling for `BigDecimal`\n                return ToStringSerializer.instance;\n            default:\n                // Add default case if necessary\n            }\n        }\n        return this;\n    }",
+            "doubao-pro-4k": "@Override\npublic JsonSerializer<?> createContextual(SerializerProvider prov,\n        BeanProperty property) throws JsonMappingException {\n    JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n    if (format!= null) {\n        switch (format.getShape()) {\n        case STRING:\n            // [databind#2264]: Need special handling for `BigDecimal`\n            return ToStringSerializer.instance;\n        default:\n        }\n    }\n    return this;\n}"
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\n@Override\npublic JsonSerializer<?> createContextual(SerializerProvider prov,\n        BeanProperty property) throws JsonMappingException\n{\n    JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n    if (format != null) {\n        switch (format.getShape()) {\n        case STRING:\n            // [databind#2264]: Need special handling for `BigDecimal`\n            return ToStringSerializer.instance;\n        default:\n            return this;\n        }\n    }\n```",
+            "deepseek-chat": "@Override\n    public JsonSerializer<?> createContextual(SerializerProvider prov,\n            BeanProperty property) throws JsonMappingException\n    {\n        JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n        if (format != null) {\n            switch (format.getShape()) {\n            case STRING:\n                // [databind#2264]: Need special handling for `BigDecimal`\n                return ToStringSerializer.instance;\n            default:\n                break;\n            }\n        }",
+            "gpt-4o-mini": "@Override\n    public JsonSerializer<?> createContextual(SerializerProvider prov,\n            BeanProperty property) throws JsonMappingException\n    {\n        JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n        if (format != null) {\n            switch (format.getShape()) {\n            case STRING:\n                // [databind#2264]: Need special handling for `BigDecimal`\n                return ToStringSerializer.instance;\n            default:\n                return null;\n            }\n        }",
+            "ernie-3.5-128k": "public JsonSerializer<?> createContextual(SerializerProvider prov,\n            BeanProperty property) throws JsonMappingException\n    {\n        JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n        if (format != null) {\n            switch (format.getShape()) {\n            case STRING:\n                // [databind#2264]: Need special handling for `BigDecimal`\n                return ToStringSerializer.instance;\n            default:\n                return this;\n            }\n        }",
+            "doubao-pro-4k": "@Override\npublic JsonSerializer<?> createContextual(SerializerProvider prov,\n        BeanProperty property) throws JsonMappingException\n{\n    JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n    if (format!= null) {\n        switch (format.getShape()) {\n        case STRING:\n            // [databind#2264]: Need special handling for `BigDecimal`\n            return ToStringSerializer.instance;\n        default:\n            break;\n        }\n    }\n}"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"return new ToStringSerializer();\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"return this;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"if (format == null) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"return ToStringSerializer.instance;\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"case OBJECT: // Handle default case if not STRING\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"return new ToStringSerializer();\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"if (format!= null) {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 15,\n        \"fixed_statement\": \"            default: return this;\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"                break;\"\n    },\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"        return this;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"                return ToStringSerializer.instance;\"\n    },\n    {\n        \"line_number\": 11,\n        \"fixed_statement\": \"            }\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"return new StdScalarSerializer<>(handledType());\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"return this;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 11,\n        \"fixed_statement\": \"if (format!= null) {\"\n    },\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"switch (format.getShape()) {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 14,\n        \"fixed_statement\": \"return this;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"return ToStringSerializer.instance;\"\n    }\n]"
+        }
+    },
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "9",
+            "qwen-turbo": "8",
+            "ernie-3.5-128k": "**12**",
+            "deepseek-chat": "5",
+            "gpt-4o-mini": "15"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "**30**",
+            "deepseek-chat": "35",
+            "gpt-4o-mini": "35"
+        },
+        "prompt_fl_3": {
+            "qwen-turbo": "35",
+            "doubao-pro-4k": "35",
+            "ernie-3.5-128k": "**35**",
+            "deepseek-chat": "35",
+            "gpt-4o-mini": "35"
+        },
+        "prompt_fl_4": {
+            "ernie-3.5-128k": "default:",
+            "qwen-turbo": "return ToStringSerializer.instance;",
+            "doubao-pro-4k": "switch (format.getShape()) {\n                case STRING:\n                    return ToStringSerializer.instance;\n                default:\n                }",
+            "deepseek-chat": "```java\ndefault:\n```",
+            "gpt-4o-mini": "switch (format.getShape()) {"
+        },
+        "prompt_fl_5": {
+            "doubao-pro-4k": "return ToStringSerializer.instance;",
+            "qwen-turbo": "return ToStringSerializer.instance;",
+            "ernie-3.5-128k": "return ToStringSerializer.instance;",
+            "deepseek-chat": "return ToStringSerializer.instance;",
+            "gpt-4o-mini": "`return ToStringSerializer.instance;`"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "assertEquals(\"{\\\"value\\\":\\\"\"+NORM_VALUE+\"\\\"}\", m.writeValueAsString(INPUT));",
+            "doubao-pro-4k": "assertEquals(\"{\\\"value\\\":\\\"\"+NORM_VALUE+\"\\\"}\", m.writeValueAsString(INPUT));",
+            "deepseek-chat": "return ToStringSerializer.instance;",
+            "ernie-3.5-128k": "assertEquals(\"{\\\"value\\\":\\\"\"+NORM_VALUE+\"\\\"}\", m.writeValueAsString(INPUT));",
+            "gpt-4o-mini": "assertEquals(\"{\\\"value\\\":\\\"[0.0000000005]\\\"}\", m.writeValueAsString(INPUT));"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "Certainly! The issue on line 12 seems to be that the `default` case in the `switch` statement does not have any action. To avoid potential warnings and ensure the method behaves correctly, we can add a `break;` statement inside the `default` case. Here is the complete corrected method:\n\n```java\n@Override\npublic JsonSerializer<?> createContextual(SerializerProvider prov,\n        BeanProperty property) throws JsonMappingException\n{\n    JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n    if (format != null) {\n        switch (format.getShape()) {\n        case STRING:\n            return ToStringSerializer.instance;\n        default:\n            break;\n        }\n    }\n    return this;\n}\n```\n\nThis ensures that the `default` case does not fall through and there are no unintended side effects.",
+            "deepseek-chat": "@Override\npublic JsonSerializer<?> createContextual(SerializerProvider prov,\n        BeanProperty property) throws JsonMappingException\n{\n    JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n    if (format != null) {\n        switch (format.getShape()) {\n        case STRING:\n            return ToStringSerializer.instance;\n        default:\n            break;\n        }\n    }\n    return this;\n}",
+            "gpt-4o-mini": "@Override\n        public JsonSerializer<?> createContextual(SerializerProvider prov,\n                BeanProperty property) throws JsonMappingException\n        {\n            JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n            if (format != null) {\n                switch (format.getShape()) {\n                case STRING:\n                    return ToStringSerializer.instance;\n                default:\n                    break;\n                }\n            }\n            return this;\n        }",
+            "doubao-pro-4k": "@Override\npublic JsonSerializer<?> createContextual(SerializerProvider prov,\n                                         BeanProperty property) throws JsonMappingException {\n    JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n    if (format!= null) {\n        switch (format.getShape()) {\n            case STRING:\n                return ToStringSerializer.instance;\n            default:\n                // Add handling for other cases or a default behavior here\n        }\n    }\n    return this;\n}",
+            "ernie-3.5-128k": "Here is the complete corrected method with the issue in line 12 resolved:\n\npublic JsonSerializer<?> createContextual(SerializerProvider prov,\n                BeanProperty property) throws JsonMappingException\n        {\n            JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n            if (format != null) {\n                switch (format.getShape()) {\n                case STRING:\n                    return ToStringSerializer.instance;\n                default:\n                    return this; // Added return statement to handle default case\n                }\n            }\n            return this;\n        }"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\n@Override\npublic JsonSerializer<?> createContextual(SerializerProvider prov,\n        BeanProperty property) throws JsonMappingException {\n    JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n    if (format != null) {\n        switch (format.getShape()) {\n            case STRING:\n                return ToStringSerializer.instance;\n            default:\n                return this;\n        }\n    }\n    return this;\n}\n``` \n\nThe corrected portion ensures that when the `format.getShape()` does not match the `STRING` case, the method returns the current serializer instance (`this`). This prevents potential issues where the method might return an incorrect or unexpected value.",
+            "deepseek-chat": "@Override\npublic JsonSerializer<?> createContextual(SerializerProvider prov,\n        BeanProperty property) throws JsonMappingException\n{\n    JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n    if (format != null) {\n        switch (format.getShape()) {\n        case STRING:\n            return ToStringSerializer.instance;\n        default:\n            break;\n        }\n    }\n    return this;\n}",
+            "gpt-4o-mini": "@Override\n        public JsonSerializer<?> createContextual(SerializerProvider prov,\n                BeanProperty property) throws JsonMappingException\n        {\n            JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n            if (format != null) {\n                switch (format.getShape()) {\n                case STRING:\n                    return ToStringSerializer.instance;\n                default:\n                    break;\n                }\n            }\n            return this;\n        }",
+            "doubao-pro-4k": "@Override\npublic JsonSerializer<?> createContextual(SerializerProvider prov,\n                                         BeanProperty property) throws JsonMappingException {\n    JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n    if (format!= null) {\n        switch (format.getShape()) {\n            case STRING:\n                return ToStringSerializer.instance;\n            default:\n        }\n    }\n    return this;\n}",
+            "ernie-3.5-128k": "Here is the complete corrected method with the bug fixed:\n\npublic JsonSerializer<?> createContextual(SerializerProvider prov,\n        BeanProperty property) throws JsonMappingException\n{\n    JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n    if (format != null) {\n        switch (format.getShape()) {\n        case STRING:\n            return ToStringSerializer.instance;\n        default:\n            return this;  // Added return statement for the default case\n        }\n    }\n    return this;\n}"
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\n@Override\npublic JsonSerializer<?> createContextual(SerializerProvider prov, BeanProperty property) throws JsonMappingException\n{\n    JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n    if (format != null) {\n        switch (format.getShape()) {\n        case STRING:\n            return ToStringSerializer.instance;\n        }\n    }\n    return this;\n}\n```",
+            "deepseek-chat": "@Override\npublic JsonSerializer<?> createContextual(SerializerProvider prov,\n        BeanProperty property) throws JsonMappingException\n{\n    JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n    if (format != null) {\n        switch (format.getShape()) {\n        case STRING:\n            return ToStringSerializer.instance;\n        default:\n            return null;\n        }\n    }",
+            "gpt-4o-mini": "@Override\n        public JsonSerializer<?> createContextual(SerializerProvider prov,\n                BeanProperty property) throws JsonMappingException\n        {\n            JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n            if (format != null) {\n                switch (format.getShape()) {\n                case STRING:\n                    return ToStringSerializer.instance;\n                default:\n                    break;\n                }\n            }",
+            "doubao-pro-4k": "@Override\npublic JsonSerializer<?> createContextual(SerializerProvider prov,\n        BeanProperty property) throws JsonMappingException\n{\n    JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n    if (format!= null) {\n        switch (format.getShape()) {\n        case STRING:\n            return ToStringSerializer.instance;\n        default:\n            break;\n        }\n    }\n}",
+            "ernie-3.5-128k": "public JsonSerializer<?> createContextual(SerializerProvider prov,\n                BeanProperty property) throws JsonMappingException\n        {\n            JsonFormat.Value format = findFormatOverrides(prov, property, handledType());\n            if (format != null) {\n                switch (format.getShape()) {\n                case STRING:\n                    return ToStringSerializer.instance;\n                default:\n                    return this;\n                }\n            }"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"return new JsonSerializer<Object>() {};\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"if (format!= null) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"return ToStringSerializer.instance;\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"return this;\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"case NUMBER:\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"                return new ToStringSerializer();\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"                    return this;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"                    break;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"if (format!= null) {\"\n    },\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"    switch (format.getShape()) {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 14,\n        \"fixed_statement\": \"                }\"\n    },\n    {\n        \"line_number\": 15,\n        \"fixed_statement\": \"            }\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"return new StdSerializer<>(handledType());\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"return this;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"return null;\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"default: return null;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"if (format!= null) {\"\n    },\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"switch (format.getShape()) {\"\n    },\n    {\n        \"line_number\": 15,\n        \"fixed_statement\": \"case STRING: return ToStringSerializer.instance;\"\n    },\n    {\n        \"line_number\": 16,\n        \"fixed_statement\": \"default: break;\"\n    }\n]"
+        }
+    }
+]

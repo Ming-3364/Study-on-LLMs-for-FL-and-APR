@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "8",
+            "qwen-turbo": "8",
+            "ernie-3.5-128k": "10",
+            "deepseek-chat": "5",
+            "gpt-4o-mini": "14"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "12",
+            "qwen-turbo": "11",
+            "ernie-3.5-128k": "**14**",
+            "deepseek-chat": "5",
+            "gpt-4o-mini": "25"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "12",
+            "qwen-turbo": "3",
+            "ernie-3.5-128k": "**21**",
+            "deepseek-chat": "4",
+            "gpt-4o-mini": "28"
+        },
+        "prompt_fl_4": {
+            "doubao-pro-4k": "insert(el);",
+            "qwen-turbo": "tokeniser.emit(new Token.EndTag(el.tagName()));",
+            "ernie-3.5-128k": "tokeniser.emit(new Token.EndTag(el.tagName()));",
+            "deepseek-chat": "stack.add(el);",
+            "gpt-4o-mini": "tokeniser.emit(new Token.EndTag(el.tagName()));"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "tokeniser.emit(new Token.EndTag(el.tagName()));",
+            "doubao-pro-4k": "tokeniser.emit(new Token.EndTag(el.tagName()));",
+            "ernie-3.5-128k": "Element el = new Element(Tag.valueOf(startTag.name()), baseUri, startTag.attributes);",
+            "deepseek-chat": "Element el = new Element(Tag.valueOf(startTag.name()), baseUri, startTag.attributes);",
+            "gpt-4o-mini": "tokeniser.emit(new Token.EndTag(el.tagName()));"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "tokeniser.emit(new Token.EndTag(el.tagName()));",
+            "ernie-3.5-128k": "Element el = new Element(Tag.valueOf(startTag.name()), baseUri, startTag.attributes);",
+            "deepseek-chat": "Element el = new Element(Tag.valueOf(startTag.name()), baseUri, startTag.attributes);",
+            "doubao-pro-4k": "assertEquals(\"<div id=\\\"1\\\"></div><script src=\\\"/foo\\\"></script><div id=\\\"2\\\"><img /><img /></div><a id=\\\"3\\\"></a><i></i><foo /><foo>One</foo> <hr /> hr text <hr /> hr text two\", TextUtil.stripNewlines(doc.body().html()));",
+            "gpt-4o-mini": "tokeniser.emit(new Token.EndTag(el.tagName()));  // ensure we get out of whatever state we are in. emitted for yielded processing"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "Certainly! The bug you're referring to on line 7 seems to be related to emitting an end tag which might not be necessary or could cause unintended behavior. Instead, you should directly add the element to the stack without emitting an end tag. Here's the corrected version of the method:\n\n```java\nElement insert(Token.StartTag startTag) {\n    // handle empty unknown tags\n    // when the spec expects an empty tag, will directly hit insertEmpty, so won't generate this fake end tag.\n    if (startTag.isSelfClosing()) {\n        Element el = insertEmpty(startTag);\n        stack.add(el);\n        return el;\n    }\n\n    Element el = new Element(Tag.valueOf(startTag.name()), baseUri, startTag.attributes);\n    insert(el);\n    stack.add(el);  // Ensure the element is added to the stack\n    return el;\n}\n```\n\nIn this corrected version, I removed the emission of the end tag and ensured that the element is added to the stack after being inserted. This should resolve the issue you were encountering.",
+            "deepseek-chat": "Element insert(Token.StartTag startTag) {\n    // handle empty unknown tags\n    // when the spec expects an empty tag, will directly hit insertEmpty, so won't generate this fake end tag.\n    if (startTag.isSelfClosing()) {\n        Element el = insertEmpty(startTag);\n        stack.add(el);\n        tokeniser.emit(new Token.EndTag(el.tagName()));  // ensure we get out of whatever state we are in. emitted for yielded processing\n        return el;\n    }\n    \n    Element el = new Element(Tag.valueOf(startTag.name()), baseUri, startTag.attributes);\n    insert(el);\n    stack.add(el);  // Add the element to the stack to ensure proper nesting and closing\n    return el;\n}",
+            "doubao-pro-4k": "Element insert(Token.StartTag startTag) {\n    // handle empty unknown tags\n    // when the spec expects an empty tag, will directly hit insertEmpty, so won't generate this fake end tag.\n    if (startTag.isSelfClosing()) {\n        Element el = insertEmpty(startTag);\n        stack.add(el);\n        tokeniser.emit(new Token.EndTag(el.tagName()));  // ensure we get out of whatever state we are in. emitted for yielded processing\n        return el;\n    }\n\n    Element el = new Element(Tag.valueOf(startTag.name()), baseUri, startTag.attributes);\n    stack.add(el);\n    return el;\n}",
+            "gpt-4o-mini": "Element insert(Token.StartTag startTag) {\n    // handle empty unknown tags\n    // when the spec expects an empty tag, will directly hit insertEmpty, so won't generate this fake end tag.\n    if (startTag.isSelfClosing()) {\n        Element el = insertEmpty(startTag);\n        stack.add(el);\n        tokeniser.emit(new Token.EndTag(el.tagName()));  // ensure we get out of whatever state we are in. emitted for yielded processing\n        return el;\n    }\n    \n    Element el = new Element(Tag.valueOf(startTag.name()), baseUri, startTag.attributes);\n    insert(el);\n    stack.add(el);  // Fix: Add the element to the stack here\n    return el;\n}",
+            "ernie-3.5-128k": "Certainly! Here is the corrected method with the issue in line 7 resolved:\n\nElement insert(Token.StartTag startTag) {\n        // handle empty unknown tags\n        // when the spec expects an empty tag, will directly hit insertEmpty, so won't generate this fake end tag.\n        if (startTag.isSelfClosing()) {\n            Element el = insertEmpty(startTag);\n            stack.add(el);\n            tokeniser.emit(new Token.EndTag(startTag.name()));  // ensure we get out of whatever state we are in. emitted for yielded processing\n            return el;\n        }\n        \n        Element el = new Element(Tag.valueOf(startTag.name()), baseUri, startTag.attributes);\n        stack.add(el);  // This line was missing in the original code\n        insert(el);  // Assuming this is a recursive call to a different method that handles the actual insertion logic\n        return el;\n    }\n\nThe correction involves adding the element `el` to the stack before calling the `insert(el)` method, which I assume is intended to handle the insertion of the element into some structure (not shown in the provided snippet)."
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\nElement insert(Token.StartTag startTag) {\n    // handle empty unknown tags\n    // when the spec expects an empty tag, will directly hit insertEmpty, so won't generate this fake end tag.\n    if (startTag.isSelfClosing()) {\n        Element el = insertEmpty(startTag);\n        stack.add(el);\n        // Ensure we get out of whatever state we are in. Emitted for yielded processing\n        tokeniser.emit(new Token.EndTag(el.tagName()));\n        return el;\n    }\n\n    Element el = new Element(Tag.valueOf(startTag.name()), baseUri, startTag.attributes());\n    insert(el);\n    stack.add(el);\n    return el;\n}\n```\n\nIn this corrected version, I added `stack.add(el);` after creating and inserting the element to ensure that the element is added to the stack regardless of whether it is self-closing or not. This maintains consistency with the logic for self-closing tags and ensures the stack remains correctly updated.",
+            "doubao-pro-4k": "Element insert(Token.StartTag startTag) {\n    // handle empty unknown tags\n    // when the spec expects an empty tag, will directly hit insertEmpty, so won't generate this fake end tag.\n    if (startTag.isSelfClosing()) {\n        Element el = insertEmpty(startTag);\n        stack.add(el);\n        tokeniser.emit(new Token.EndTag(startTag.name()));  // ensure we get out of whatever state we are in. emitted for yielded processing\n        return el;\n    }\n\n    Element el = new Element(Tag.valueOf(startTag.name()), baseUri, startTag.attributes);\n    insert(el);\n    return el;\n}",
+            "gpt-4o-mini": "Element insert(Token.StartTag startTag) {\n    // handle empty unknown tags\n    // when the spec expects an empty tag, will directly hit insertEmpty, so won't generate this fake end tag.\n    if (startTag.isSelfClosing()) {\n        Element el = insertEmpty(startTag);\n        stack.add(el);\n        // Emit the end tag only when it's not an empty self-closing tag.\n        // This line should be omitted for self-closing tags as they don't need an end tag.\n        return el;\n    }\n    \n    Element el = new Element(Tag.valueOf(startTag.name()), baseUri, startTag.attributes);\n    insert(el);\n    // Emit the end tag for non-self-closing tags.\n    tokeniser.emit(new Token.EndTag(el.tagName()));  // Ensure we get out of whatever state we are in. Emitted for yielded processing.\n    return el;\n}",
+            "deepseek-chat": "Element insert(Token.StartTag startTag) {\n    // handle empty unknown tags\n    // when the spec expects an empty tag, will directly hit insertEmpty, so won't generate this fake end tag.\n    if (startTag.isSelfClosing()) {\n        Element el = insertEmpty(startTag);\n        stack.add(el);\n        if (!startTag.isSelfClosingKnownTag()) {\n            tokeniser.emit(new Token.EndTag(el.tagName()));  // ensure we get out of whatever state we are in. emitted for yielded processing\n        }\n        return el;\n    }\n    \n    Element el = new Element(Tag.valueOf(startTag.name()), baseUri, startTag.attributes);\n    insert(el);\n    return el;\n}\n\nThe bug was that the `emit` call for the `EndTag` token was being executed unconditionally for all self-closing tags, even for known self-closing tags like `<br />` or `<img />`. This could cause issues because known self-closing tags do not require an explicit end tag in HTML. The fix adds a check `if (!startTag.isSelfClosingKnownTag())` to ensure that the `EndTag` token is only emitted for unknown self-closing tags, which aligns with the HTML specification.",
+            "ernie-3.5-128k": "Here is the corrected method with the issue resolved. The problem was that the `insert` method was being called recursively within its own definition without an appropriate base case to handle the insertion of the newly created `Element`. I've renamed the recursive `insert` call to `insertIntoParent` (or you could use another name that fits your context better) to avoid confusion and ensure it doesn't clash with the method itself.\n\nAssuming `insertIntoParent` is a method that correctly inserts the `Element` into its parent (which might be the document or another element), here's the complete corrected method:\n\nElement insert(Token.StartTag startTag) {\n    // handle empty unknown tags\n    // when the spec expects an empty tag, will directly hit insertEmpty, so won't generate this fake end tag.\n    if (startTag.isSelfClosing()) {\n        Element el = insertEmpty(startTag);\n        stack.add(el);\n        tokeniser.emit(new Token.EndTag(el.tagName()));  // ensure we get out of whatever state we are in. emitted for yielded processing\n        return el;\n    }\n    \n    Element el = new Element(Tag.valueOf(startTag.name()), baseUri, startTag.attributes);\n    insertIntoParent(el);  // Assuming this is the method that correctly inserts the element into its parent\n    stack.add(el);  // Assuming you want to add the element to a stack for further processing\n    return el;\n}\n\nMake sure `insertIntoParent` is defined in your class and handles the insertion logic correctly. If `stack.add(el);` should not be part of handling self-closing tags, you might want to adjust the indentation and placement of that line accordingly."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\nElement insert(Token.StartTag startTag) {\n    // handle empty unknown tags\n    // when the spec expects an empty tag, will directly hit insertEmpty, so won't generate this fake end tag.\n    if (startTag.isSelfClosing()) {\n        Element el = insertEmpty(startTag);\n        stack.add(el);\n        tokeniser.emit(new Token.EndTag(startTag.name()));  // ensure we get out of whatever state we are in. emitted for yielded processing\n```",
+            "deepseek-chat": "Element insert(Token.StartTag startTag) {\n        // handle empty unknown tags\n        // when the spec expects an empty tag, will directly hit insertEmpty, so won't generate this fake end tag.\n        if (startTag.isSelfClosing()) {\n            Element el = insertEmpty(startTag);\n            stack.add(el);\n            tokeniser.emit(new Token.EndTag(startTag.tagName()));  // ensure we get out of whatever state we are in. emitted for yielded processing",
+            "gpt-4o-mini": "Element insert(Token.StartTag startTag) {\n        // handle empty unknown tags\n        // when the spec expects an empty tag, will directly hit insertEmpty, so won't generate this fake end tag.\n        if (startTag.isSelfClosing()) {\n            Element el = insertEmpty(startTag);\n            stack.add(el);\n            tokeniser.emit(new Token.EndTag(el.tagName()));  // ensure we get out of whatever state we are in. emitted for yielded processing\n        }",
+            "doubao-pro-4k": "Element insert(Token.StartTag startTag) {\n    // handle empty unknown tags\n    // when the spec expects an empty tag, will directly hit insertEmpty, so won't generate this fake end tag.\n    if (startTag.isSelfClosing()) {\n        Element el = insertEmpty(startTag);\n        stack.add(el);\n        tokeniser.emit(new Token.EndTag(startTag.getTagName()));  // ensure we get out of whatever state we are in. emitted for yielded processing\n    }\n}",
+            "ernie-3.5-128k": "Element insert(Token.StartTag startTag) {\n        // handle empty unknown tags\n        // when the spec expects an empty tag, will directly hit insertEmpty, so won't generate this fake end tag.\n        if (startTag.isSelfClosing()) {\n            Element el = insertEmpty(startTag);\n            stack.add(el);\n            tokeniser.emitCurrentToken(new Token.EndTag(el.tagName()));  // ensure we get out of whatever state we are in. emitted for yielded processing\n"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"tokeniser.emit(new Token.EndTag(startTag.name()));\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"stack.push(el);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"stack.add(el);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"stack.push(el);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"tokeniser.emit(new Token.EndTag(el.tagName()));\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"            tokeniser.emit(new Token.EndTag(\\\"html\\\"));  // ensure we get out of whatever state we are in. emitted for yielded processing\"\n    }\n]",
+            "doubao-pro-4k": "[\n{\n\"line_number\": 11,\n\"fixed_statement\": \"tokeniser.emit(new Token.EndTag(startTag.name()));  // ensure we get out of whatever state we are in. emitted for yielded processing\"\n}\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"tokeniser.emit(new Token.EndTag(startTag.name()));  // ensure we get out of whatever state we are in. emitted for yielded processing\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"tokeniser.emit(new Token.EndTag(el.tagName().toLowerCase()));  // ensure we get out of whatever state we are in. emitted for yielded processing\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"stack.peek().appendChild(el); // Append the new element to the top of the stack (assuming stack is managing the DOM tree) \\n            tokeniser.emit(new Token.EndTag(el.tagName()));  // ensure we get out of whatever state we are in. emitted for yielded processing\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"tokeniser.emit(new Token.EndTag(startTag.name()));\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"tokeniser.emit(new Token.EndTag(startTag.tagName()));  // ensure we get out of whatever state we are in. emitted for yielded processing\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"tokeniser.emit(new Token.EndTag(startTag.tagName()));  // ensure we get out of whatever state we are in. emitted for yielded processing\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"tokeniser.emit(new Token.EndTag(el.tagName())); // ensure we emit an end tag for self-closing elements\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"            tokeniser.emitCurrentToken(new Token.EndTag(el.tagName()));  // ensure we get out of whatever state we are in. emitted for yielded processing\"\n    }\n]"
+        }
+    }
+]

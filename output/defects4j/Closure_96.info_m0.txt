@@ -1,0 +1,102 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/TypeCheck.java
+================== buggy_method ==================
+{'method_name': 'visitParameterList', 'method_body': 'private void visitParameterList(NodeTraversal t, Node call,\n      FunctionType functionType) {\n    Iterator<Node> arguments = call.children().iterator();\n    arguments.next(); // skip the function name\n\n    Iterator<Node> parameters = functionType.getParameters().iterator();\n    int ordinal = 0;\n    Node parameter = null;\n    Node argument = null;\n    while (arguments.hasNext() &&\n           parameters.hasNext()) {\n      // If there are no parameters left in the list, then the while loop\n      // above implies that this must be a var_args function.\n        parameter = parameters.next();\n      argument = arguments.next();\n      ordinal++;\n\n      validator.expectArgumentMatchesParameter(t, argument,\n          getJSType(argument), getJSType(parameter), call, ordinal);\n    }\n\n    int numArgs = call.getChildCount() - 1;\n    int minArgs = functionType.getMinArguments();\n    int maxArgs = functionType.getMaxArguments();\n    if (minArgs > numArgs || maxArgs < numArgs) {\n      report(t, call, WRONG_ARGUMENT_COUNT,\n              validator.getReadableJSTypeName(call.getFirstChild(), false),\n              String.valueOf(numArgs), String.valueOf(minArgs),\n              maxArgs != Integer.MAX_VALUE ?\n              " and no more than " + maxArgs + " argument(s)" : "");\n    }\n  }', 'start_line': 1399, 'end_line': 1430, 'buggy_lines': [1409]}
+================== buggy_method_src ==================
+private void visitParameterList(NodeTraversal t, Node call,
+      FunctionType functionType) {
+    Iterator<Node> arguments = call.children().iterator();
+    arguments.next(); // skip the function name
+
+    Iterator<Node> parameters = functionType.getParameters().iterator();
+    int ordinal = 0;
+    Node parameter = null;
+    Node argument = null;
+    while (arguments.hasNext() &&
+           parameters.hasNext()) {
+      // If there are no parameters left in the list, then the while loop
+      // above implies that this must be a var_args function.
+        parameter = parameters.next();
+      argument = arguments.next();
+      ordinal++;
+
+      validator.expectArgumentMatchesParameter(t, argument,
+          getJSType(argument), getJSType(parameter), call, ordinal);
+    }
+
+    int numArgs = call.getChildCount() - 1;
+    int minArgs = functionType.getMinArguments();
+    int maxArgs = functionType.getMaxArguments();
+    if (minArgs > numArgs || maxArgs < numArgs) {
+      report(t, call, WRONG_ARGUMENT_COUNT,
+              validator.getReadableJSTypeName(call.getFirstChild(), false),
+              String.valueOf(numArgs), String.valueOf(minArgs),
+              maxArgs != Integer.MAX_VALUE ?
+              " and no more than " + maxArgs + " argument(s)" : "");
+    }
+  }
+================== test_stack ==================
+com.google.javascript.jscomp.TypeCheckTest::testFunctionArguments16
+junit.framework.AssertionFailedError: expected a warning
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.TestCase.assertTrue(TestCase.java:192)
+	at com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:7294)
+	at com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:7274)
+	at com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:7227)
+	at com.google.javascript.jscomp.TypeCheckTest.testFunctionArguments16(TypeCheckTest.java:1362)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+testTypes(
+
+================== buggy_lines_in_method ==================
+[11]
+================== buggy_statements ==================
+['           parameters.hasNext()) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+private void visitParameterList(NodeTraversal t, Node call,
+      FunctionType functionType) {
+    Iterator<Node> arguments = call.children().iterator();
+    arguments.next(); // skip the function name
+
+    Iterator<Node> parameters = functionType.getParameters().iterator();
+    int ordinal = 0;
+    Node parameter = null;
+    Node argument = null;
+    while (arguments.hasNext() &&
+           parameters.hasNext()) {

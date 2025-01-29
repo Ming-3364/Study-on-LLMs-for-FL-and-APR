@@ -1,0 +1,290 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/Normalize.java
+================== buggy_method ==================
+{'method_name': 'process', 'method_body': "@Override\n  public void process(Node externs, Node root) {\n    new NodeTraversal(\n        compiler, new NormalizeStatements(compiler, assertOnChange))\n        .traverse(root);\n    if (MAKE_LOCAL_NAMES_UNIQUE) {\n      MakeDeclaredNamesUnique renamer = new MakeDeclaredNamesUnique();\n      NodeTraversal t = new NodeTraversal(compiler, renamer);\n      t.traverseRoots(externs, root);\n    }\n    // It is important that removeDuplicateDeclarations runs after\n    // MakeDeclaredNamesUnique in order for catch block exception names to be\n    // handled properly. Specifically, catch block exception names are\n    // only valid within the catch block, but our currect Scope logic\n    // has no concept of this and includes it in the containing function\n    // (or global scope). MakeDeclaredNamesUnique makes the catch exception\n    // names unique so that removeDuplicateDeclarations() will properly handle\n    // cases where a function scope variable conflict with a exception name:\n    //   function f() {\n    //      try {throw 0;} catch(e) {e; /* catch scope 'e'*/}\n    //      var e = 1; // f scope 'e'\n    //   }\n    // otherwise 'var e = 1' would be rewritten as 'e = 1'.\n    // TODO(johnlenz): Introduce a seperate scope for catch nodes.\n    removeDuplicateDeclarations(externs, root);\n    new PropagateConstantAnnotationsOverVars(compiler, assertOnChange)\n        .process(externs, root);\n\n    if (!compiler.getLifeCycleStage().isNormalized()) {\n      compiler.setLifeCycleStage(LifeCycleStage.NORMALIZED);\n    }\n  }", 'start_line': 118, 'end_line': 149, 'buggy_lines': [122]}
+================== buggy_method_src ==================
+@Override
+  public void process(Node externs, Node root) {
+    new NodeTraversal(
+        compiler, new NormalizeStatements(compiler, assertOnChange))
+        .traverse(root);
+    if (MAKE_LOCAL_NAMES_UNIQUE) {
+      MakeDeclaredNamesUnique renamer = new MakeDeclaredNamesUnique();
+      NodeTraversal t = new NodeTraversal(compiler, renamer);
+      t.traverseRoots(externs, root);
+    }
+    // It is important that removeDuplicateDeclarations runs after
+    // MakeDeclaredNamesUnique in order for catch block exception names to be
+    // handled properly. Specifically, catch block exception names are
+    // only valid within the catch block, but our currect Scope logic
+    // has no concept of this and includes it in the containing function
+    // (or global scope). MakeDeclaredNamesUnique makes the catch exception
+    // names unique so that removeDuplicateDeclarations() will properly handle
+    // cases where a function scope variable conflict with a exception name:
+    //   function f() {
+    //      try {throw 0;} catch(e) {e; /* catch scope 'e'*/}
+    //      var e = 1; // f scope 'e'
+    //   }
+    // otherwise 'var e = 1' would be rewritten as 'e = 1'.
+    // TODO(johnlenz): Introduce a seperate scope for catch nodes.
+    removeDuplicateDeclarations(externs, root);
+    new PropagateConstantAnnotationsOverVars(compiler, assertOnChange)
+        .process(externs, root);
+
+    if (!compiler.getLifeCycleStage().isNormalized()) {
+      compiler.setLifeCycleStage(LifeCycleStage.NORMALIZED);
+    }
+  }
+================== test_stack ==================
+com.google.javascript.jscomp.NormalizeTest::testIssue
+java.lang.RuntimeException: INTERNAL COMPILER ERROR.
+Please report this problem.
+null
+	at com.google.common.base.Preconditions.checkState(Preconditions.java:129)
+	at com.google.javascript.jscomp.Normalize$DuplicateDeclarationHandler.onRedeclaration(Normalize.java:698)
+	at com.google.javascript.jscomp.SyntacticScopeCreator.declareVar(SyntacticScopeCreator.java:238)
+	at com.google.javascript.jscomp.SyntacticScopeCreator.scanVars(SyntacticScopeCreator.java:124)
+	at com.google.javascript.jscomp.SyntacticScopeCreator.scanVars(SyntacticScopeCreator.java:166)
+	at com.google.javascript.jscomp.SyntacticScopeCreator.scanVars(SyntacticScopeCreator.java:166)
+	at com.google.javascript.jscomp.SyntacticScopeCreator.scanVars(SyntacticScopeCreator.java:166)
+	at com.google.javascript.jscomp.SyntacticScopeCreator.scanRoot(SyntacticScopeCreator.java:110)
+	at com.google.javascript.jscomp.SyntacticScopeCreator.createScope(SyntacticScopeCreator.java:74)
+	at com.google.javascript.jscomp.NodeTraversal.getScope(NodeTraversal.java:563)
+	at com.google.javascript.jscomp.Normalize$ScopeTicklingCallback.enterScope(Normalize.java:760)
+	at com.google.javascript.jscomp.NodeTraversal.pushScope(NodeTraversal.java:527)
+	at com.google.javascript.jscomp.NodeTraversal.traverseRoots(NodeTraversal.java:271)
+	at com.google.javascript.jscomp.NodeTraversal.traverseRoots(NodeTraversal.java:257)
+	at com.google.javascript.jscomp.Normalize.removeDuplicateDeclarations(Normalize.java:633)
+	at com.google.javascript.jscomp.Normalize.process(Normalize.java:142)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:749)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:410)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:374)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:351)
+	at com.google.javascript.jscomp.NormalizeTest.testIssue(NormalizeTest.java:386)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+Caused by: java.lang.IllegalStateException
+	... 55 more
+com.google.javascript.jscomp.VarCheckTest::testPropReferenceInExterns1
+junit.framework.AssertionFailedError: compiler.reportCodeChange() should have been called
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.TestCase.assertTrue(TestCase.java:192)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:838)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:410)
+	at com.google.javascript.jscomp.CompilerTestCase.testSame(CompilerTestCase.java:600)
+	at com.google.javascript.jscomp.CompilerTestCase.testSame(CompilerTestCase.java:563)
+	at com.google.javascript.jscomp.VarCheckTest.testPropReferenceInExterns1(VarCheckTest.java:141)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.VarCheckTest::testPropReferenceInExterns3
+junit.framework.AssertionFailedError: compiler.reportCodeChange() should have been called
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.TestCase.assertTrue(TestCase.java:192)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:838)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:410)
+	at com.google.javascript.jscomp.CompilerTestCase.testSame(CompilerTestCase.java:600)
+	at com.google.javascript.jscomp.CompilerTestCase.testSame(CompilerTestCase.java:563)
+	at com.google.javascript.jscomp.VarCheckTest.testPropReferenceInExterns3(VarCheckTest.java:151)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.VarCheckTest::testVarReferenceInExterns
+junit.framework.AssertionFailedError: compiler.reportCodeChange() should have been called
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.TestCase.assertTrue(TestCase.java:192)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:838)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:410)
+	at com.google.javascript.jscomp.CompilerTestCase.testSame(CompilerTestCase.java:600)
+	at com.google.javascript.jscomp.CompilerTestCase.testSame(CompilerTestCase.java:563)
+	at com.google.javascript.jscomp.VarCheckTest.testVarReferenceInExterns(VarCheckTest.java:131)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.VarCheckTest::testCallInExterns
+junit.framework.AssertionFailedError: compiler.reportCodeChange() should have been called
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.TestCase.assertTrue(TestCase.java:192)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:838)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:410)
+	at com.google.javascript.jscomp.CompilerTestCase.testSame(CompilerTestCase.java:600)
+	at com.google.javascript.jscomp.CompilerTestCase.testSame(CompilerTestCase.java:563)
+	at com.google.javascript.jscomp.VarCheckTest.testCallInExterns(VarCheckTest.java:136)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+test("var a,b,c; var a,b", "a(), b()", "a(), b()", null, null);
+
+================== buggy_lines_in_method ==================
+[5]
+================== buggy_statements ==================
+['        .traverse(root);']
+================== buggy_method_src_endswith_buggy_statement ==================
+@Override
+  public void process(Node externs, Node root) {
+    new NodeTraversal(
+        compiler, new NormalizeStatements(compiler, assertOnChange))
+        .traverse(root);

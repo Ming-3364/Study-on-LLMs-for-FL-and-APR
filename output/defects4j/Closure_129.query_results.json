@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "7",
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "**7**",
+            "deepseek-chat": "6",
+            "gpt-4o-mini": "9"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "13",
+            "qwen-turbo": "11",
+            "ernie-3.5-128k": "**30**",
+            "deepseek-chat": "5",
+            "gpt-4o-mini": "19"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "10",
+            "qwen-turbo": "5",
+            "ernie-3.5-128k": "**4**",
+            "deepseek-chat": "5",
+            "gpt-4o-mini": "53"
+        },
+        "prompt_fl_4": {
+            "doubao-pro-4k": "if (!NodeUtil.isGet(first)) {",
+            "qwen-turbo": "if (!NodeUtil.isGet(first))",
+            "ernie-3.5-128k": "if (!NodeUtil.isGet(first)) {",
+            "deepseek-chat": "if (!NodeUtil.isGet(first)) {\n        n.putBooleanProp(Node.FREE_CALL, true);\n      }",
+            "gpt-4o-mini": "first.putBooleanProp(Node.DIRECT_EVAL, true);"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "n.putBooleanProp(Node.FREE_CALL, true);",
+            "ernie-3.5-128k": "Node first = n.getFirstChild();",
+            "doubao-pro-4k": "n.putBooleanProp(Node.FREE_CALL, true);",
+            "gpt-4o-mini": "n.putBooleanProp(Node.FREE_CALL, true);",
+            "deepseek-chat": "n.putBooleanProp(Node.FREE_CALL, true);"
+        },
+        "prompt_fl_6": {
+            "doubao-pro-4k": "test(options, code, result);",
+            "qwen-turbo": "n.putBooleanProp(Node.FREE_CALL, true);",
+            "ernie-3.5-128k": "n.putBooleanProp(Node.FREE_CALL, true);",
+            "deepseek-chat": "n.putBooleanProp(Node.FREE_CALL, true);",
+            "gpt-4o-mini": "n.putBooleanProp(Node.FREE_CALL, true);"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "Certainly! The bug on line 11 is that it doesn't properly handle the case where `first` is a `CAST` node. To fix this, we need to ensure that we skip over any `CAST` nodes until we reach the actual target node.\n\nHere's the complete corrected method:\n\n```java\nprivate void annotateCalls(Node n) {\n  Preconditions.checkState(n.isCall());\n\n  // Keep track of the \"this\" context of a call. A call without an\n  // explicit \"this\" is a free call.\n  Node first = n.getFirstChild();\n\n  // Ignore cast nodes.\n  while (first != null && first.isCast()) {\n    first = first.getFirstChild();\n  }\n\n  if (first == null || !NodeUtil.isGet(first)) {\n    n.putBooleanProp(Node.FREE_CALL, true);\n  }\n\n  // Keep track of the context in which eval is called. It is important\n  // to distinguish between \"(0, eval)()\" and \"eval()\".\n  if (first != null && first.isName() && \"eval\".equals(first.getString())) {\n    first.putBooleanProp(Node.DIRECT_EVAL, true);\n  }\n}\n```\n\nThis ensures that `first` correctly references the target node after skipping over any `CAST` nodes.",
+            "gpt-4o-mini": "private void annotateCalls(Node n) {\n      Preconditions.checkState(n.isCall());\n\n      // Keep track of the \"this\" context of a call.  A call without an\n      // explicit \"this\" is a free call.\n      Node first = n.getFirstChild();\n\n      // ignore cast nodes.\n\n      if (!NodeUtil.isGet(first)) {\n        n.putBooleanProp(Node.FREE_CALL, true);\n      }\n\n      // Keep track of the context in which eval is called. It is important\n      // to distinguish between \"(0, eval)()\" and \"eval()\".\n      if (first.isName() &&\n          \"eval\".equals(first.getString())) {\n        first.putBooleanProp(Node.DIRECT_EVAL, true);\n      }\n\n      // Fix for line [11]\n      if (first != null && first.isName() && \"eval\".equals(first.getString())) {\n        first.putBooleanProp(Node.DIRECT_EVAL, true);\n      }\n}",
+            "deepseek-chat": "private void annotateCalls(Node n) {\n    Preconditions.checkState(n.isCall());\n\n    // Keep track of of the \"this\" context of a call.  A call without an\n    // explicit \"this\" is a free call.\n    Node first = n.getFirstChild();\n\n    // ignore cast nodes.\n    while (first.isCast()) {\n        first = first.getFirstChild();\n    }\n\n    if (!NodeUtil.isGet(first)) {\n        n.putBooleanProp(Node.FREE_CALL, true);\n    }\n\n    // Keep track of the context in which eval is called. It is important\n    // to distinguish between \"(0, eval)()\" and \"eval()\".\n    if (first.isName() &&\n        \"eval\".equals(first.getString())) {\n        first.putBooleanProp(Node.DIRECT_EVAL, true);\n    }\n}\n\nThe bug in the original code was that it did not handle cast nodes properly. The corrected code now includes a `while` loop to skip over any cast nodes by moving to the first child of the cast node until a non-cast node is found. This ensures that the correct node is checked for the `FREE_CALL` and `DIRECT_EVAL` properties.",
+            "doubao-pro-4k": "private void annotateCalls(Node n) {\n    Preconditions.checkState(n.isCall());\n\n    // Keep track of of the \"this\" context of a call.  A call without an\n    // explicit \"this\" is a free call.\n    Node first = n.getFirstChild();\n\n    // ignore cast nodes.\n\n    if (!NodeUtil.isGet(first)) {\n        n.putBooleanProp(Node.FREE_CALL, true);\n    }\n\n    // Keep track of the context in which eval is called. It is important\n    // to distinguish between \"(0, eval)()\" and \"eval()\".\n    if (first!= null && first.isName() && \"eval\".equals(first.getString())) {\n        first.putBooleanProp(Node.DIRECT_EVAL, true);\n    }\n}",
+            "ernie-3.5-128k": "private void annotateCalls(Node n) {\n      Preconditions.checkState(n.isCall());\n\n      // Keep track of of the \"this\" context of a call.  A call without an\n      // explicit \"this\" is a free call.\n      Node first = n.getFirstChild();\n\n      // ignore cast nodes. For this, we need to check if the first child is\n      // indeed a GET node, traversing through any CAST nodes that might be\n      // present.\n      Node current = first;\n      while (NodeUtil.isCast(current)) {\n        current = current.getFirstChild();\n      }\n      first = current;\n\n      if (!NodeUtil.isGet(first)) {\n        n.putBooleanProp(Node.FREE_CALL, true);\n      }\n\n      // Keep track of the context in which eval is called. It is important\n      // to distinguish between \"(0, eval)()\" and \"eval()\".\n      if (NodeUtil.isName(first) &&\n          \"eval\".equals(first.getString())) {\n        first.putBooleanProp(Node.DIRECT_EVAL, true);\n      }\n    }"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\nprivate void annotateCalls(Node n) {\n  Preconditions.checkState(n.isCall());\n\n  // Keep track of the \"this\" context of a call. A call without an\n  // explicit \"this\" is a free call.\n  Node first = n.getFirstChild();\n\n  // Ignore cast nodes.\n  while (first != null && first.isCast()) {\n    first = first.getFirstChild();\n  }\n\n  if (first == null || !NodeUtil.isGet(first)) {\n    n.putBooleanProp(Node.FREE_CALL, true);\n  } else {\n    n.removeProp(Node.FREE_CALL);\n  }\n\n  // Keep track of the context in which eval is called. It is important\n  // to distinguish between \"(0, eval)()\" and \"eval()\".\n  if (first != null && first.isName() && \"eval\".equals(first.getString())) {\n    first.putBooleanProp(Node.DIRECT_EVAL, true);\n  }\n}\n```",
+            "deepseek-chat": "private void annotateCalls(Node n) {\n    Preconditions.checkState(n.isCall());\n\n    // Keep track of of the \"this\" context of a call.  A call without an\n    // explicit \"this\" is a free call.\n    Node first = n.getFirstChild();\n\n    // ignore cast nodes.\n    while (first.isCast()) {\n        first = first.getFirstChild();\n    }\n\n    if (!NodeUtil.isGet(first)) {\n        n.putBooleanProp(Node.FREE_CALL, true);\n    }\n\n    // Keep track of the context in which eval is called. It is important\n    // to distinguish between \"(0, eval)()\" and \"eval()\".\n    if (first.isName() &&\n        \"eval\".equals(first.getString())) {\n        first.putBooleanProp(Node.DIRECT_EVAL, true);\n    }\n}",
+            "gpt-4o-mini": "private void annotateCalls(Node n) {\n      Preconditions.checkState(n.isCall());\n\n      // Keep track of the \"this\" context of a call. A call without an\n      // explicit \"this\" is a free call.\n      Node first = n.getFirstChild();\n\n      // Ignore cast nodes.\n      if (!NodeUtil.isGet(first)) {\n          // Check if 'first' is not a function name or some other condition\n          // that would make this call not a free call. \n          if (first != null && first.isName()) {\n              n.putBooleanProp(Node.FREE_CALL, true);\n          }\n      }\n\n      // Keep track of the context in which eval is called. It is important\n      // to distinguish between \"(0, eval)()\" and \"eval()\".\n      if (first.isName() && \"eval\".equals(first.getString())) {\n          first.putBooleanProp(Node.DIRECT_EVAL, true);\n      }\n}",
+            "doubao-pro-4k": "private void annotateCalls(Node n) {\n    Preconditions.checkState(n.isCall());\n\n    // Keep track of of the \"this\" context of a call.  A call without an\n    // explicit \"this\" is a free call.\n    Node first = n.getFirstChild();\n\n    // ignore cast nodes.\n\n    if (!NodeUtil.isGet(first)) {\n        n.putBooleanProp(Node.FREE_CALL, true);\n    } else {\n        n.putBooleanProp(Node.FREE_CALL, false);\n    }\n\n    // Keep track of the context in which eval is called. It is important\n    // to distinguish between \"(0, eval)()\" and \"eval()\".\n    if (first.isName() &&\n            \"eval\".equals(first.getString())) {\n        first.putBooleanProp(Node.DIRECT_EVAL, true);\n    }\n}",
+            "ernie-3.5-128k": "private void annotateCalls(Node n) {\n      Preconditions.checkState(n.isCall());\n\n      // Keep track of the \"this\" context of a call. A call without an\n      // explicit \"this\" is a free call.\n      Node first = n.getFirstChild();\n\n      // Ignore cast nodes.\n      while (first != null && first.isCast()) {\n        first = first.getFirstChild();\n      }\n\n      if (first == null || !NodeUtil.isGet(first)) {\n        n.putBooleanProp(Node.FREE_CALL, true);\n      }\n\n      // Keep track of the context in which eval is called. It is important\n      // to distinguish between \"(0, eval)()\" and \"eval()\".\n      if (first != null && first.isName() &&\n          \"eval\".equals(first.getString())) {\n        first.putBooleanProp(Node.DIRECT_EVAL, true);\n      }\n    }"
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\nprivate void annotateCalls(Node n) {\n    Preconditions.checkState(n.isCall());\n\n    // Keep track of of the \"this\" context of a call.  A call without an\n    // explicit \"this\" is a free call.\n    Node first = n.getFirstChild();\n\n    // ignore cast nodes.\n\n    if (!NodeUtil.isGet(first)) {\n        n.putBooleanProp(Node.FREE_CALL, true);\n```",
+            "deepseek-chat": "private void annotateCalls(Node n) {\n      Preconditions.checkState(n.isCall());\n\n      // Keep track of of the \"this\" context of a call.  A call without an\n      // explicit \"this\" is a free call.\n      Node first = n.getFirstChild();\n\n      // ignore cast nodes.\n\n      if (!NodeUtil.isGet(first)) {\n        n.putBooleanProp(Node.FREE_CALL, true);\n      }",
+            "doubao-pro-4k": "private void annotateCalls(Node n) {\n    Preconditions.checkState(n.isCall());\n\n    // Keep track of of the \"this\" context of a call.  A call without an\n    // explicit \"this\" is a free call.\n    Node first = n.getFirstChild();\n\n    // ignore cast nodes.\n\n    if (!NodeUtil.isGet(first)) {\n        n.setBooleanProp(Node.FREE_CALL, true);\n    }\n}",
+            "gpt-4o-mini": "private void annotateCalls(Node n) {\n      Preconditions.checkState(n.isCall());\n\n      // Keep track of the \"this\" context of a call.  A call without an\n      // explicit \"this\" is a free call.\n      Node first = n.getFirstChild();\n\n      // ignore cast nodes.\n\n      if (!NodeUtil.isGet(first)) {\n        n.putBooleanProp(Node.FREE_CALL, true);\n      }",
+            "ernie-3.5-128k": "private void annotateCalls(Node n) {\n      Preconditions.checkState(n.isCall());\n\n      // Keep track of of the \"this\" context of a call.  A call without an\n      // explicit \"this\" is a free call.\n      Node first = n.getFirstChild();\n\n      // ignore cast nodes.\n\n      if (!NodeUtil.isGet(first)) {\n        if (first == null || !first.hasChildren() || !first.getFirstChild().isString()) {\n          n.putBooleanProp(Node.FREE_CALL, true);\n        }"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 11,\n        \"fixed_statement\": \"if (first.isQualifiedName() || first.isUnscopedQualifiedName()) {\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 11,\n        \"fixed_statement\": \"if (first.isName() && \\\"eval\\\".equals(first.getString()) && n.isCall()) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 11,\n        \"fixed_statement\": \"if (first.isName() && \\\"eval\\\".equals(first.getString()) && first.getParent().isCall()) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 11,\n        \"fixed_statement\": \"        if (!first.isName() || !\\\"this\\\".equals(first.getString()) && !NodeUtil.isGet(first)) {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 11,\n        \"fixed_statement\": \"if (first != null && first.isName() && \\\"eval\\\".equals(first.getString())) {\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 11,\n        \"fixed_statement\": \"if (first == null || !NodeUtil.isGet(first)) {\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"if (!NodeUtil.isGet(first) || first == null) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"if (!NodeUtil.isGet(first) && !NodeUtil.isNew(first)) {\"\n    },\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"    n.putBooleanProp(Node.FREE_CALL, true);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"if (!NodeUtil.isGet(first) && first != null) {\"\n    },\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"  n.putBooleanProp(Node.FREE_CALL, true);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"n.putBooleanProp(Node.FREE_CALL, !NodeUtil.isGet(first));\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"if (!NodeUtil.isGet(first) || first == null) {\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"if (!NodeUtil.isGet(first) || first == null) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"if (!NodeUtil.isGet(first) || first.isCast()) {\"\n    },\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"    n.putBooleanProp(Node.FREE_CALL, true);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"n.putBooleanProp(Node.FREE_CALL, false);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"        if (!NodeUtil.isGet(first) && !(first.isCast())) {\"\n    },\n    {\n        \"line_number\": 11,\n        \"fixed_statement\": \"        }\"\n    }\n]"
+        }
+    }
+]

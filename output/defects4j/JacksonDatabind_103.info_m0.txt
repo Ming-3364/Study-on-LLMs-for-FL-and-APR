@@ -1,0 +1,116 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/DatabindContext.java
+================== buggy_method ==================
+{'method_name': 'resolveSubType', 'method_body': 'public JavaType resolveSubType(JavaType baseType, String subClass)\n        throws JsonMappingException\n    {\n        // 30-Jan-2010, tatu: Most ids are basic class names; so let\'s first\n        //    check if any generics info is added; and only then ask factory\n        //    to do translation when necessary\n        if (subClass.indexOf(\'<\') > 0) {\n            // note: may want to try combining with specialization (esp for EnumMap)?\n            // 17-Aug-2017, tatu: As per [databind#1735] need to ensure assignment\n            //    compatibility -- needed later anyway, and not doing so may open\n            //    security issues.\n            JavaType t = getTypeFactory().constructFromCanonical(subClass);\n            if (t.isTypeOrSubTypeOf(baseType.getRawClass())) {\n                return t;\n            }\n        } else {\n            Class<?> cls;\n            try {\n                cls =  getTypeFactory().findClass(subClass);\n            } catch (ClassNotFoundException e) { // let caller handle this problem\n                return null;\n            } catch (Exception e) {\n                throw invalidTypeIdException(baseType, subClass, String.format(\n                        "problem: (%s) %s",\n                        e.getClass().getName(),\n                        e.getMessage()));\n            }\n            if (baseType.isTypeOrSuperTypeOf(cls)) {\n                return getTypeFactory().constructSpecializedType(baseType, cls);\n            }\n        }\n        throw invalidTypeIdException(baseType, subClass, "Not a subtype");\n    }', 'start_line': 170, 'end_line': 202, 'buggy_lines': [195]}
+================== buggy_method_src ==================
+public JavaType resolveSubType(JavaType baseType, String subClass)
+        throws JsonMappingException
+    {
+        // 30-Jan-2010, tatu: Most ids are basic class names; so let's first
+        //    check if any generics info is added; and only then ask factory
+        //    to do translation when necessary
+        if (subClass.indexOf('<') > 0) {
+            // note: may want to try combining with specialization (esp for EnumMap)?
+            // 17-Aug-2017, tatu: As per [databind#1735] need to ensure assignment
+            //    compatibility -- needed later anyway, and not doing so may open
+            //    security issues.
+            JavaType t = getTypeFactory().constructFromCanonical(subClass);
+            if (t.isTypeOrSubTypeOf(baseType.getRawClass())) {
+                return t;
+            }
+        } else {
+            Class<?> cls;
+            try {
+                cls =  getTypeFactory().findClass(subClass);
+            } catch (ClassNotFoundException e) { // let caller handle this problem
+                return null;
+            } catch (Exception e) {
+                throw invalidTypeIdException(baseType, subClass, String.format(
+                        "problem: (%s) %s",
+                        e.getClass().getName(),
+                        e.getMessage()));
+            }
+            if (baseType.isTypeOrSuperTypeOf(cls)) {
+                return getTypeFactory().constructSpecializedType(baseType, cls);
+            }
+        }
+        throw invalidTypeIdException(baseType, subClass, "Not a subtype");
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.exc.BasicExceptionTest::testLocationAddition
+junit.framework.AssertionFailedError: Should only get one 'at [' marker, got 2, source: Cannot deserialize Map key of type `com.fasterxml.jackson.databind.BaseMapTest$ABC` from String "value": not a valid representation, problem: (com.fasterxml.jackson.databind.exc.InvalidFormatException) Cannot deserialize Map key of type `com.fasterxml.jackson.databind.BaseMapTest$ABC` from String "value": not one of values excepted for Enum class: [A, B, C]
+ at [Source: (String)"{"value":"foo"}"; line: 1, column: 2]
+ at [Source: (String)"{"value":"foo"}"; line: 1, column: 2]
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.TestCase.fail(TestCase.java:227)
+	at com.fasterxml.jackson.databind.exc.BasicExceptionTest.testLocationAddition(BasicExceptionTest.java:127)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+fail("Should only get one 'at [' marker, got "+(str.length-1)+", source: "+msg);
+
+================== buggy_lines_in_method ==================
+[26]
+================== buggy_statements ==================
+['                        e.getMessage()));']
+================== buggy_method_src_endswith_buggy_statement ==================
+public JavaType resolveSubType(JavaType baseType, String subClass)
+        throws JsonMappingException
+    {
+        // 30-Jan-2010, tatu: Most ids are basic class names; so let's first
+        //    check if any generics info is added; and only then ask factory
+        //    to do translation when necessary
+        if (subClass.indexOf('<') > 0) {
+            // note: may want to try combining with specialization (esp for EnumMap)?
+            // 17-Aug-2017, tatu: As per [databind#1735] need to ensure assignment
+            //    compatibility -- needed later anyway, and not doing so may open
+            //    security issues.
+            JavaType t = getTypeFactory().constructFromCanonical(subClass);
+            if (t.isTypeOrSubTypeOf(baseType.getRawClass())) {
+                return t;
+            }
+        } else {
+            Class<?> cls;
+            try {
+                cls =  getTypeFactory().findClass(subClass);
+            } catch (ClassNotFoundException e) { // let caller handle this problem
+                return null;
+            } catch (Exception e) {
+                throw invalidTypeIdException(baseType, subClass, String.format(
+                        "problem: (%s) %s",
+                        e.getClass().getName(),
+                        e.getMessage()));

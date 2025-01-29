@@ -1,0 +1,202 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/math/ode/events/EventState.java
+================== buggy_method ==================
+{'method_name': 'evaluateStep', 'method_body': 'public boolean evaluateStep(final StepInterpolator interpolator)\n        throws DerivativeException, EventException, ConvergenceException {\n\n        try {\n\n            forward = interpolator.isForward();\n            final double t1 = interpolator.getCurrentTime();\n            final int    n  = Math.max(1, (int) Math.ceil(Math.abs(t1 - t0) / maxCheckInterval));\n            final double h  = (t1 - t0) / n;\n\n            double ta = t0;\n            double ga = g0;\n            double tb = t0 + (interpolator.isForward() ? convergence : -convergence);\n            for (int i = 0; i < n; ++i) {\n\n                // evaluate handler value at the end of the substep\n                tb += h;\n                interpolator.setInterpolatedTime(tb);\n                final double gb = handler.g(tb, interpolator.getInterpolatedState());\n\n                // check events occurrence\n                if (g0Positive ^ (gb >= 0)) {\n                    // there is a sign change: an event is expected during this step\n\n                        // this is a corner case:\n                        // - there was an event near ta,\n                        // - there is another event between ta and tb\n                        // - when ta was computed, convergence was reached on the "wrong side" of the interval\n                        // this implies that the real sign of ga is the same as gb, so we need to slightly\n                        // shift ta to make sure ga and gb get opposite signs and the solver won\'t complain\n                        // about bracketing\n                            // this should never happen\n                         \n                    // variation direction, with respect to the integration direction\n                    increasing = gb >= ga;\n\n                    final UnivariateRealFunction f = new UnivariateRealFunction() {\n                        public double value(final double t) throws FunctionEvaluationException {\n                            try {\n                                interpolator.setInterpolatedTime(t);\n                                return handler.g(t, interpolator.getInterpolatedState());\n                            } catch (DerivativeException e) {\n                                throw new FunctionEvaluationException(e, t);\n                            } catch (EventException e) {\n                                throw new FunctionEvaluationException(e, t);\n                            }\n                        }\n                    };\n                    final BrentSolver solver = new BrentSolver();\n                    solver.setAbsoluteAccuracy(convergence);\n                    solver.setMaximalIterationCount(maxIterationCount);\n                    final double root = (ta <= tb) ? solver.solve(f, ta, tb) : solver.solve(f, tb, ta);\n                    if ((Math.abs(root - ta) <= convergence) &&\n                         (Math.abs(root - previousEventTime) <= convergence)) {\n                        // we have either found nothing or found (again ?) a past event, we simply ignore it\n                        ta = tb;\n                        ga = gb;\n                    } else if (Double.isNaN(previousEventTime) ||\n                               (Math.abs(previousEventTime - root) > convergence)) {\n                        pendingEventTime = root;\n                        if (pendingEvent && (Math.abs(t1 - pendingEventTime) <= convergence)) {\n                            // we were already waiting for this event which was\n                            // found during a previous call for a step that was\n                            // rejected, this step must now be accepted since it\n                            // properly ends exactly at the event occurrence\n                            return false;\n                        }\n                        // either we were not waiting for the event or it has\n                        // moved in such a way the step cannot be accepted\n                        pendingEvent = true;\n                        return true;\n                    }\n\n                } else {\n                    // no sign change: there is no event for now\n                    ta = tb;\n                    ga = gb;\n                }\n\n            }\n\n            // no event during the whole step\n            pendingEvent     = false;\n            pendingEventTime = Double.NaN;\n            return false;\n\n        } catch (FunctionEvaluationException e) {\n            final Throwable cause = e.getCause();\n            if ((cause != null) && (cause instanceof DerivativeException)) {\n                throw (DerivativeException) cause;\n            } else if ((cause != null) && (cause instanceof EventException)) {\n                throw (EventException) cause;\n            }\n            throw new EventException(e);\n        }\n\n    }', 'start_line': 167, 'end_line': 263, 'buggy_lines': [191, 205, 209]}
+================== buggy_method_src ==================
+public boolean evaluateStep(final StepInterpolator interpolator)
+        throws DerivativeException, EventException, ConvergenceException {
+
+        try {
+
+            forward = interpolator.isForward();
+            final double t1 = interpolator.getCurrentTime();
+            final int    n  = Math.max(1, (int) Math.ceil(Math.abs(t1 - t0) / maxCheckInterval));
+            final double h  = (t1 - t0) / n;
+
+            double ta = t0;
+            double ga = g0;
+            double tb = t0 + (interpolator.isForward() ? convergence : -convergence);
+            for (int i = 0; i < n; ++i) {
+
+                // evaluate handler value at the end of the substep
+                tb += h;
+                interpolator.setInterpolatedTime(tb);
+                final double gb = handler.g(tb, interpolator.getInterpolatedState());
+
+                // check events occurrence
+                if (g0Positive ^ (gb >= 0)) {
+                    // there is a sign change: an event is expected during this step
+
+                        // this is a corner case:
+                        // - there was an event near ta,
+                        // - there is another event between ta and tb
+                        // - when ta was computed, convergence was reached on the "wrong side" of the interval
+                        // this implies that the real sign of ga is the same as gb, so we need to slightly
+                        // shift ta to make sure ga and gb get opposite signs and the solver won't complain
+                        // about bracketing
+                            // this should never happen
+                         
+                    // variation direction, with respect to the integration direction
+                    increasing = gb >= ga;
+
+                    final UnivariateRealFunction f = new UnivariateRealFunction() {
+                        public double value(final double t) throws FunctionEvaluationException {
+                            try {
+                                interpolator.setInterpolatedTime(t);
+                                return handler.g(t, interpolator.getInterpolatedState());
+                            } catch (DerivativeException e) {
+                                throw new FunctionEvaluationException(e, t);
+                            } catch (EventException e) {
+                                throw new FunctionEvaluationException(e, t);
+                            }
+                        }
+                    };
+                    final BrentSolver solver = new BrentSolver();
+                    solver.setAbsoluteAccuracy(convergence);
+                    solver.setMaximalIterationCount(maxIterationCount);
+                    final double root = (ta <= tb) ? solver.solve(f, ta, tb) : solver.solve(f, tb, ta);
+                    if ((Math.abs(root - ta) <= convergence) &&
+                         (Math.abs(root - previousEventTime) <= convergence)) {
+                        // we have either found nothing or found (again ?) a past event, we simply ignore it
+                        ta = tb;
+                        ga = gb;
+                    } else if (Double.isNaN(previousEventTime) ||
+                               (Math.abs(previousEventTime - root) > convergence)) {
+                        pendingEventTime = root;
+                        if (pendingEvent && (Math.abs(t1 - pendingEventTime) <= convergence)) {
+                            // we were already waiting for this event which was
+                            // found during a previous call for a step that was
+                            // rejected, this step must now be accepted since it
+                            // properly ends exactly at the event occurrence
+                            return false;
+                        }
+                        // either we were not waiting for the event or it has
+                        // moved in such a way the step cannot be accepted
+                        pendingEvent = true;
+                        return true;
+                    }
+
+                } else {
+                    // no sign change: there is no event for now
+                    ta = tb;
+                    ga = gb;
+                }
+
+            }
+
+            // no event during the whole step
+            pendingEvent     = false;
+            pendingEventTime = Double.NaN;
+            return false;
+
+        } catch (FunctionEvaluationException e) {
+            final Throwable cause = e.getCause();
+            if ((cause != null) && (cause instanceof DerivativeException)) {
+                throw (DerivativeException) cause;
+            } else if ((cause != null) && (cause instanceof EventException)) {
+                throw (EventException) cause;
+            }
+            throw new EventException(e);
+        }
+
+    }
+================== test_stack ==================
+org.apache.commons.math.ode.events.EventStateTest::closeEvents
+org.apache.commons.math.MathRuntimeException$4: function values at endpoints do not have different signs.  Endpoints: [89.999, 153.1], Values: [-0.066, -1,142.11]
+	at org.apache.commons.math.MathRuntimeException.createIllegalArgumentException(MathRuntimeException.java:305)
+	at org.apache.commons.math.analysis.solvers.BrentSolver.solve(BrentSolver.java:178)
+	at org.apache.commons.math.ode.events.EventState.evaluateStep(EventState.java:218)
+	at org.apache.commons.math.ode.events.EventStateTest.closeEvents(EventStateTest.java:66)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+Assert.assertTrue(es.evaluateStep(interpolator));
+
+================== buggy_lines_in_method ==================
+[25, 39, 43]
+================== buggy_statements ==================
+['                        // this is a corner case:', '                            try {', '                                throw new FunctionEvaluationException(e, t);']
+================== buggy_method_src_endswith_buggy_statement ==================
+public boolean evaluateStep(final StepInterpolator interpolator)
+        throws DerivativeException, EventException, ConvergenceException {
+
+        try {
+
+            forward = interpolator.isForward();
+            final double t1 = interpolator.getCurrentTime();
+            final int    n  = Math.max(1, (int) Math.ceil(Math.abs(t1 - t0) / maxCheckInterval));
+            final double h  = (t1 - t0) / n;
+
+            double ta = t0;
+            double ga = g0;
+            double tb = t0 + (interpolator.isForward() ? convergence : -convergence);
+            for (int i = 0; i < n; ++i) {
+
+                // evaluate handler value at the end of the substep
+                tb += h;
+                interpolator.setInterpolatedTime(tb);
+                final double gb = handler.g(tb, interpolator.getInterpolatedState());
+
+                // check events occurrence
+                if (g0Positive ^ (gb >= 0)) {
+                    // there is a sign change: an event is expected during this step
+
+                        // this is a corner case:
+                        // - there was an event near ta,
+                        // - there is another event between ta and tb
+                        // - when ta was computed, convergence was reached on the "wrong side" of the interval
+                        // this implies that the real sign of ga is the same as gb, so we need to slightly
+                        // shift ta to make sure ga and gb get opposite signs and the solver won't complain
+                        // about bracketing
+                            // this should never happen
+                         
+                    // variation direction, with respect to the integration direction
+                    increasing = gb >= ga;
+
+                    final UnivariateRealFunction f = new UnivariateRealFunction() {
+                        public double value(final double t) throws FunctionEvaluationException {
+                            try {
+                                interpolator.setInterpolatedTime(t);
+                                return handler.g(t, interpolator.getInterpolatedState());
+                            } catch (DerivativeException e) {
+                                throw new FunctionEvaluationException(e, t);

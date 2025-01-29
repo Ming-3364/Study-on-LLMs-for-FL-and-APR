@@ -1,0 +1,2282 @@
+
+================== prompt_fl_1 ==================
+
+source code:
+protected void drawHorizontalItem(Graphics2D g2,
+                                      CategoryItemRendererState state,
+                                      Rectangle2D dataArea,
+                                      CategoryPlot plot,
+                                      CategoryAxis domainAxis,
+                                      ValueAxis rangeAxis,
+                                      StatisticalCategoryDataset dataset,
+                                      int row,
+                                      int column) {
+                                     
+        RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
+        
+        // BAR Y
+        double rectY = domainAxis.getCategoryStart(column, getColumnCount(), 
+                dataArea, xAxisLocation);
+
+        int seriesCount = getRowCount();
+        int categoryCount = getColumnCount();
+        if (seriesCount > 1) {
+            double seriesGap = dataArea.getHeight() * getItemMargin()
+                               / (categoryCount * (seriesCount - 1));
+            rectY = rectY + row * (state.getBarWidth() + seriesGap);
+        }
+        else {
+            rectY = rectY + row * state.getBarWidth();
+        }
+
+        // BAR X
+        Number meanValue = dataset.getMeanValue(row, column);
+
+        double value = meanValue.doubleValue();
+        double base = 0.0;
+        double lclip = getLowerClip();
+        double uclip = getUpperClip();
+
+        if (uclip <= 0.0) {  // cases 1, 2, 3 and 4
+            if (value >= uclip) {
+                return; // bar is not visible
+            }
+            base = uclip;
+            if (value <= lclip) {
+                value = lclip;
+            }
+        }
+        else if (lclip <= 0.0) { // cases 5, 6, 7 and 8
+            if (value >= uclip) {
+                value = uclip;
+            }
+            else {
+                if (value <= lclip) {
+                    value = lclip;
+                }
+            }
+        }
+        else { // cases 9, 10, 11 and 12
+            if (value <= lclip) {
+                return; // bar is not visible
+            }
+            base = getLowerClip();
+            if (value >= uclip) {
+               value = uclip;
+            }
+        }
+
+        RectangleEdge yAxisLocation = plot.getRangeAxisEdge();
+        double transY1 = rangeAxis.valueToJava2D(base, dataArea, yAxisLocation);
+        double transY2 = rangeAxis.valueToJava2D(value, dataArea, 
+                yAxisLocation);
+        double rectX = Math.min(transY2, transY1);
+
+        double rectHeight = state.getBarWidth();
+        double rectWidth = Math.abs(transY2 - transY1);
+
+        Rectangle2D bar = new Rectangle2D.Double(rectX, rectY, rectWidth, 
+                rectHeight);
+        Paint seriesPaint = getItemPaint(row, column);
+        g2.setPaint(seriesPaint);
+        g2.fill(bar);
+        if (isDrawBarOutline() && state.getBarWidth() > 3) {
+            g2.setStroke(getItemStroke(row, column));
+            g2.setPaint(getItemOutlinePaint(row, column));
+            g2.draw(bar);
+        }
+
+        // standard deviation lines
+            double valueDelta = dataset.getStdDevValue(row, column).doubleValue();
+            double highVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    + valueDelta, dataArea, yAxisLocation);
+            double lowVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    - valueDelta, dataArea, yAxisLocation);
+
+            if (this.errorIndicatorStroke != null) {
+                g2.setStroke(this.errorIndicatorStroke);
+            }
+            else {
+                g2.setStroke(getItemOutlineStroke(row, column));
+            }
+            if (this.errorIndicatorPaint != null) {
+                g2.setPaint(this.errorIndicatorPaint);  
+            }
+            else {
+                g2.setPaint(getItemOutlinePaint(row, column));   
+            }
+        
+            Line2D line = null;
+            line = new Line2D.Double(lowVal, rectY + rectHeight / 2.0d, 
+                                     highVal, rectY + rectHeight / 2.0d);
+            g2.draw(line);
+            line = new Line2D.Double(highVal, rectY + rectHeight * 0.25, 
+                                     highVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+            line = new Line2D.Double(lowVal, rectY + rectHeight * 0.25, 
+                                     lowVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+        
+        CategoryItemLabelGenerator generator = getItemLabelGenerator(row, 
+                column);
+        if (generator != null && isItemLabelVisible(row, column)) {
+            drawItemLabel(g2, dataset, row, column, plot, generator, bar, 
+                    (value < 0.0));
+        }        
+
+        // add an item entity, if this information is being collected
+        EntityCollection entities = state.getEntityCollection();
+        if (entities != null) {
+            addItemEntity(entities, dataset, row, column, bar);
+        }
+
+    }
+
+There is a bug in the above code, please help me locate it.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_2 ==================
+
+source code:
+protected void drawHorizontalItem(Graphics2D g2,
+                                      CategoryItemRendererState state,
+                                      Rectangle2D dataArea,
+                                      CategoryPlot plot,
+                                      CategoryAxis domainAxis,
+                                      ValueAxis rangeAxis,
+                                      StatisticalCategoryDataset dataset,
+                                      int row,
+                                      int column) {
+                                     
+        RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
+        
+        // BAR Y
+        double rectY = domainAxis.getCategoryStart(column, getColumnCount(), 
+                dataArea, xAxisLocation);
+
+        int seriesCount = getRowCount();
+        int categoryCount = getColumnCount();
+        if (seriesCount > 1) {
+            double seriesGap = dataArea.getHeight() * getItemMargin()
+                               / (categoryCount * (seriesCount - 1));
+            rectY = rectY + row * (state.getBarWidth() + seriesGap);
+        }
+        else {
+            rectY = rectY + row * state.getBarWidth();
+        }
+
+        // BAR X
+        Number meanValue = dataset.getMeanValue(row, column);
+
+        double value = meanValue.doubleValue();
+        double base = 0.0;
+        double lclip = getLowerClip();
+        double uclip = getUpperClip();
+
+        if (uclip <= 0.0) {  // cases 1, 2, 3 and 4
+            if (value >= uclip) {
+                return; // bar is not visible
+            }
+            base = uclip;
+            if (value <= lclip) {
+                value = lclip;
+            }
+        }
+        else if (lclip <= 0.0) { // cases 5, 6, 7 and 8
+            if (value >= uclip) {
+                value = uclip;
+            }
+            else {
+                if (value <= lclip) {
+                    value = lclip;
+                }
+            }
+        }
+        else { // cases 9, 10, 11 and 12
+            if (value <= lclip) {
+                return; // bar is not visible
+            }
+            base = getLowerClip();
+            if (value >= uclip) {
+               value = uclip;
+            }
+        }
+
+        RectangleEdge yAxisLocation = plot.getRangeAxisEdge();
+        double transY1 = rangeAxis.valueToJava2D(base, dataArea, yAxisLocation);
+        double transY2 = rangeAxis.valueToJava2D(value, dataArea, 
+                yAxisLocation);
+        double rectX = Math.min(transY2, transY1);
+
+        double rectHeight = state.getBarWidth();
+        double rectWidth = Math.abs(transY2 - transY1);
+
+        Rectangle2D bar = new Rectangle2D.Double(rectX, rectY, rectWidth, 
+                rectHeight);
+        Paint seriesPaint = getItemPaint(row, column);
+        g2.setPaint(seriesPaint);
+        g2.fill(bar);
+        if (isDrawBarOutline() && state.getBarWidth() > 3) {
+            g2.setStroke(getItemStroke(row, column));
+            g2.setPaint(getItemOutlinePaint(row, column));
+            g2.draw(bar);
+        }
+
+        // standard deviation lines
+            double valueDelta = dataset.getStdDevValue(row, column).doubleValue();
+            double highVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    + valueDelta, dataArea, yAxisLocation);
+            double lowVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    - valueDelta, dataArea, yAxisLocation);
+
+            if (this.errorIndicatorStroke != null) {
+                g2.setStroke(this.errorIndicatorStroke);
+            }
+            else {
+                g2.setStroke(getItemOutlineStroke(row, column));
+            }
+            if (this.errorIndicatorPaint != null) {
+                g2.setPaint(this.errorIndicatorPaint);  
+            }
+            else {
+                g2.setPaint(getItemOutlinePaint(row, column));   
+            }
+        
+            Line2D line = null;
+            line = new Line2D.Double(lowVal, rectY + rectHeight / 2.0d, 
+                                     highVal, rectY + rectHeight / 2.0d);
+            g2.draw(line);
+            line = new Line2D.Double(highVal, rectY + rectHeight * 0.25, 
+                                     highVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+            line = new Line2D.Double(lowVal, rectY + rectHeight * 0.25, 
+                                     lowVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+        
+        CategoryItemLabelGenerator generator = getItemLabelGenerator(row, 
+                column);
+        if (generator != null && isItemLabelVisible(row, column)) {
+            drawItemLabel(g2, dataset, row, column, plot, generator, bar, 
+                    (value < 0.0));
+        }        
+
+        // add an item entity, if this information is being collected
+        EntityCollection entities = state.getEntityCollection();
+        if (entities != null) {
+            addItemEntity(entities, dataset, row, column, bar);
+        }
+
+    }
+
+stack trace:
+org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests::testDrawWithNullMeanVertical
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests.testDrawWithNullMeanVertical(StatisticalBarRendererTests.java:208)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests::testDrawWithNullDeviationVertical
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests.testDrawWithNullDeviationVertical(StatisticalBarRendererTests.java:263)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests::testDrawWithNullMeanHorizontal
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests.testDrawWithNullMeanHorizontal(StatisticalBarRendererTests.java:236)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests::testDrawWithNullDeviationHorizontal
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests.testDrawWithNullDeviationHorizontal(StatisticalBarRendererTests.java:291)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_3 ==================
+
+source code:
+protected void drawHorizontalItem(Graphics2D g2,
+                                      CategoryItemRendererState state,
+                                      Rectangle2D dataArea,
+                                      CategoryPlot plot,
+                                      CategoryAxis domainAxis,
+                                      ValueAxis rangeAxis,
+                                      StatisticalCategoryDataset dataset,
+                                      int row,
+                                      int column) {
+                                     
+        RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
+        
+        // BAR Y
+        double rectY = domainAxis.getCategoryStart(column, getColumnCount(), 
+                dataArea, xAxisLocation);
+
+        int seriesCount = getRowCount();
+        int categoryCount = getColumnCount();
+        if (seriesCount > 1) {
+            double seriesGap = dataArea.getHeight() * getItemMargin()
+                               / (categoryCount * (seriesCount - 1));
+            rectY = rectY + row * (state.getBarWidth() + seriesGap);
+        }
+        else {
+            rectY = rectY + row * state.getBarWidth();
+        }
+
+        // BAR X
+        Number meanValue = dataset.getMeanValue(row, column);
+
+        double value = meanValue.doubleValue();
+        double base = 0.0;
+        double lclip = getLowerClip();
+        double uclip = getUpperClip();
+
+        if (uclip <= 0.0) {  // cases 1, 2, 3 and 4
+            if (value >= uclip) {
+                return; // bar is not visible
+            }
+            base = uclip;
+            if (value <= lclip) {
+                value = lclip;
+            }
+        }
+        else if (lclip <= 0.0) { // cases 5, 6, 7 and 8
+            if (value >= uclip) {
+                value = uclip;
+            }
+            else {
+                if (value <= lclip) {
+                    value = lclip;
+                }
+            }
+        }
+        else { // cases 9, 10, 11 and 12
+            if (value <= lclip) {
+                return; // bar is not visible
+            }
+            base = getLowerClip();
+            if (value >= uclip) {
+               value = uclip;
+            }
+        }
+
+        RectangleEdge yAxisLocation = plot.getRangeAxisEdge();
+        double transY1 = rangeAxis.valueToJava2D(base, dataArea, yAxisLocation);
+        double transY2 = rangeAxis.valueToJava2D(value, dataArea, 
+                yAxisLocation);
+        double rectX = Math.min(transY2, transY1);
+
+        double rectHeight = state.getBarWidth();
+        double rectWidth = Math.abs(transY2 - transY1);
+
+        Rectangle2D bar = new Rectangle2D.Double(rectX, rectY, rectWidth, 
+                rectHeight);
+        Paint seriesPaint = getItemPaint(row, column);
+        g2.setPaint(seriesPaint);
+        g2.fill(bar);
+        if (isDrawBarOutline() && state.getBarWidth() > 3) {
+            g2.setStroke(getItemStroke(row, column));
+            g2.setPaint(getItemOutlinePaint(row, column));
+            g2.draw(bar);
+        }
+
+        // standard deviation lines
+            double valueDelta = dataset.getStdDevValue(row, column).doubleValue();
+            double highVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    + valueDelta, dataArea, yAxisLocation);
+            double lowVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    - valueDelta, dataArea, yAxisLocation);
+
+            if (this.errorIndicatorStroke != null) {
+                g2.setStroke(this.errorIndicatorStroke);
+            }
+            else {
+                g2.setStroke(getItemOutlineStroke(row, column));
+            }
+            if (this.errorIndicatorPaint != null) {
+                g2.setPaint(this.errorIndicatorPaint);  
+            }
+            else {
+                g2.setPaint(getItemOutlinePaint(row, column));   
+            }
+        
+            Line2D line = null;
+            line = new Line2D.Double(lowVal, rectY + rectHeight / 2.0d, 
+                                     highVal, rectY + rectHeight / 2.0d);
+            g2.draw(line);
+            line = new Line2D.Double(highVal, rectY + rectHeight * 0.25, 
+                                     highVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+            line = new Line2D.Double(lowVal, rectY + rectHeight * 0.25, 
+                                     lowVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+        
+        CategoryItemLabelGenerator generator = getItemLabelGenerator(row, 
+                column);
+        if (generator != null && isItemLabelVisible(row, column)) {
+            drawItemLabel(g2, dataset, row, column, plot, generator, bar, 
+                    (value < 0.0));
+        }        
+
+        // add an item entity, if this information is being collected
+        EntityCollection entities = state.getEntityCollection();
+        if (entities != null) {
+            addItemEntity(entities, dataset, row, column, bar);
+        }
+
+    }
+
+stack trace:
+org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests::testDrawWithNullMeanVertical
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests.testDrawWithNullMeanVertical(StatisticalBarRendererTests.java:208)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests::testDrawWithNullDeviationVertical
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests.testDrawWithNullDeviationVertical(StatisticalBarRendererTests.java:263)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests::testDrawWithNullMeanHorizontal
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests.testDrawWithNullMeanHorizontal(StatisticalBarRendererTests.java:236)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests::testDrawWithNullDeviationHorizontal
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests.testDrawWithNullDeviationHorizontal(StatisticalBarRendererTests.java:291)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+failure assertion code:
+assertTrue(success);
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_4 ==================
+
+source code:
+protected void drawHorizontalItem(Graphics2D g2,
+                                      CategoryItemRendererState state,
+                                      Rectangle2D dataArea,
+                                      CategoryPlot plot,
+                                      CategoryAxis domainAxis,
+                                      ValueAxis rangeAxis,
+                                      StatisticalCategoryDataset dataset,
+                                      int row,
+                                      int column) {
+                                     
+        RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
+        
+        // BAR Y
+        double rectY = domainAxis.getCategoryStart(column, getColumnCount(), 
+                dataArea, xAxisLocation);
+
+        int seriesCount = getRowCount();
+        int categoryCount = getColumnCount();
+        if (seriesCount > 1) {
+            double seriesGap = dataArea.getHeight() * getItemMargin()
+                               / (categoryCount * (seriesCount - 1));
+            rectY = rectY + row * (state.getBarWidth() + seriesGap);
+        }
+        else {
+            rectY = rectY + row * state.getBarWidth();
+        }
+
+        // BAR X
+        Number meanValue = dataset.getMeanValue(row, column);
+
+        double value = meanValue.doubleValue();
+        double base = 0.0;
+        double lclip = getLowerClip();
+        double uclip = getUpperClip();
+
+        if (uclip <= 0.0) {  // cases 1, 2, 3 and 4
+            if (value >= uclip) {
+                return; // bar is not visible
+            }
+            base = uclip;
+            if (value <= lclip) {
+                value = lclip;
+            }
+        }
+        else if (lclip <= 0.0) { // cases 5, 6, 7 and 8
+            if (value >= uclip) {
+                value = uclip;
+            }
+            else {
+                if (value <= lclip) {
+                    value = lclip;
+                }
+            }
+        }
+        else { // cases 9, 10, 11 and 12
+            if (value <= lclip) {
+                return; // bar is not visible
+            }
+            base = getLowerClip();
+            if (value >= uclip) {
+               value = uclip;
+            }
+        }
+
+        RectangleEdge yAxisLocation = plot.getRangeAxisEdge();
+        double transY1 = rangeAxis.valueToJava2D(base, dataArea, yAxisLocation);
+        double transY2 = rangeAxis.valueToJava2D(value, dataArea, 
+                yAxisLocation);
+        double rectX = Math.min(transY2, transY1);
+
+        double rectHeight = state.getBarWidth();
+        double rectWidth = Math.abs(transY2 - transY1);
+
+        Rectangle2D bar = new Rectangle2D.Double(rectX, rectY, rectWidth, 
+                rectHeight);
+        Paint seriesPaint = getItemPaint(row, column);
+        g2.setPaint(seriesPaint);
+        g2.fill(bar);
+        if (isDrawBarOutline() && state.getBarWidth() > 3) {
+            g2.setStroke(getItemStroke(row, column));
+            g2.setPaint(getItemOutlinePaint(row, column));
+            g2.draw(bar);
+        }
+
+        // standard deviation lines
+            double valueDelta = dataset.getStdDevValue(row, column).doubleValue();
+            double highVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    + valueDelta, dataArea, yAxisLocation);
+            double lowVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    - valueDelta, dataArea, yAxisLocation);
+
+            if (this.errorIndicatorStroke != null) {
+                g2.setStroke(this.errorIndicatorStroke);
+            }
+            else {
+                g2.setStroke(getItemOutlineStroke(row, column));
+            }
+            if (this.errorIndicatorPaint != null) {
+                g2.setPaint(this.errorIndicatorPaint);  
+            }
+            else {
+                g2.setPaint(getItemOutlinePaint(row, column));   
+            }
+        
+            Line2D line = null;
+            line = new Line2D.Double(lowVal, rectY + rectHeight / 2.0d, 
+                                     highVal, rectY + rectHeight / 2.0d);
+            g2.draw(line);
+            line = new Line2D.Double(highVal, rectY + rectHeight * 0.25, 
+                                     highVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+            line = new Line2D.Double(lowVal, rectY + rectHeight * 0.25, 
+                                     lowVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+        
+        CategoryItemLabelGenerator generator = getItemLabelGenerator(row, 
+                column);
+        if (generator != null && isItemLabelVisible(row, column)) {
+            drawItemLabel(g2, dataset, row, column, plot, generator, bar, 
+                    (value < 0.0));
+        }        
+
+        // add an item entity, if this information is being collected
+        EntityCollection entities = state.getEntityCollection();
+        if (entities != null) {
+            addItemEntity(entities, dataset, row, column, bar);
+        }
+
+    }
+
+There is a bug in the above code, please help me locate it.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_5 ==================
+
+source code:
+protected void drawHorizontalItem(Graphics2D g2,
+                                      CategoryItemRendererState state,
+                                      Rectangle2D dataArea,
+                                      CategoryPlot plot,
+                                      CategoryAxis domainAxis,
+                                      ValueAxis rangeAxis,
+                                      StatisticalCategoryDataset dataset,
+                                      int row,
+                                      int column) {
+                                     
+        RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
+        
+        // BAR Y
+        double rectY = domainAxis.getCategoryStart(column, getColumnCount(), 
+                dataArea, xAxisLocation);
+
+        int seriesCount = getRowCount();
+        int categoryCount = getColumnCount();
+        if (seriesCount > 1) {
+            double seriesGap = dataArea.getHeight() * getItemMargin()
+                               / (categoryCount * (seriesCount - 1));
+            rectY = rectY + row * (state.getBarWidth() + seriesGap);
+        }
+        else {
+            rectY = rectY + row * state.getBarWidth();
+        }
+
+        // BAR X
+        Number meanValue = dataset.getMeanValue(row, column);
+
+        double value = meanValue.doubleValue();
+        double base = 0.0;
+        double lclip = getLowerClip();
+        double uclip = getUpperClip();
+
+        if (uclip <= 0.0) {  // cases 1, 2, 3 and 4
+            if (value >= uclip) {
+                return; // bar is not visible
+            }
+            base = uclip;
+            if (value <= lclip) {
+                value = lclip;
+            }
+        }
+        else if (lclip <= 0.0) { // cases 5, 6, 7 and 8
+            if (value >= uclip) {
+                value = uclip;
+            }
+            else {
+                if (value <= lclip) {
+                    value = lclip;
+                }
+            }
+        }
+        else { // cases 9, 10, 11 and 12
+            if (value <= lclip) {
+                return; // bar is not visible
+            }
+            base = getLowerClip();
+            if (value >= uclip) {
+               value = uclip;
+            }
+        }
+
+        RectangleEdge yAxisLocation = plot.getRangeAxisEdge();
+        double transY1 = rangeAxis.valueToJava2D(base, dataArea, yAxisLocation);
+        double transY2 = rangeAxis.valueToJava2D(value, dataArea, 
+                yAxisLocation);
+        double rectX = Math.min(transY2, transY1);
+
+        double rectHeight = state.getBarWidth();
+        double rectWidth = Math.abs(transY2 - transY1);
+
+        Rectangle2D bar = new Rectangle2D.Double(rectX, rectY, rectWidth, 
+                rectHeight);
+        Paint seriesPaint = getItemPaint(row, column);
+        g2.setPaint(seriesPaint);
+        g2.fill(bar);
+        if (isDrawBarOutline() && state.getBarWidth() > 3) {
+            g2.setStroke(getItemStroke(row, column));
+            g2.setPaint(getItemOutlinePaint(row, column));
+            g2.draw(bar);
+        }
+
+        // standard deviation lines
+            double valueDelta = dataset.getStdDevValue(row, column).doubleValue();
+            double highVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    + valueDelta, dataArea, yAxisLocation);
+            double lowVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    - valueDelta, dataArea, yAxisLocation);
+
+            if (this.errorIndicatorStroke != null) {
+                g2.setStroke(this.errorIndicatorStroke);
+            }
+            else {
+                g2.setStroke(getItemOutlineStroke(row, column));
+            }
+            if (this.errorIndicatorPaint != null) {
+                g2.setPaint(this.errorIndicatorPaint);  
+            }
+            else {
+                g2.setPaint(getItemOutlinePaint(row, column));   
+            }
+        
+            Line2D line = null;
+            line = new Line2D.Double(lowVal, rectY + rectHeight / 2.0d, 
+                                     highVal, rectY + rectHeight / 2.0d);
+            g2.draw(line);
+            line = new Line2D.Double(highVal, rectY + rectHeight * 0.25, 
+                                     highVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+            line = new Line2D.Double(lowVal, rectY + rectHeight * 0.25, 
+                                     lowVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+        
+        CategoryItemLabelGenerator generator = getItemLabelGenerator(row, 
+                column);
+        if (generator != null && isItemLabelVisible(row, column)) {
+            drawItemLabel(g2, dataset, row, column, plot, generator, bar, 
+                    (value < 0.0));
+        }        
+
+        // add an item entity, if this information is being collected
+        EntityCollection entities = state.getEntityCollection();
+        if (entities != null) {
+            addItemEntity(entities, dataset, row, column, bar);
+        }
+
+    }
+
+stack trace:
+org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests::testDrawWithNullMeanVertical
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests.testDrawWithNullMeanVertical(StatisticalBarRendererTests.java:208)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests::testDrawWithNullDeviationVertical
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests.testDrawWithNullDeviationVertical(StatisticalBarRendererTests.java:263)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests::testDrawWithNullMeanHorizontal
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests.testDrawWithNullMeanHorizontal(StatisticalBarRendererTests.java:236)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests::testDrawWithNullDeviationHorizontal
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests.testDrawWithNullDeviationHorizontal(StatisticalBarRendererTests.java:291)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_6 ==================
+
+source code:
+protected void drawHorizontalItem(Graphics2D g2,
+                                      CategoryItemRendererState state,
+                                      Rectangle2D dataArea,
+                                      CategoryPlot plot,
+                                      CategoryAxis domainAxis,
+                                      ValueAxis rangeAxis,
+                                      StatisticalCategoryDataset dataset,
+                                      int row,
+                                      int column) {
+                                     
+        RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
+        
+        // BAR Y
+        double rectY = domainAxis.getCategoryStart(column, getColumnCount(), 
+                dataArea, xAxisLocation);
+
+        int seriesCount = getRowCount();
+        int categoryCount = getColumnCount();
+        if (seriesCount > 1) {
+            double seriesGap = dataArea.getHeight() * getItemMargin()
+                               / (categoryCount * (seriesCount - 1));
+            rectY = rectY + row * (state.getBarWidth() + seriesGap);
+        }
+        else {
+            rectY = rectY + row * state.getBarWidth();
+        }
+
+        // BAR X
+        Number meanValue = dataset.getMeanValue(row, column);
+
+        double value = meanValue.doubleValue();
+        double base = 0.0;
+        double lclip = getLowerClip();
+        double uclip = getUpperClip();
+
+        if (uclip <= 0.0) {  // cases 1, 2, 3 and 4
+            if (value >= uclip) {
+                return; // bar is not visible
+            }
+            base = uclip;
+            if (value <= lclip) {
+                value = lclip;
+            }
+        }
+        else if (lclip <= 0.0) { // cases 5, 6, 7 and 8
+            if (value >= uclip) {
+                value = uclip;
+            }
+            else {
+                if (value <= lclip) {
+                    value = lclip;
+                }
+            }
+        }
+        else { // cases 9, 10, 11 and 12
+            if (value <= lclip) {
+                return; // bar is not visible
+            }
+            base = getLowerClip();
+            if (value >= uclip) {
+               value = uclip;
+            }
+        }
+
+        RectangleEdge yAxisLocation = plot.getRangeAxisEdge();
+        double transY1 = rangeAxis.valueToJava2D(base, dataArea, yAxisLocation);
+        double transY2 = rangeAxis.valueToJava2D(value, dataArea, 
+                yAxisLocation);
+        double rectX = Math.min(transY2, transY1);
+
+        double rectHeight = state.getBarWidth();
+        double rectWidth = Math.abs(transY2 - transY1);
+
+        Rectangle2D bar = new Rectangle2D.Double(rectX, rectY, rectWidth, 
+                rectHeight);
+        Paint seriesPaint = getItemPaint(row, column);
+        g2.setPaint(seriesPaint);
+        g2.fill(bar);
+        if (isDrawBarOutline() && state.getBarWidth() > 3) {
+            g2.setStroke(getItemStroke(row, column));
+            g2.setPaint(getItemOutlinePaint(row, column));
+            g2.draw(bar);
+        }
+
+        // standard deviation lines
+            double valueDelta = dataset.getStdDevValue(row, column).doubleValue();
+            double highVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    + valueDelta, dataArea, yAxisLocation);
+            double lowVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    - valueDelta, dataArea, yAxisLocation);
+
+            if (this.errorIndicatorStroke != null) {
+                g2.setStroke(this.errorIndicatorStroke);
+            }
+            else {
+                g2.setStroke(getItemOutlineStroke(row, column));
+            }
+            if (this.errorIndicatorPaint != null) {
+                g2.setPaint(this.errorIndicatorPaint);  
+            }
+            else {
+                g2.setPaint(getItemOutlinePaint(row, column));   
+            }
+        
+            Line2D line = null;
+            line = new Line2D.Double(lowVal, rectY + rectHeight / 2.0d, 
+                                     highVal, rectY + rectHeight / 2.0d);
+            g2.draw(line);
+            line = new Line2D.Double(highVal, rectY + rectHeight * 0.25, 
+                                     highVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+            line = new Line2D.Double(lowVal, rectY + rectHeight * 0.25, 
+                                     lowVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+        
+        CategoryItemLabelGenerator generator = getItemLabelGenerator(row, 
+                column);
+        if (generator != null && isItemLabelVisible(row, column)) {
+            drawItemLabel(g2, dataset, row, column, plot, generator, bar, 
+                    (value < 0.0));
+        }        
+
+        // add an item entity, if this information is being collected
+        EntityCollection entities = state.getEntityCollection();
+        if (entities != null) {
+            addItemEntity(entities, dataset, row, column, bar);
+        }
+
+    }
+
+stack trace:
+org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests::testDrawWithNullMeanVertical
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests.testDrawWithNullMeanVertical(StatisticalBarRendererTests.java:208)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests::testDrawWithNullDeviationVertical
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests.testDrawWithNullDeviationVertical(StatisticalBarRendererTests.java:263)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests::testDrawWithNullMeanHorizontal
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests.testDrawWithNullMeanHorizontal(StatisticalBarRendererTests.java:236)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests::testDrawWithNullDeviationHorizontal
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at org.jfree.chart.renderer.category.junit.StatisticalBarRendererTests.testDrawWithNullDeviationHorizontal(StatisticalBarRendererTests.java:291)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+failure assertion code:
+assertTrue(success);
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_1 ==================
+
+protected void drawHorizontalItem(Graphics2D g2,
+                                      CategoryItemRendererState state,
+                                      Rectangle2D dataArea,
+                                      CategoryPlot plot,
+                                      CategoryAxis domainAxis,
+                                      ValueAxis rangeAxis,
+                                      StatisticalCategoryDataset dataset,
+                                      int row,
+                                      int column) {
+                                     
+        RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
+        
+        // BAR Y
+        double rectY = domainAxis.getCategoryStart(column, getColumnCount(), 
+                dataArea, xAxisLocation);
+
+        int seriesCount = getRowCount();
+        int categoryCount = getColumnCount();
+        if (seriesCount > 1) {
+            double seriesGap = dataArea.getHeight() * getItemMargin()
+                               / (categoryCount * (seriesCount - 1));
+            rectY = rectY + row * (state.getBarWidth() + seriesGap);
+        }
+        else {
+            rectY = rectY + row * state.getBarWidth();
+        }
+
+        // BAR X
+        Number meanValue = dataset.getMeanValue(row, column);
+
+        double value = meanValue.doubleValue();
+        double base = 0.0;
+        double lclip = getLowerClip();
+        double uclip = getUpperClip();
+
+        if (uclip <= 0.0) {  // cases 1, 2, 3 and 4
+            if (value >= uclip) {
+                return; // bar is not visible
+            }
+            base = uclip;
+            if (value <= lclip) {
+                value = lclip;
+            }
+        }
+        else if (lclip <= 0.0) { // cases 5, 6, 7 and 8
+            if (value >= uclip) {
+                value = uclip;
+            }
+            else {
+                if (value <= lclip) {
+                    value = lclip;
+                }
+            }
+        }
+        else { // cases 9, 10, 11 and 12
+            if (value <= lclip) {
+                return; // bar is not visible
+            }
+            base = getLowerClip();
+            if (value >= uclip) {
+               value = uclip;
+            }
+        }
+
+        RectangleEdge yAxisLocation = plot.getRangeAxisEdge();
+        double transY1 = rangeAxis.valueToJava2D(base, dataArea, yAxisLocation);
+        double transY2 = rangeAxis.valueToJava2D(value, dataArea, 
+                yAxisLocation);
+        double rectX = Math.min(transY2, transY1);
+
+        double rectHeight = state.getBarWidth();
+        double rectWidth = Math.abs(transY2 - transY1);
+
+        Rectangle2D bar = new Rectangle2D.Double(rectX, rectY, rectWidth, 
+                rectHeight);
+        Paint seriesPaint = getItemPaint(row, column);
+        g2.setPaint(seriesPaint);
+        g2.fill(bar);
+        if (isDrawBarOutline() && state.getBarWidth() > 3) {
+            g2.setStroke(getItemStroke(row, column));
+            g2.setPaint(getItemOutlinePaint(row, column));
+            g2.draw(bar);
+        }
+
+        // standard deviation lines
+            double valueDelta = dataset.getStdDevValue(row, column).doubleValue();
+            double highVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    + valueDelta, dataArea, yAxisLocation);
+            double lowVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    - valueDelta, dataArea, yAxisLocation);
+
+            if (this.errorIndicatorStroke != null) {
+                g2.setStroke(this.errorIndicatorStroke);
+            }
+            else {
+                g2.setStroke(getItemOutlineStroke(row, column));
+            }
+            if (this.errorIndicatorPaint != null) {
+                g2.setPaint(this.errorIndicatorPaint);  
+            }
+            else {
+                g2.setPaint(getItemOutlinePaint(row, column));   
+            }
+        
+            Line2D line = null;
+            line = new Line2D.Double(lowVal, rectY + rectHeight / 2.0d, 
+                                     highVal, rectY + rectHeight / 2.0d);
+            g2.draw(line);
+            line = new Line2D.Double(highVal, rectY + rectHeight * 0.25, 
+                                     highVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+            line = new Line2D.Double(lowVal, rectY + rectHeight * 0.25, 
+                                     lowVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+        
+        CategoryItemLabelGenerator generator = getItemLabelGenerator(row, 
+                column);
+        if (generator != null && isItemLabelVisible(row, column)) {
+            drawItemLabel(g2, dataset, row, column, plot, generator, bar, 
+                    (value < 0.0));
+        }        
+
+        // add an item entity, if this information is being collected
+        EntityCollection entities = state.getEntityCollection();
+        if (entities != null) {
+            addItemEntity(entities, dataset, row, column, bar);
+        }
+
+    }
+
+There is a bug in line [86] of the code, please help me fix it.
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_2 ==================
+
+protected void drawHorizontalItem(Graphics2D g2,
+                                      CategoryItemRendererState state,
+                                      Rectangle2D dataArea,
+                                      CategoryPlot plot,
+                                      CategoryAxis domainAxis,
+                                      ValueAxis rangeAxis,
+                                      StatisticalCategoryDataset dataset,
+                                      int row,
+                                      int column) {
+                                     
+        RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
+        
+        // BAR Y
+        double rectY = domainAxis.getCategoryStart(column, getColumnCount(), 
+                dataArea, xAxisLocation);
+
+        int seriesCount = getRowCount();
+        int categoryCount = getColumnCount();
+        if (seriesCount > 1) {
+            double seriesGap = dataArea.getHeight() * getItemMargin()
+                               / (categoryCount * (seriesCount - 1));
+            rectY = rectY + row * (state.getBarWidth() + seriesGap);
+        }
+        else {
+            rectY = rectY + row * state.getBarWidth();
+        }
+
+        // BAR X
+        Number meanValue = dataset.getMeanValue(row, column);
+
+        double value = meanValue.doubleValue();
+        double base = 0.0;
+        double lclip = getLowerClip();
+        double uclip = getUpperClip();
+
+        if (uclip <= 0.0) {  // cases 1, 2, 3 and 4
+            if (value >= uclip) {
+                return; // bar is not visible
+            }
+            base = uclip;
+            if (value <= lclip) {
+                value = lclip;
+            }
+        }
+        else if (lclip <= 0.0) { // cases 5, 6, 7 and 8
+            if (value >= uclip) {
+                value = uclip;
+            }
+            else {
+                if (value <= lclip) {
+                    value = lclip;
+                }
+            }
+        }
+        else { // cases 9, 10, 11 and 12
+            if (value <= lclip) {
+                return; // bar is not visible
+            }
+            base = getLowerClip();
+            if (value >= uclip) {
+               value = uclip;
+            }
+        }
+
+        RectangleEdge yAxisLocation = plot.getRangeAxisEdge();
+        double transY1 = rangeAxis.valueToJava2D(base, dataArea, yAxisLocation);
+        double transY2 = rangeAxis.valueToJava2D(value, dataArea, 
+                yAxisLocation);
+        double rectX = Math.min(transY2, transY1);
+
+        double rectHeight = state.getBarWidth();
+        double rectWidth = Math.abs(transY2 - transY1);
+
+        Rectangle2D bar = new Rectangle2D.Double(rectX, rectY, rectWidth, 
+                rectHeight);
+        Paint seriesPaint = getItemPaint(row, column);
+        g2.setPaint(seriesPaint);
+        g2.fill(bar);
+        if (isDrawBarOutline() && state.getBarWidth() > 3) {
+            g2.setStroke(getItemStroke(row, column));
+            g2.setPaint(getItemOutlinePaint(row, column));
+            g2.draw(bar);
+        }
+
+        // standard deviation lines
+            double valueDelta = dataset.getStdDevValue(row, column).doubleValue();
+            double highVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    + valueDelta, dataArea, yAxisLocation);
+            double lowVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    - valueDelta, dataArea, yAxisLocation);
+
+            if (this.errorIndicatorStroke != null) {
+                g2.setStroke(this.errorIndicatorStroke);
+            }
+            else {
+                g2.setStroke(getItemOutlineStroke(row, column));
+            }
+            if (this.errorIndicatorPaint != null) {
+                g2.setPaint(this.errorIndicatorPaint);  
+            }
+            else {
+                g2.setPaint(getItemOutlinePaint(row, column));   
+            }
+        
+            Line2D line = null;
+            line = new Line2D.Double(lowVal, rectY + rectHeight / 2.0d, 
+                                     highVal, rectY + rectHeight / 2.0d);
+            g2.draw(line);
+            line = new Line2D.Double(highVal, rectY + rectHeight * 0.25, 
+                                     highVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+            line = new Line2D.Double(lowVal, rectY + rectHeight * 0.25, 
+                                     lowVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+        
+        CategoryItemLabelGenerator generator = getItemLabelGenerator(row, 
+                column);
+        if (generator != null && isItemLabelVisible(row, column)) {
+            drawItemLabel(g2, dataset, row, column, plot, generator, bar, 
+                    (value < 0.0));
+        }        
+
+        // add an item entity, if this information is being collected
+        EntityCollection entities = state.getEntityCollection();
+        if (entities != null) {
+            addItemEntity(entities, dataset, row, column, bar);
+        }
+
+    }
+
+There is a bug in ['            double valueDelta = dataset.getStdDevValue(row, column).doubleValue();'] , please help me fix it. 
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_3 ==================
+
+protected void drawHorizontalItem(Graphics2D g2,
+                                      CategoryItemRendererState state,
+                                      Rectangle2D dataArea,
+                                      CategoryPlot plot,
+                                      CategoryAxis domainAxis,
+                                      ValueAxis rangeAxis,
+                                      StatisticalCategoryDataset dataset,
+                                      int row,
+                                      int column) {
+                                     
+        RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
+        
+        // BAR Y
+        double rectY = domainAxis.getCategoryStart(column, getColumnCount(), 
+                dataArea, xAxisLocation);
+
+        int seriesCount = getRowCount();
+        int categoryCount = getColumnCount();
+        if (seriesCount > 1) {
+            double seriesGap = dataArea.getHeight() * getItemMargin()
+                               / (categoryCount * (seriesCount - 1));
+            rectY = rectY + row * (state.getBarWidth() + seriesGap);
+        }
+        else {
+            rectY = rectY + row * state.getBarWidth();
+        }
+
+        // BAR X
+        Number meanValue = dataset.getMeanValue(row, column);
+
+        double value = meanValue.doubleValue();
+        double base = 0.0;
+        double lclip = getLowerClip();
+        double uclip = getUpperClip();
+
+        if (uclip <= 0.0) {  // cases 1, 2, 3 and 4
+            if (value >= uclip) {
+                return; // bar is not visible
+            }
+            base = uclip;
+            if (value <= lclip) {
+                value = lclip;
+            }
+        }
+        else if (lclip <= 0.0) { // cases 5, 6, 7 and 8
+            if (value >= uclip) {
+                value = uclip;
+            }
+            else {
+                if (value <= lclip) {
+                    value = lclip;
+                }
+            }
+        }
+        else { // cases 9, 10, 11 and 12
+            if (value <= lclip) {
+                return; // bar is not visible
+            }
+            base = getLowerClip();
+            if (value >= uclip) {
+               value = uclip;
+            }
+        }
+
+        RectangleEdge yAxisLocation = plot.getRangeAxisEdge();
+        double transY1 = rangeAxis.valueToJava2D(base, dataArea, yAxisLocation);
+        double transY2 = rangeAxis.valueToJava2D(value, dataArea, 
+                yAxisLocation);
+        double rectX = Math.min(transY2, transY1);
+
+        double rectHeight = state.getBarWidth();
+        double rectWidth = Math.abs(transY2 - transY1);
+
+        Rectangle2D bar = new Rectangle2D.Double(rectX, rectY, rectWidth, 
+                rectHeight);
+        Paint seriesPaint = getItemPaint(row, column);
+        g2.setPaint(seriesPaint);
+        g2.fill(bar);
+        if (isDrawBarOutline() && state.getBarWidth() > 3) {
+            g2.setStroke(getItemStroke(row, column));
+            g2.setPaint(getItemOutlinePaint(row, column));
+            g2.draw(bar);
+        }
+
+        // standard deviation lines
+            double valueDelta = dataset.getStdDevValue(row, column).doubleValue();
+
+There is a bug in the last statement, please help me fix it.
+
+Return the code **only from the method declaration to the fixed statement**, without completing or adding additional code. Do not modify anything beyond fixing the bug, and do not complete the `if` statement or other unfinished parts. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_4 ==================
+
+protected void drawHorizontalItem(Graphics2D g2,
+                                      CategoryItemRendererState state,
+                                      Rectangle2D dataArea,
+                                      CategoryPlot plot,
+                                      CategoryAxis domainAxis,
+                                      ValueAxis rangeAxis,
+                                      StatisticalCategoryDataset dataset,
+                                      int row,
+                                      int column) {
+                                     
+        RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
+        
+        // BAR Y
+        double rectY = domainAxis.getCategoryStart(column, getColumnCount(), 
+                dataArea, xAxisLocation);
+
+        int seriesCount = getRowCount();
+        int categoryCount = getColumnCount();
+        if (seriesCount > 1) {
+            double seriesGap = dataArea.getHeight() * getItemMargin()
+                               / (categoryCount * (seriesCount - 1));
+            rectY = rectY + row * (state.getBarWidth() + seriesGap);
+        }
+        else {
+            rectY = rectY + row * state.getBarWidth();
+        }
+
+        // BAR X
+        Number meanValue = dataset.getMeanValue(row, column);
+
+        double value = meanValue.doubleValue();
+        double base = 0.0;
+        double lclip = getLowerClip();
+        double uclip = getUpperClip();
+
+        if (uclip <= 0.0) {  // cases 1, 2, 3 and 4
+            if (value >= uclip) {
+                return; // bar is not visible
+            }
+            base = uclip;
+            if (value <= lclip) {
+                value = lclip;
+            }
+        }
+        else if (lclip <= 0.0) { // cases 5, 6, 7 and 8
+            if (value >= uclip) {
+                value = uclip;
+            }
+            else {
+                if (value <= lclip) {
+                    value = lclip;
+                }
+            }
+        }
+        else { // cases 9, 10, 11 and 12
+            if (value <= lclip) {
+                return; // bar is not visible
+            }
+            base = getLowerClip();
+            if (value >= uclip) {
+               value = uclip;
+            }
+        }
+
+        RectangleEdge yAxisLocation = plot.getRangeAxisEdge();
+        double transY1 = rangeAxis.valueToJava2D(base, dataArea, yAxisLocation);
+        double transY2 = rangeAxis.valueToJava2D(value, dataArea, 
+                yAxisLocation);
+        double rectX = Math.min(transY2, transY1);
+
+        double rectHeight = state.getBarWidth();
+        double rectWidth = Math.abs(transY2 - transY1);
+
+        Rectangle2D bar = new Rectangle2D.Double(rectX, rectY, rectWidth, 
+                rectHeight);
+        Paint seriesPaint = getItemPaint(row, column);
+        g2.setPaint(seriesPaint);
+        g2.fill(bar);
+        if (isDrawBarOutline() && state.getBarWidth() > 3) {
+            g2.setStroke(getItemStroke(row, column));
+            g2.setPaint(getItemOutlinePaint(row, column));
+            g2.draw(bar);
+        }
+
+        // standard deviation lines
+            double valueDelta = dataset.getStdDevValue(row, column).doubleValue();
+            double highVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    + valueDelta, dataArea, yAxisLocation);
+            double lowVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    - valueDelta, dataArea, yAxisLocation);
+
+            if (this.errorIndicatorStroke != null) {
+                g2.setStroke(this.errorIndicatorStroke);
+            }
+            else {
+                g2.setStroke(getItemOutlineStroke(row, column));
+            }
+            if (this.errorIndicatorPaint != null) {
+                g2.setPaint(this.errorIndicatorPaint);  
+            }
+            else {
+                g2.setPaint(getItemOutlinePaint(row, column));   
+            }
+        
+            Line2D line = null;
+            line = new Line2D.Double(lowVal, rectY + rectHeight / 2.0d, 
+                                     highVal, rectY + rectHeight / 2.0d);
+            g2.draw(line);
+            line = new Line2D.Double(highVal, rectY + rectHeight * 0.25, 
+                                     highVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+            line = new Line2D.Double(lowVal, rectY + rectHeight * 0.25, 
+                                     lowVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+        
+        CategoryItemLabelGenerator generator = getItemLabelGenerator(row, 
+                column);
+        if (generator != null && isItemLabelVisible(row, column)) {
+            drawItemLabel(g2, dataset, row, column, plot, generator, bar, 
+                    (value < 0.0));
+        }        
+
+        // add an item entity, if this information is being collected
+        EntityCollection entities = state.getEntityCollection();
+        if (entities != null) {
+            addItemEntity(entities, dataset, row, column, bar);
+        }
+
+    }
+
+There is a bug in line [86] of the code, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_5 ==================
+
+protected void drawHorizontalItem(Graphics2D g2,
+                                      CategoryItemRendererState state,
+                                      Rectangle2D dataArea,
+                                      CategoryPlot plot,
+                                      CategoryAxis domainAxis,
+                                      ValueAxis rangeAxis,
+                                      StatisticalCategoryDataset dataset,
+                                      int row,
+                                      int column) {
+                                     
+        RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
+        
+        // BAR Y
+        double rectY = domainAxis.getCategoryStart(column, getColumnCount(), 
+                dataArea, xAxisLocation);
+
+        int seriesCount = getRowCount();
+        int categoryCount = getColumnCount();
+        if (seriesCount > 1) {
+            double seriesGap = dataArea.getHeight() * getItemMargin()
+                               / (categoryCount * (seriesCount - 1));
+            rectY = rectY + row * (state.getBarWidth() + seriesGap);
+        }
+        else {
+            rectY = rectY + row * state.getBarWidth();
+        }
+
+        // BAR X
+        Number meanValue = dataset.getMeanValue(row, column);
+
+        double value = meanValue.doubleValue();
+        double base = 0.0;
+        double lclip = getLowerClip();
+        double uclip = getUpperClip();
+
+        if (uclip <= 0.0) {  // cases 1, 2, 3 and 4
+            if (value >= uclip) {
+                return; // bar is not visible
+            }
+            base = uclip;
+            if (value <= lclip) {
+                value = lclip;
+            }
+        }
+        else if (lclip <= 0.0) { // cases 5, 6, 7 and 8
+            if (value >= uclip) {
+                value = uclip;
+            }
+            else {
+                if (value <= lclip) {
+                    value = lclip;
+                }
+            }
+        }
+        else { // cases 9, 10, 11 and 12
+            if (value <= lclip) {
+                return; // bar is not visible
+            }
+            base = getLowerClip();
+            if (value >= uclip) {
+               value = uclip;
+            }
+        }
+
+        RectangleEdge yAxisLocation = plot.getRangeAxisEdge();
+        double transY1 = rangeAxis.valueToJava2D(base, dataArea, yAxisLocation);
+        double transY2 = rangeAxis.valueToJava2D(value, dataArea, 
+                yAxisLocation);
+        double rectX = Math.min(transY2, transY1);
+
+        double rectHeight = state.getBarWidth();
+        double rectWidth = Math.abs(transY2 - transY1);
+
+        Rectangle2D bar = new Rectangle2D.Double(rectX, rectY, rectWidth, 
+                rectHeight);
+        Paint seriesPaint = getItemPaint(row, column);
+        g2.setPaint(seriesPaint);
+        g2.fill(bar);
+        if (isDrawBarOutline() && state.getBarWidth() > 3) {
+            g2.setStroke(getItemStroke(row, column));
+            g2.setPaint(getItemOutlinePaint(row, column));
+            g2.draw(bar);
+        }
+
+        // standard deviation lines
+            double valueDelta = dataset.getStdDevValue(row, column).doubleValue();
+            double highVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    + valueDelta, dataArea, yAxisLocation);
+            double lowVal = rangeAxis.valueToJava2D(meanValue.doubleValue() 
+                    - valueDelta, dataArea, yAxisLocation);
+
+            if (this.errorIndicatorStroke != null) {
+                g2.setStroke(this.errorIndicatorStroke);
+            }
+            else {
+                g2.setStroke(getItemOutlineStroke(row, column));
+            }
+            if (this.errorIndicatorPaint != null) {
+                g2.setPaint(this.errorIndicatorPaint);  
+            }
+            else {
+                g2.setPaint(getItemOutlinePaint(row, column));   
+            }
+        
+            Line2D line = null;
+            line = new Line2D.Double(lowVal, rectY + rectHeight / 2.0d, 
+                                     highVal, rectY + rectHeight / 2.0d);
+            g2.draw(line);
+            line = new Line2D.Double(highVal, rectY + rectHeight * 0.25, 
+                                     highVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+            line = new Line2D.Double(lowVal, rectY + rectHeight * 0.25, 
+                                     lowVal, rectY + rectHeight * 0.75);
+            g2.draw(line);
+        
+        CategoryItemLabelGenerator generator = getItemLabelGenerator(row, 
+                column);
+        if (generator != null && isItemLabelVisible(row, column)) {
+            drawItemLabel(g2, dataset, row, column, plot, generator, bar, 
+                    (value < 0.0));
+        }        
+
+        // add an item entity, if this information is being collected
+        EntityCollection entities = state.getEntityCollection();
+        if (entities != null) {
+            addItemEntity(entities, dataset, row, column, bar);
+        }
+
+    }
+
+There is a bug in ['            double valueDelta = dataset.getStdDevValue(row, column).doubleValue();'] , please help me fix it. 
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_6 ==================
+
+protected void drawHorizontalItem(Graphics2D g2,
+                                      CategoryItemRendererState state,
+                                      Rectangle2D dataArea,
+                                      CategoryPlot plot,
+                                      CategoryAxis domainAxis,
+                                      ValueAxis rangeAxis,
+                                      StatisticalCategoryDataset dataset,
+                                      int row,
+                                      int column) {
+                                     
+        RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
+        
+        // BAR Y
+        double rectY = domainAxis.getCategoryStart(column, getColumnCount(), 
+                dataArea, xAxisLocation);
+
+        int seriesCount = getRowCount();
+        int categoryCount = getColumnCount();
+        if (seriesCount > 1) {
+            double seriesGap = dataArea.getHeight() * getItemMargin()
+                               / (categoryCount * (seriesCount - 1));
+            rectY = rectY + row * (state.getBarWidth() + seriesGap);
+        }
+        else {
+            rectY = rectY + row * state.getBarWidth();
+        }
+
+        // BAR X
+        Number meanValue = dataset.getMeanValue(row, column);
+
+        double value = meanValue.doubleValue();
+        double base = 0.0;
+        double lclip = getLowerClip();
+        double uclip = getUpperClip();
+
+        if (uclip <= 0.0) {  // cases 1, 2, 3 and 4
+            if (value >= uclip) {
+                return; // bar is not visible
+            }
+            base = uclip;
+            if (value <= lclip) {
+                value = lclip;
+            }
+        }
+        else if (lclip <= 0.0) { // cases 5, 6, 7 and 8
+            if (value >= uclip) {
+                value = uclip;
+            }
+            else {
+                if (value <= lclip) {
+                    value = lclip;
+                }
+            }
+        }
+        else { // cases 9, 10, 11 and 12
+            if (value <= lclip) {
+                return; // bar is not visible
+            }
+            base = getLowerClip();
+            if (value >= uclip) {
+               value = uclip;
+            }
+        }
+
+        RectangleEdge yAxisLocation = plot.getRangeAxisEdge();
+        double transY1 = rangeAxis.valueToJava2D(base, dataArea, yAxisLocation);
+        double transY2 = rangeAxis.valueToJava2D(value, dataArea, 
+                yAxisLocation);
+        double rectX = Math.min(transY2, transY1);
+
+        double rectHeight = state.getBarWidth();
+        double rectWidth = Math.abs(transY2 - transY1);
+
+        Rectangle2D bar = new Rectangle2D.Double(rectX, rectY, rectWidth, 
+                rectHeight);
+        Paint seriesPaint = getItemPaint(row, column);
+        g2.setPaint(seriesPaint);
+        g2.fill(bar);
+        if (isDrawBarOutline() && state.getBarWidth() > 3) {
+            g2.setStroke(getItemStroke(row, column));
+            g2.setPaint(getItemOutlinePaint(row, column));
+            g2.draw(bar);
+        }
+
+        // standard deviation lines
+            double valueDelta = dataset.getStdDevValue(row, column).doubleValue();
+
+There is a bug in the last statement, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.

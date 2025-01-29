@@ -1,0 +1,143 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/ser/BeanSerializerFactory.java
+================== buggy_method ==================
+{'method_name': '_createSerializer2', 'method_body': 'protected JsonSerializer<?> _createSerializer2(SerializerProvider prov,\n            JavaType type, BeanDescription beanDesc, boolean staticTyping)\n        throws JsonMappingException\n    {\n        JsonSerializer<?> ser = findSerializerByAnnotations(prov, type, beanDesc);\n        if (ser != null) {\n            return ser;\n        }\n        final SerializationConfig config = prov.getConfig();\n        \n        // Container types differ from non-container types\n        // (note: called method checks for module-provided serializers)\n        if (type.isContainerType()) {\n            if (!staticTyping) {\n                staticTyping = usesStaticTyping(config, beanDesc, null);\n                // [Issue#23]: Need to figure out how to force passed parameterization\n                //  to stick...\n                /*\n                if (property == null) {\n                    JavaType t = origType.getContentType();\n                    if (t != null && !t.hasRawClass(Object.class)) {\n                        staticTyping = true;\n                    }\n                }\n                */\n            }\n            // 03-Aug-2012, tatu: As per [Issue#40], may require POJO serializer...\n            ser =  buildContainerSerializer(prov, type, beanDesc, staticTyping);\n            // Will return right away, since called method does post-processing:\n            if (ser != null) {\n                return ser;\n            }\n        } else {\n            // Modules may provide serializers of POJO types:\n            for (Serializers serializers : customSerializers()) {\n                ser = serializers.findSerializer(config, type, beanDesc);\n                if (ser != null) {\n                    break;\n                }\n            }\n            // 25-Jun-2015, tatu: Then JsonSerializable, @JsonValue etc. NOTE! Prior to 2.6,\n            //    this call was BEFORE custom serializer lookup, which was wrong.\n        }\n        \n        if (ser == null) {\n            // Otherwise, we will check "primary types"; both marker types that\n            // indicate specific handling (JsonSerializable), or main types that have\n            // precedence over container types\n            ser = findSerializerByLookup(type, config, beanDesc, staticTyping);\n            if (ser == null) {\n                ser = findSerializerByPrimaryType(prov, type, beanDesc, staticTyping);\n                if (ser == null) {\n                    // And this is where this class comes in: if type is not a\n                    // known "primary JDK type", perhaps it\'s a bean? We can still\n                    // get a null, if we can\'t find a single suitable bean property.\n                    ser = findBeanSerializer(prov, type, beanDesc);\n                    // Finally: maybe we can still deal with it as an implementation of some basic JDK interface?\n                    if (ser == null) {\n                        ser = findSerializerByAddonType(config, type, beanDesc, staticTyping);\n                        // 18-Sep-2014, tatu: Actually, as per [jackson-databind#539], need to get\n                        //   \'unknown\' serializer assigned earlier, here, so that it gets properly\n                        //   post-processed\n                        if (ser == null) {\n                            ser = prov.getUnknownTypeSerializer(beanDesc.getBeanClass());\n                        }\n                    }\n                }\n            }\n        }\n        if (ser != null) {\n            // [databind#120]: Allow post-processing\n            if (_factoryConfig.hasSerializerModifiers()) {\n                for (BeanSerializerModifier mod : _factoryConfig.serializerModifiers()) {\n                    ser = mod.modifySerializer(config, beanDesc, ser);\n                }\n            }\n        }\n        return ser;\n    }', 'start_line': 170, 'end_line': 248, 'buggy_lines': [174, 175, 176, 177]}
+================== buggy_method_src ==================
+protected JsonSerializer<?> _createSerializer2(SerializerProvider prov,
+            JavaType type, BeanDescription beanDesc, boolean staticTyping)
+        throws JsonMappingException
+    {
+        JsonSerializer<?> ser = findSerializerByAnnotations(prov, type, beanDesc);
+        if (ser != null) {
+            return ser;
+        }
+        final SerializationConfig config = prov.getConfig();
+        
+        // Container types differ from non-container types
+        // (note: called method checks for module-provided serializers)
+        if (type.isContainerType()) {
+            if (!staticTyping) {
+                staticTyping = usesStaticTyping(config, beanDesc, null);
+                // [Issue#23]: Need to figure out how to force passed parameterization
+                //  to stick...
+                /*
+                if (property == null) {
+                    JavaType t = origType.getContentType();
+                    if (t != null && !t.hasRawClass(Object.class)) {
+                        staticTyping = true;
+                    }
+                }
+                */
+            }
+            // 03-Aug-2012, tatu: As per [Issue#40], may require POJO serializer...
+            ser =  buildContainerSerializer(prov, type, beanDesc, staticTyping);
+            // Will return right away, since called method does post-processing:
+            if (ser != null) {
+                return ser;
+            }
+        } else {
+            // Modules may provide serializers of POJO types:
+            for (Serializers serializers : customSerializers()) {
+                ser = serializers.findSerializer(config, type, beanDesc);
+                if (ser != null) {
+                    break;
+                }
+            }
+            // 25-Jun-2015, tatu: Then JsonSerializable, @JsonValue etc. NOTE! Prior to 2.6,
+            //    this call was BEFORE custom serializer lookup, which was wrong.
+        }
+        
+        if (ser == null) {
+            // Otherwise, we will check "primary types"; both marker types that
+            // indicate specific handling (JsonSerializable), or main types that have
+            // precedence over container types
+            ser = findSerializerByLookup(type, config, beanDesc, staticTyping);
+            if (ser == null) {
+                ser = findSerializerByPrimaryType(prov, type, beanDesc, staticTyping);
+                if (ser == null) {
+                    // And this is where this class comes in: if type is not a
+                    // known "primary JDK type", perhaps it's a bean? We can still
+                    // get a null, if we can't find a single suitable bean property.
+                    ser = findBeanSerializer(prov, type, beanDesc);
+                    // Finally: maybe we can still deal with it as an implementation of some basic JDK interface?
+                    if (ser == null) {
+                        ser = findSerializerByAddonType(config, type, beanDesc, staticTyping);
+                        // 18-Sep-2014, tatu: Actually, as per [jackson-databind#539], need to get
+                        //   'unknown' serializer assigned earlier, here, so that it gets properly
+                        //   post-processed
+                        if (ser == null) {
+                            ser = prov.getUnknownTypeSerializer(beanDesc.getBeanClass());
+                        }
+                    }
+                }
+            }
+        }
+        if (ser != null) {
+            // [databind#120]: Allow post-processing
+            if (_factoryConfig.hasSerializerModifiers()) {
+                for (BeanSerializerModifier mod : _factoryConfig.serializerModifiers()) {
+                    ser = mod.modifySerializer(config, beanDesc, ser);
+                }
+            }
+        }
+        return ser;
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.ser.TestJsonValue::testJsonValueWithCustomOverride
+junit.framework.ComparisonFailure: expected:<[42]> but was:<["value"]>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.Assert.assertEquals(Assert.java:107)
+	at junit.framework.TestCase.assertEquals(TestCase.java:269)
+	at com.fasterxml.jackson.databind.ser.TestJsonValue.testJsonValueWithCustomOverride(TestJsonValue.java:282)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals("42", mapper.writeValueAsString(INPUT));
+
+================== buggy_lines_in_method ==================
+[5, 6, 7, 8]
+================== buggy_statements ==================
+['        JsonSerializer<?> ser = findSerializerByAnnotations(prov, type, beanDesc);', '        if (ser != null) {', '            return ser;', '        }']
+================== buggy_method_src_endswith_buggy_statement ==================
+protected JsonSerializer<?> _createSerializer2(SerializerProvider prov,
+            JavaType type, BeanDescription beanDesc, boolean staticTyping)
+        throws JsonMappingException
+    {
+        JsonSerializer<?> ser = findSerializerByAnnotations(prov, type, beanDesc);
+        if (ser != null) {
+            return ser;
+        }

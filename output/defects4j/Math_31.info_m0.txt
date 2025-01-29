@@ -1,0 +1,259 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/math3/util/ContinuedFraction.java
+================== buggy_method ==================
+{'method_name': 'evaluate', 'method_body': "public double evaluate(double x, double epsilon, int maxIterations) {\n        final double small = 1e-50;\n        double hPrev = getA(0, x);\n\n        // use the value of small as epsilon criteria for zero checks\n        if (Precision.equals(hPrev, 0.0, small)) {\n            hPrev = small;\n        }\n\n        int n = 1;\n        double dPrev = 0.0;\n        double p0 = 1.0;\n        double q1 = 1.0;\n        double cPrev = hPrev;\n        double hN = hPrev;\n\n        while (n < maxIterations) {\n            final double a = getA(n, x);\n            final double b = getB(n, x);\n\n            double cN = a * hPrev + b * p0;\n            double q2 = a * q1 + b * dPrev;\n            if (Double.isInfinite(cN) || Double.isInfinite(q2)) {\n                double scaleFactor = 1d;\n                double lastScaleFactor = 1d;\n                final int maxPower = 5;\n                final double scale = FastMath.max(a,b);\n                if (scale <= 0) {  // Can't scale\n                    throw new ConvergenceException(LocalizedFormats.CONTINUED_FRACTION_INFINITY_DIVERGENCE, x);\n                }\n                for (int i = 0; i < maxPower; i++) {\n                    lastScaleFactor = scaleFactor;\n                    scaleFactor *= scale;\n                    if (a != 0.0 && a > b) {\n                        cN = hPrev / lastScaleFactor + (b / scaleFactor * p0);\n                        q2 = q1 / lastScaleFactor + (b / scaleFactor * dPrev);\n                    } else if (b != 0) {\n                        cN = (a / scaleFactor * hPrev) + p0 / lastScaleFactor;\n                        q2 = (a / scaleFactor * q1) + dPrev / lastScaleFactor;\n                    }\n                    if (!(Double.isInfinite(cN) || Double.isInfinite(q2))) {\n                        break;\n                    }\n                }\n            }\n\n            final double deltaN = cN / q2 / cPrev;\n            hN = cPrev * deltaN;\n\n            if (Double.isInfinite(hN)) {\n                throw new ConvergenceException(LocalizedFormats.CONTINUED_FRACTION_INFINITY_DIVERGENCE,\n                                               x);\n            }\n            if (Double.isNaN(hN)) {\n                throw new ConvergenceException(LocalizedFormats.CONTINUED_FRACTION_NAN_DIVERGENCE,\n                                               x);\n            }\n\n            if (FastMath.abs(deltaN - 1.0) < epsilon) {\n                break;\n            }\n\n            dPrev = q1;\n            cPrev = cN / q2;\n            p0 = hPrev;\n            hPrev = cN;\n            q1 = q2;\n            n++;\n        }\n\n        if (n >= maxIterations) {\n            throw new MaxCountExceededException(LocalizedFormats.NON_CONVERGENT_CONTINUED_FRACTION,\n                                                maxIterations, x);\n        }\n\n        return hN;\n    }", 'start_line': 123, 'end_line': 199, 'buggy_lines': [134, 135, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 169, 170, 185, 186, 187, 188, 189]}
+================== buggy_method_src ==================
+public double evaluate(double x, double epsilon, int maxIterations) {
+        final double small = 1e-50;
+        double hPrev = getA(0, x);
+
+        // use the value of small as epsilon criteria for zero checks
+        if (Precision.equals(hPrev, 0.0, small)) {
+            hPrev = small;
+        }
+
+        int n = 1;
+        double dPrev = 0.0;
+        double p0 = 1.0;
+        double q1 = 1.0;
+        double cPrev = hPrev;
+        double hN = hPrev;
+
+        while (n < maxIterations) {
+            final double a = getA(n, x);
+            final double b = getB(n, x);
+
+            double cN = a * hPrev + b * p0;
+            double q2 = a * q1 + b * dPrev;
+            if (Double.isInfinite(cN) || Double.isInfinite(q2)) {
+                double scaleFactor = 1d;
+                double lastScaleFactor = 1d;
+                final int maxPower = 5;
+                final double scale = FastMath.max(a,b);
+                if (scale <= 0) {  // Can't scale
+                    throw new ConvergenceException(LocalizedFormats.CONTINUED_FRACTION_INFINITY_DIVERGENCE, x);
+                }
+                for (int i = 0; i < maxPower; i++) {
+                    lastScaleFactor = scaleFactor;
+                    scaleFactor *= scale;
+                    if (a != 0.0 && a > b) {
+                        cN = hPrev / lastScaleFactor + (b / scaleFactor * p0);
+                        q2 = q1 / lastScaleFactor + (b / scaleFactor * dPrev);
+                    } else if (b != 0) {
+                        cN = (a / scaleFactor * hPrev) + p0 / lastScaleFactor;
+                        q2 = (a / scaleFactor * q1) + dPrev / lastScaleFactor;
+                    }
+                    if (!(Double.isInfinite(cN) || Double.isInfinite(q2))) {
+                        break;
+                    }
+                }
+            }
+
+            final double deltaN = cN / q2 / cPrev;
+            hN = cPrev * deltaN;
+
+            if (Double.isInfinite(hN)) {
+                throw new ConvergenceException(LocalizedFormats.CONTINUED_FRACTION_INFINITY_DIVERGENCE,
+                                               x);
+            }
+            if (Double.isNaN(hN)) {
+                throw new ConvergenceException(LocalizedFormats.CONTINUED_FRACTION_NAN_DIVERGENCE,
+                                               x);
+            }
+
+            if (FastMath.abs(deltaN - 1.0) < epsilon) {
+                break;
+            }
+
+            dPrev = q1;
+            cPrev = cN / q2;
+            p0 = hPrev;
+            hPrev = cN;
+            q1 = q2;
+            n++;
+        }
+
+        if (n >= maxIterations) {
+            throw new MaxCountExceededException(LocalizedFormats.NON_CONVERGENT_CONTINUED_FRACTION,
+                                                maxIterations, x);
+        }
+
+        return hN;
+    }
+================== test_stack ==================
+org.apache.commons.math3.distribution.BinomialDistributionTest::testMath718
+org.apache.commons.math3.exception.ConvergenceException: illegal state: Continued fraction diverged to NaN for value 0.5
+	at org.apache.commons.math3.util.ContinuedFraction.evaluate(ContinuedFraction.java:177)
+	at org.apache.commons.math3.special.Beta.regularizedBeta(Beta.java:154)
+	at org.apache.commons.math3.special.Beta.regularizedBeta(Beta.java:129)
+	at org.apache.commons.math3.special.Beta.regularizedBeta(Beta.java:50)
+	at org.apache.commons.math3.distribution.BinomialDistribution.cumulativeProbability(BinomialDistribution.java:101)
+	at org.apache.commons.math3.distribution.AbstractIntegerDistribution.checkedCumulativeProbability(AbstractIntegerDistribution.java:201)
+	at org.apache.commons.math3.distribution.AbstractIntegerDistribution.solveInverseCumulativeProbability(AbstractIntegerDistribution.java:143)
+	at org.apache.commons.math3.distribution.AbstractIntegerDistribution.inverseCumulativeProbability(AbstractIntegerDistribution.java:116)
+	at org.apache.commons.math3.distribution.BinomialDistributionTest.testMath718(BinomialDistributionTest.java:140)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.apache.commons.math3.distribution.FDistributionTest::testMath785
+junit.framework.AssertionFailedError: Failing to calculate inverse cumulative probability
+	at org.junit.Assert.fail(Assert.java:88)
+	at org.apache.commons.math3.distribution.FDistributionTest.testMath785(FDistributionTest.java:156)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+int p = dist.inverseCumulativeProbability(0.5);
+
+================== buggy_lines_in_method ==================
+[12, 13, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 47, 48, 63, 64, 65, 66, 67]
+================== buggy_statements ==================
+['        double p0 = 1.0;', '        double q1 = 1.0;', '            double cN = a * hPrev + b * p0;', '            double q2 = a * q1 + b * dPrev;', '            if (Double.isInfinite(cN) || Double.isInfinite(q2)) {', '                double scaleFactor = 1d;', '                double lastScaleFactor = 1d;', '                final int maxPower = 5;', '                final double scale = FastMath.max(a,b);', "                if (scale <= 0) {  // Can't scale", '                    throw new ConvergenceException(LocalizedFormats.CONTINUED_FRACTION_INFINITY_DIVERGENCE, x);', '                }', '                for (int i = 0; i < maxPower; i++) {', '                    lastScaleFactor = scaleFactor;', '                    scaleFactor *= scale;', '                    if (a != 0.0 && a > b) {', '                        cN = hPrev / lastScaleFactor + (b / scaleFactor * p0);', '                        q2 = q1 / lastScaleFactor + (b / scaleFactor * dPrev);', '                    } else if (b != 0) {', '                        cN = (a / scaleFactor * hPrev) + p0 / lastScaleFactor;', '                        q2 = (a / scaleFactor * q1) + dPrev / lastScaleFactor;', '                    }', '                    if (!(Double.isInfinite(cN) || Double.isInfinite(q2))) {', '                        break;', '                    }', '                }', '            final double deltaN = cN / q2 / cPrev;', '            hN = cPrev * deltaN;', '            dPrev = q1;', '            cPrev = cN / q2;', '            p0 = hPrev;', '            hPrev = cN;', '            q1 = q2;']
+================== buggy_method_src_endswith_buggy_statement ==================
+public double evaluate(double x, double epsilon, int maxIterations) {
+        final double small = 1e-50;
+        double hPrev = getA(0, x);
+
+        // use the value of small as epsilon criteria for zero checks
+        if (Precision.equals(hPrev, 0.0, small)) {
+            hPrev = small;
+        }
+
+        int n = 1;
+        double dPrev = 0.0;
+        double p0 = 1.0;
+        double q1 = 1.0;
+        double cPrev = hPrev;
+        double hN = hPrev;
+
+        while (n < maxIterations) {
+            final double a = getA(n, x);
+            final double b = getB(n, x);
+
+            double cN = a * hPrev + b * p0;
+            double q2 = a * q1 + b * dPrev;
+            if (Double.isInfinite(cN) || Double.isInfinite(q2)) {
+                double scaleFactor = 1d;
+                double lastScaleFactor = 1d;
+                final int maxPower = 5;
+                final double scale = FastMath.max(a,b);
+                if (scale <= 0) {  // Can't scale
+                    throw new ConvergenceException(LocalizedFormats.CONTINUED_FRACTION_INFINITY_DIVERGENCE, x);
+                }
+                for (int i = 0; i < maxPower; i++) {
+                    lastScaleFactor = scaleFactor;
+                    scaleFactor *= scale;
+                    if (a != 0.0 && a > b) {
+                        cN = hPrev / lastScaleFactor + (b / scaleFactor * p0);
+                        q2 = q1 / lastScaleFactor + (b / scaleFactor * dPrev);
+                    } else if (b != 0) {
+                        cN = (a / scaleFactor * hPrev) + p0 / lastScaleFactor;
+                        q2 = (a / scaleFactor * q1) + dPrev / lastScaleFactor;
+                    }
+                    if (!(Double.isInfinite(cN) || Double.isInfinite(q2))) {
+                        break;
+                    }
+                }
+            }
+
+            final double deltaN = cN / q2 / cPrev;
+            hN = cPrev * deltaN;
+
+            if (Double.isInfinite(hN)) {
+                throw new ConvergenceException(LocalizedFormats.CONTINUED_FRACTION_INFINITY_DIVERGENCE,
+                                               x);
+            }
+            if (Double.isNaN(hN)) {
+                throw new ConvergenceException(LocalizedFormats.CONTINUED_FRACTION_NAN_DIVERGENCE,
+                                               x);
+            }
+
+            if (FastMath.abs(deltaN - 1.0) < epsilon) {
+                break;
+            }
+
+            dPrev = q1;
+            cPrev = cN / q2;
+            p0 = hPrev;
+            hPrev = cN;
+            q1 = q2;

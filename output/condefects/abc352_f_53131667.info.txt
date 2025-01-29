@@ -1,0 +1,165 @@
+
+================== buggy_file ==================
+faultyVersion.java
+================== buggy_method ==================
+{'method_name': 'solve', 'method_body': 'public void solve() {\n        n = sc.nextInt();\n        int m = sc.nextInt();\n        List<E>[] list = new List[n];\n        UFSize uf = new UFSize(n);\n        Arrays.setAll(list, i -> new ArrayList<>());\n        for(int i=0; i<m; i++) {\n            int a = sc.nextInt()-1;\n            int b = sc.nextInt()-1;\n            int c = sc.nextInt();\n            list[a].add(new E(a, b, -c));\n            list[b].add(new E(b, a, c));\n            uf.join(a, b);\n        }\n        boolean[] v = new boolean[n];\n        int[] l = new int[n];\n        gs = new ArrayList<>();\n        for(int i=0; i<n; i++) {\n            if(uf.root(i) != i) continue;\n            Set<Integer> set = new HashSet<>();\n            set.add(i);\n            v[i] = true;\n            LinkedList<Integer> q = new LinkedList<>();\n            q.offer(i);\n            while(!q.isEmpty()) {\n                int u = q.poll();\n                for(E e : list[u]) {\n                    if(v[e.v]) continue;\n                    v[e.v] = true;\n                    l[e.v] = l[u] + e.c;\n                    q.offer(e.v);\n                    set.add(e.v);\n                }\n            }\n            int min = l[i];\n            int mini = i;\n            for(int j : set) {\n                if(l[j] < min) {\n                    min = l[j];\n                    mini = j;\n                }\n            }\n            int max = 0;\n            int mask = 0;\n            for(int j : set) {\n                l[j] -= min;\n                max = Math.max(max, l[j]);\n                mask |= 1<<l[j];\n            }\n            gs.add(new G(mini, max, mask, set.size()));\n        }\n        d = gs.size();\n        gs.sort(Comparator.comparingInt(a -> a.cnt));\n        int sn  = 0;\n        res = new int[n];\n        Arrays.fill(res, -1);\n        for(int i=0; i<d; i++) {\n            G g = gs.get(i);\n            if(g.cnt == 1) {\n                sn++;\n            }\n        }\n        md = d;\n        if(sn >= 2) {\n            for(int i=0; i<d; i++) {\n                G g = gs.get(i);\n                if(g.cnt == 1) {\n                    res[g.root] = -1;\n                }\n            }\n            md -= sn;\n        }\n        dfs(md-1, 0, new int[md]);\n        for(int i=0; i<md; i++) {\n            G g = gs.get(i);\n            if(g.oset.size() != 1) {\n                continue;\n            }\n            int offset = g.oset.iterator().next();\n            res[g.root] = offset;\n            for(int j=0; j<n; j++) {\n                if(uf.root(j) == uf.root(g.root)) {\n                    res[j] = l[j] + offset;\n                }\n            }\n\n        }\n        \n        for(int i=0; i<res.length; i++) {\n            if(i>0) out.print(" ");\n            if(res[i] >= 0) {\n                res[i]++;\n            }\n            out.print(res[i]);\n         }\n         out.println();\n    }', 'start_line': 21, 'end_line': 117}
+================== buggy_method_src ==================
+public void solve() {
+        n = sc.nextInt();
+        int m = sc.nextInt();
+        List<E>[] list = new List[n];
+        UFSize uf = new UFSize(n);
+        Arrays.setAll(list, i -> new ArrayList<>());
+        for(int i=0; i<m; i++) {
+            int a = sc.nextInt()-1;
+            int b = sc.nextInt()-1;
+            int c = sc.nextInt();
+            list[a].add(new E(a, b, -c));
+            list[b].add(new E(b, a, c));
+            uf.join(a, b);
+        }
+        boolean[] v = new boolean[n];
+        int[] l = new int[n];
+        gs = new ArrayList<>();
+        for(int i=0; i<n; i++) {
+            if(uf.root(i) != i) continue;
+            Set<Integer> set = new HashSet<>();
+            set.add(i);
+            v[i] = true;
+            LinkedList<Integer> q = new LinkedList<>();
+            q.offer(i);
+            while(!q.isEmpty()) {
+                int u = q.poll();
+                for(E e : list[u]) {
+                    if(v[e.v]) continue;
+                    v[e.v] = true;
+                    l[e.v] = l[u] + e.c;
+                    q.offer(e.v);
+                    set.add(e.v);
+                }
+            }
+            int min = l[i];
+            int mini = i;
+            for(int j : set) {
+                if(l[j] < min) {
+                    min = l[j];
+                    mini = j;
+                }
+            }
+            int max = 0;
+            int mask = 0;
+            for(int j : set) {
+                l[j] -= min;
+                max = Math.max(max, l[j]);
+                mask |= 1<<l[j];
+            }
+            gs.add(new G(mini, max, mask, set.size()));
+        }
+        d = gs.size();
+        gs.sort(Comparator.comparingInt(a -> a.cnt));
+        int sn  = 0;
+        res = new int[n];
+        Arrays.fill(res, -1);
+        for(int i=0; i<d; i++) {
+            G g = gs.get(i);
+            if(g.cnt == 1) {
+                sn++;
+            }
+        }
+        md = d;
+        if(sn >= 2) {
+            for(int i=0; i<d; i++) {
+                G g = gs.get(i);
+                if(g.cnt == 1) {
+                    res[g.root] = -1;
+                }
+            }
+            md -= sn;
+        }
+        dfs(md-1, 0, new int[md]);
+        for(int i=0; i<md; i++) {
+            G g = gs.get(i);
+            if(g.oset.size() != 1) {
+                continue;
+            }
+            int offset = g.oset.iterator().next();
+            res[g.root] = offset;
+            for(int j=0; j<n; j++) {
+                if(uf.root(j) == uf.root(g.root)) {
+                    res[j] = l[j] + offset;
+                }
+            }
+
+        }
+        
+        for(int i=0; i<res.length; i++) {
+            if(i>0) out.print(" ");
+            if(res[i] >= 0) {
+                res[i]++;
+            }
+            out.print(res[i]);
+         }
+         out.println();
+    }
+================== test_stack ==================
+None
+================== test_assert ==================
+None
+================== buggy_lines_in_method ==================
+[53]
+================== buggy_statements ==================
+['        gs.sort(Comparator.comparingInt(a -> a.cnt));']
+================== buggy_method_src_endswith_buggy_statement ==================
+public void solve() {
+        n = sc.nextInt();
+        int m = sc.nextInt();
+        List<E>[] list = new List[n];
+        UFSize uf = new UFSize(n);
+        Arrays.setAll(list, i -> new ArrayList<>());
+        for(int i=0; i<m; i++) {
+            int a = sc.nextInt()-1;
+            int b = sc.nextInt()-1;
+            int c = sc.nextInt();
+            list[a].add(new E(a, b, -c));
+            list[b].add(new E(b, a, c));
+            uf.join(a, b);
+        }
+        boolean[] v = new boolean[n];
+        int[] l = new int[n];
+        gs = new ArrayList<>();
+        for(int i=0; i<n; i++) {
+            if(uf.root(i) != i) continue;
+            Set<Integer> set = new HashSet<>();
+            set.add(i);
+            v[i] = true;
+            LinkedList<Integer> q = new LinkedList<>();
+            q.offer(i);
+            while(!q.isEmpty()) {
+                int u = q.poll();
+                for(E e : list[u]) {
+                    if(v[e.v]) continue;
+                    v[e.v] = true;
+                    l[e.v] = l[u] + e.c;
+                    q.offer(e.v);
+                    set.add(e.v);
+                }
+            }
+            int min = l[i];
+            int mini = i;
+            for(int j : set) {
+                if(l[j] < min) {
+                    min = l[j];
+                    mini = j;
+                }
+            }
+            int max = 0;
+            int mask = 0;
+            for(int j : set) {
+                l[j] -= min;
+                max = Math.max(max, l[j]);
+                mask |= 1<<l[j];
+            }
+            gs.add(new G(mini, max, mask, set.size()));
+        }
+        d = gs.size();
+        gs.sort(Comparator.comparingInt(a -> a.cnt));

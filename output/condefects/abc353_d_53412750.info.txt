@@ -1,0 +1,91 @@
+
+================== buggy_file ==================
+faultyVersion.java
+================== buggy_method ==================
+{'method_name': 'main', 'method_body': 'ring[] args) throws Exception {\n\t\t/* --- Input --- */\n\t\tvar br = new BufferedReader(new InputStreamReader(System.in));\n\t\tvar N = Integer.parseInt(br.readLine());\n\t\tvar sa = br.readLine().split(" ");\n\t\tvar A = new long[N];\n\t\tfor (var i = 0; i < N; i++) A[i] = Long.parseLong(sa[i]);\n\t\tbr.close();\n\t\t/* --- Process --- */\n\t\t// Arrays.sort(A); // f(x,y)はxyの順序を入れ替えると結果が変わるためソートNG\n\t\t// (1)yに指定されて等倍で加算される分を計算：i番目はi-1回加算される(0-indexedならi回)\n\t\tvar ans = 0L;\n\t\tfor (var i = 1; i < N; i++) ans += A[i] * i % MOD;\n\t\t// (2)xに指定されて10^*倍で加算される分を計算：i番目はi番目より後ろの要素の桁数だけ10^*倍して加算される\n\t\t// pow[i]：10^i\n\t\tvar pow = new long[M + 1];\n\t\tpow[1] = 1L;\n\t\tfor (var i = 2; i < M + 1; i++) pow[i] = pow[i - 1] * 10L;\n\t\t// K[i][j]：i番目までのj桁の要素の数\n\t\tvar K = new int[N][M];\n\t\tfor (var i = 0; i < N; i++) {\n\t\t\tif (i != 0) System.arraycopy(K[i - 1], 0, K[i], 0, M);\n\t\t\tfor (var j = 2; j < pow.length; j++) {\n\t\t\t\tif (A[i] < pow[j]) {\n\t\t\t\t\tK[i][j - 1]++;\n\t\t\t\t\tbreak;\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\t// K[N - 1][j] - K[i][j]：i番目より後ろのj桁の要素の数\n\t\tfor (var i = 0; i < N; i++) {\n\t\t\tfor (var j = 1; j < M; j++) {\n\t\t\t\tvar add = A[i] * pow[j + 1] % MOD; // A[i]を10^(j+1)倍した値が加算される\n\t\t\t\tadd = add * (K[N - 1][j] - K[i][j]) % MOD; // i番目より後ろのj桁の要素の数だけ繰り返し加算される\n\t\t\t\tans = (ans + add) % MOD;\n\t\t\t}\n\t\t}\n\t\t/* --- Output --- */\n\t\tSystem.out.println(ans);\n\t\tSystem.out.flush();\n\t}\n}\n', 'start_line': 10, 'end_line': 50}
+================== buggy_method_src ==================
+ring[] args) throws Exception {
+		/* --- Input --- */
+		var br = new BufferedReader(new InputStreamReader(System.in));
+		var N = Integer.parseInt(br.readLine());
+		var sa = br.readLine().split(" ");
+		var A = new long[N];
+		for (var i = 0; i < N; i++) A[i] = Long.parseLong(sa[i]);
+		br.close();
+		/* --- Process --- */
+		// Arrays.sort(A); // f(x,y)はxyの順序を入れ替えると結果が変わるためソートNG
+		// (1)yに指定されて等倍で加算される分を計算：i番目はi-1回加算される(0-indexedならi回)
+		var ans = 0L;
+		for (var i = 1; i < N; i++) ans += A[i] * i % MOD;
+		// (2)xに指定されて10^*倍で加算される分を計算：i番目はi番目より後ろの要素の桁数だけ10^*倍して加算される
+		// pow[i]：10^i
+		var pow = new long[M + 1];
+		pow[1] = 1L;
+		for (var i = 2; i < M + 1; i++) pow[i] = pow[i - 1] * 10L;
+		// K[i][j]：i番目までのj桁の要素の数
+		var K = new int[N][M];
+		for (var i = 0; i < N; i++) {
+			if (i != 0) System.arraycopy(K[i - 1], 0, K[i], 0, M);
+			for (var j = 2; j < pow.length; j++) {
+				if (A[i] < pow[j]) {
+					K[i][j - 1]++;
+					break;
+				}
+			}
+		}
+		// K[N - 1][j] - K[i][j]：i番目より後ろのj桁の要素の数
+		for (var i = 0; i < N; i++) {
+			for (var j = 1; j < M; j++) {
+				var add = A[i] * pow[j + 1] % MOD; // A[i]を10^(j+1)倍した値が加算される
+				add = add * (K[N - 1][j] - K[i][j]) % MOD; // i番目より後ろのj桁の要素の数だけ繰り返し加算される
+				ans = (ans + add) % MOD;
+			}
+		}
+		/* --- Output --- */
+		System.out.println(ans);
+		System.out.flush();
+	}
+}
+
+================== test_stack ==================
+None
+================== test_assert ==================
+None
+================== buggy_lines_in_method ==================
+[33]
+================== buggy_statements ==================
+['\t\t\t\tvar add = A[i] * pow[j + 1] % MOD; // A[i]を10^(j+1)倍した値が加算される']
+================== buggy_method_src_endswith_buggy_statement ==================
+ring[] args) throws Exception {
+		/* --- Input --- */
+		var br = new BufferedReader(new InputStreamReader(System.in));
+		var N = Integer.parseInt(br.readLine());
+		var sa = br.readLine().split(" ");
+		var A = new long[N];
+		for (var i = 0; i < N; i++) A[i] = Long.parseLong(sa[i]);
+		br.close();
+		/* --- Process --- */
+		// Arrays.sort(A); // f(x,y)はxyの順序を入れ替えると結果が変わるためソートNG
+		// (1)yに指定されて等倍で加算される分を計算：i番目はi-1回加算される(0-indexedならi回)
+		var ans = 0L;
+		for (var i = 1; i < N; i++) ans += A[i] * i % MOD;
+		// (2)xに指定されて10^*倍で加算される分を計算：i番目はi番目より後ろの要素の桁数だけ10^*倍して加算される
+		// pow[i]：10^i
+		var pow = new long[M + 1];
+		pow[1] = 1L;
+		for (var i = 2; i < M + 1; i++) pow[i] = pow[i - 1] * 10L;
+		// K[i][j]：i番目までのj桁の要素の数
+		var K = new int[N][M];
+		for (var i = 0; i < N; i++) {
+			if (i != 0) System.arraycopy(K[i - 1], 0, K[i], 0, M);
+			for (var j = 2; j < pow.length; j++) {
+				if (A[i] < pow[j]) {
+					K[i][j - 1]++;
+					break;
+				}
+			}
+		}
+		// K[N - 1][j] - K[i][j]：i番目より後ろのj桁の要素の数
+		for (var i = 0; i < N; i++) {
+			for (var j = 1; j < M; j++) {
+				var add = A[i] * pow[j + 1] % MOD; // A[i]を10^(j+1)倍した値が加算される

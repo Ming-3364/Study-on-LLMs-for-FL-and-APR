@@ -1,0 +1,119 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/lang/builder/EqualsBuilder.java
+================== buggy_method ==================
+{'method_name': 'append', 'method_body': "public EqualsBuilder append(Object lhs, Object rhs) {\n        if (isEquals == false) {\n            return this;\n        }\n        if (lhs == rhs) {\n            return this;\n        }\n        if (lhs == null || rhs == null) {\n            this.setEquals(false);\n            return this;\n        }\n        Class lhsClass = lhs.getClass();\n        if (!lhsClass.isArray()) {\n                // The simple case, not an array, just test the element\n                isEquals = lhs.equals(rhs);\n        } else if (lhs.getClass() != rhs.getClass()) {\n            // Here when we compare different dimensions, for example: a boolean[][] to a boolean[] \n            this.setEquals(false);\n        }\n        // 'Switch' on type of array, to dispatch to the correct handler\n        // This handles multi dimensional arrays of the same depth\n        else if (lhs instanceof long[]) {\n            append((long[]) lhs, (long[]) rhs);\n        } else if (lhs instanceof int[]) {\n            append((int[]) lhs, (int[]) rhs);\n        } else if (lhs instanceof short[]) {\n            append((short[]) lhs, (short[]) rhs);\n        } else if (lhs instanceof char[]) {\n            append((char[]) lhs, (char[]) rhs);\n        } else if (lhs instanceof byte[]) {\n            append((byte[]) lhs, (byte[]) rhs);\n        } else if (lhs instanceof double[]) {\n            append((double[]) lhs, (double[]) rhs);\n        } else if (lhs instanceof float[]) {\n            append((float[]) lhs, (float[]) rhs);\n        } else if (lhs instanceof boolean[]) {\n            append((boolean[]) lhs, (boolean[]) rhs);\n        } else {\n            // Not an array of primitives\n            append((Object[]) lhs, (Object[]) rhs);\n        }\n        return this;\n    }", 'start_line': 367, 'end_line': 409, 'buggy_lines': [382, 385]}
+================== buggy_method_src ==================
+public EqualsBuilder append(Object lhs, Object rhs) {
+        if (isEquals == false) {
+            return this;
+        }
+        if (lhs == rhs) {
+            return this;
+        }
+        if (lhs == null || rhs == null) {
+            this.setEquals(false);
+            return this;
+        }
+        Class lhsClass = lhs.getClass();
+        if (!lhsClass.isArray()) {
+                // The simple case, not an array, just test the element
+                isEquals = lhs.equals(rhs);
+        } else if (lhs.getClass() != rhs.getClass()) {
+            // Here when we compare different dimensions, for example: a boolean[][] to a boolean[] 
+            this.setEquals(false);
+        }
+        // 'Switch' on type of array, to dispatch to the correct handler
+        // This handles multi dimensional arrays of the same depth
+        else if (lhs instanceof long[]) {
+            append((long[]) lhs, (long[]) rhs);
+        } else if (lhs instanceof int[]) {
+            append((int[]) lhs, (int[]) rhs);
+        } else if (lhs instanceof short[]) {
+            append((short[]) lhs, (short[]) rhs);
+        } else if (lhs instanceof char[]) {
+            append((char[]) lhs, (char[]) rhs);
+        } else if (lhs instanceof byte[]) {
+            append((byte[]) lhs, (byte[]) rhs);
+        } else if (lhs instanceof double[]) {
+            append((double[]) lhs, (double[]) rhs);
+        } else if (lhs instanceof float[]) {
+            append((float[]) lhs, (float[]) rhs);
+        } else if (lhs instanceof boolean[]) {
+            append((boolean[]) lhs, (boolean[]) rhs);
+        } else {
+            // Not an array of primitives
+            append((Object[]) lhs, (Object[]) rhs);
+        }
+        return this;
+    }
+================== test_stack ==================
+org.apache.commons.lang.builder.EqualsBuilderTest::testBigDecimal
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at org.apache.commons.lang.builder.EqualsBuilderTest.testBigDecimal(EqualsBuilderTest.java:385)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertTrue(new EqualsBuilder().append(o1, o2).isEquals());
+
+================== buggy_lines_in_method ==================
+[16, 19]
+================== buggy_statements ==================
+['        } else if (lhs.getClass() != rhs.getClass()) {', '        }']
+================== buggy_method_src_endswith_buggy_statement ==================
+public EqualsBuilder append(Object lhs, Object rhs) {
+        if (isEquals == false) {
+            return this;
+        }
+        if (lhs == rhs) {
+            return this;
+        }
+        if (lhs == null || rhs == null) {
+            this.setEquals(false);
+            return this;
+        }
+        Class lhsClass = lhs.getClass();
+        if (!lhsClass.isArray()) {
+                // The simple case, not an array, just test the element
+                isEquals = lhs.equals(rhs);
+        } else if (lhs.getClass() != rhs.getClass()) {
+            // Here when we compare different dimensions, for example: a boolean[][] to a boolean[] 
+            this.setEquals(false);
+        }

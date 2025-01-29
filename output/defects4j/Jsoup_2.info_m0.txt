@@ -1,0 +1,144 @@
+
+================== buggy_file ==================
+src/main/java/org/jsoup/parser/Parser.java
+================== buggy_method ==================
+{'method_name': 'parseStartTag', 'method_body': 'private void parseStartTag() {\n        tq.consume("<");\n        String tagName = tq.consumeWord();\n\n        if (tagName.length() == 0) { // doesn\'t look like a start tag after all; put < back on stack and handle as text\n            tq.addFirst("&lt;");\n            parseTextNode();\n            return;\n        }\n\n        Attributes attributes = new Attributes();\n        while (!tq.matchesAny("<", "/>", ">") && !tq.isEmpty()) {\n            Attribute attribute = parseAttribute();\n            if (attribute != null)\n                attributes.put(attribute);\n        }\n\n        Tag tag = Tag.valueOf(tagName);\n        Element child = new Element(tag, baseUri, attributes);\n\n        boolean isEmptyElement = tag.isEmpty(); // empty element if empty tag (e.g. img) or self-closed el (<div/>\n        if (tq.matchChomp("/>")) { // close empty element or tag\n            isEmptyElement = true;\n        } else {\n            tq.matchChomp(">");\n        }\n        addChildToParent(child, isEmptyElement);\n\n        // pc data only tags (textarea, script): chomp to end tag, add content as text node\n        if (tag.isData()) {\n            String data = tq.chompTo("</" + tagName);\n            tq.chompTo(">");\n            \n            Node dataNode;\n            if (tag.equals(titleTag) || tag.equals(textareaTag)) // want to show as text, but not contain inside tags (so not a data tag?)\n                dataNode = TextNode.createFromEncoded(data, baseUri);\n            else\n                dataNode = new DataNode(data, baseUri); // data not encoded but raw (for " in script)\n            child.appendChild(dataNode);   \n        }\n\n        // <base href>: update the base uri\n        if (child.tagName().equals("base")) {\n            String href = child.absUrl("href");\n            if (href.length() != 0) { // ignore <base target> etc\n                baseUri = href;\n                doc.setBaseUri(href); // set on the doc so doc.createElement(Tag) will get updated base\n            }\n        }\n    }', 'start_line': 116, 'end_line': 165, 'buggy_lines': [148]}
+================== buggy_method_src ==================
+private void parseStartTag() {
+        tq.consume("<");
+        String tagName = tq.consumeWord();
+
+        if (tagName.length() == 0) { // doesn't look like a start tag after all; put < back on stack and handle as text
+            tq.addFirst("&lt;");
+            parseTextNode();
+            return;
+        }
+
+        Attributes attributes = new Attributes();
+        while (!tq.matchesAny("<", "/>", ">") && !tq.isEmpty()) {
+            Attribute attribute = parseAttribute();
+            if (attribute != null)
+                attributes.put(attribute);
+        }
+
+        Tag tag = Tag.valueOf(tagName);
+        Element child = new Element(tag, baseUri, attributes);
+
+        boolean isEmptyElement = tag.isEmpty(); // empty element if empty tag (e.g. img) or self-closed el (<div/>
+        if (tq.matchChomp("/>")) { // close empty element or tag
+            isEmptyElement = true;
+        } else {
+            tq.matchChomp(">");
+        }
+        addChildToParent(child, isEmptyElement);
+
+        // pc data only tags (textarea, script): chomp to end tag, add content as text node
+        if (tag.isData()) {
+            String data = tq.chompTo("</" + tagName);
+            tq.chompTo(">");
+            
+            Node dataNode;
+            if (tag.equals(titleTag) || tag.equals(textareaTag)) // want to show as text, but not contain inside tags (so not a data tag?)
+                dataNode = TextNode.createFromEncoded(data, baseUri);
+            else
+                dataNode = new DataNode(data, baseUri); // data not encoded but raw (for " in script)
+            child.appendChild(dataNode);   
+        }
+
+        // <base href>: update the base uri
+        if (child.tagName().equals("base")) {
+            String href = child.absUrl("href");
+            if (href.length() != 0) { // ignore <base target> etc
+                baseUri = href;
+                doc.setBaseUri(href); // set on the doc so doc.createElement(Tag) will get updated base
+            }
+        }
+    }
+================== test_stack ==================
+org.jsoup.parser.ParserTest::handlesTextAfterData
+junit.framework.AssertionFailedError: expected:<...dy>pre <script>inner[</script> aft]</body></html>> but was:<...dy>pre <script>inner[ aft</script>]</body></html>>
+	at org.junit.Assert.assertEquals(Assert.java:115)
+	at org.junit.Assert.assertEquals(Assert.java:144)
+	at org.jsoup.parser.ParserTest.handlesTextAfterData(ParserTest.java:138)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals("<html><head></head><body>pre <script>inner</script> aft</body></html>", TextUtil.stripNewlines(doc.html()));
+
+================== buggy_lines_in_method ==================
+[33]
+================== buggy_statements ==================
+['            ']
+================== buggy_method_src_endswith_buggy_statement ==================
+private void parseStartTag() {
+        tq.consume("<");
+        String tagName = tq.consumeWord();
+
+        if (tagName.length() == 0) { // doesn't look like a start tag after all; put < back on stack and handle as text
+            tq.addFirst("&lt;");
+            parseTextNode();
+            return;
+        }
+
+        Attributes attributes = new Attributes();
+        while (!tq.matchesAny("<", "/>", ">") && !tq.isEmpty()) {
+            Attribute attribute = parseAttribute();
+            if (attribute != null)
+                attributes.put(attribute);
+        }
+
+        Tag tag = Tag.valueOf(tagName);
+        Element child = new Element(tag, baseUri, attributes);
+
+        boolean isEmptyElement = tag.isEmpty(); // empty element if empty tag (e.g. img) or self-closed el (<div/>
+        if (tq.matchChomp("/>")) { // close empty element or tag
+            isEmptyElement = true;
+        } else {
+            tq.matchChomp(">");
+        }
+        addChildToParent(child, isEmptyElement);
+
+        // pc data only tags (textarea, script): chomp to end tag, add content as text node
+        if (tag.isData()) {
+            String data = tq.chompTo("</" + tagName);
+            tq.chompTo(">");
+            

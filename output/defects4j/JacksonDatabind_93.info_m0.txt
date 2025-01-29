@@ -1,0 +1,124 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/jsontype/impl/SubTypeValidator.java
+================== buggy_method ==================
+{'method_name': 'validateSubType', 'method_body': 'public void validateSubType(DeserializationContext ctxt, JavaType type) throws JsonMappingException\n    {\n        // There are certain nasty classes that could cause problems, mostly\n        // via default typing -- catch them here.\n        final Class<?> raw = type.getRawClass();\n        String full = raw.getName();\n\n        main_check:\n        do {\n            if (_cfgIllegalClassNames.contains(full)) {\n                break;\n            }\n\n            // 18-Dec-2017, tatu: As per [databind#1855], need bit more sophisticated handling\n            //    for some Spring framework types\n            // 05-Jan-2017, tatu: ... also, only applies to classes, not interfaces\n            if (full.startsWith(PREFIX_STRING)) {\n                for (Class<?> cls = raw; cls != Object.class; cls = cls.getSuperclass()) {\n                    String name = cls.getSimpleName();\n                    // looking for "AbstractBeanFactoryPointcutAdvisor" but no point to allow any is there?\n                    if ("AbstractPointcutAdvisor".equals(name)\n                            // ditto  for "FileSystemXmlApplicationContext": block all ApplicationContexts\n                            || "AbstractApplicationContext".equals(name)) {\n                        break main_check;\n                    }\n                }\n            }\n            return;\n        } while (false);\n\n        throw JsonMappingException.from(ctxt,\n                String.format("Illegal type (%s) to deserialize: prevented for security reasons", full));\n    }', 'start_line': 67, 'end_line': 99, 'buggy_lines': [83, 84]}
+================== buggy_method_src ==================
+public void validateSubType(DeserializationContext ctxt, JavaType type) throws JsonMappingException
+    {
+        // There are certain nasty classes that could cause problems, mostly
+        // via default typing -- catch them here.
+        final Class<?> raw = type.getRawClass();
+        String full = raw.getName();
+
+        main_check:
+        do {
+            if (_cfgIllegalClassNames.contains(full)) {
+                break;
+            }
+
+            // 18-Dec-2017, tatu: As per [databind#1855], need bit more sophisticated handling
+            //    for some Spring framework types
+            // 05-Jan-2017, tatu: ... also, only applies to classes, not interfaces
+            if (full.startsWith(PREFIX_STRING)) {
+                for (Class<?> cls = raw; cls != Object.class; cls = cls.getSuperclass()) {
+                    String name = cls.getSimpleName();
+                    // looking for "AbstractBeanFactoryPointcutAdvisor" but no point to allow any is there?
+                    if ("AbstractPointcutAdvisor".equals(name)
+                            // ditto  for "FileSystemXmlApplicationContext": block all ApplicationContexts
+                            || "AbstractApplicationContext".equals(name)) {
+                        break main_check;
+                    }
+                }
+            }
+            return;
+        } while (false);
+
+        throw JsonMappingException.from(ctxt,
+                String.format("Illegal type (%s) to deserialize: prevented for security reasons", full));
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.interop.IllegalTypesCheckTest::testJDKTypes1872
+java.lang.NullPointerException
+	at com.fasterxml.jackson.databind.jsontype.impl.SubTypeValidator.validateSubType(SubTypeValidator.java:85)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializerFactory._validateSubType(BeanDeserializerFactory.java:866)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializerFactory.createBeanDeserializer(BeanDeserializerFactory.java:142)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createDeserializer2(DeserializerCache.java:403)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createDeserializer(DeserializerCache.java:349)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:264)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:244)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:142)
+	at com.fasterxml.jackson.databind.DeserializationContext.findContextualValueDeserializer(DeserializationContext.java:443)
+	at com.fasterxml.jackson.databind.deser.std.CollectionDeserializer.createContextual(CollectionDeserializer.java:206)
+	at com.fasterxml.jackson.databind.deser.std.CollectionDeserializer.createContextual(CollectionDeserializer.java:26)
+	at com.fasterxml.jackson.databind.DeserializationContext.handlePrimaryContextualization(DeserializationContext.java:650)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.resolve(BeanDeserializerBase.java:490)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:293)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:244)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:142)
+	at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:476)
+	at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:3915)
+	at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:3810)
+	at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:2858)
+	at com.fasterxml.jackson.databind.interop.IllegalTypesCheckTest.testJDKTypes1872(IllegalTypesCheckTest.java:112)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+Authentication1872 result = mapper.readValue(json, Authentication1872.class);
+
+================== buggy_lines_in_method ==================
+[17, 18]
+================== buggy_statements ==================
+['            if (full.startsWith(PREFIX_STRING)) {', '                for (Class<?> cls = raw; cls != Object.class; cls = cls.getSuperclass()) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+public void validateSubType(DeserializationContext ctxt, JavaType type) throws JsonMappingException
+    {
+        // There are certain nasty classes that could cause problems, mostly
+        // via default typing -- catch them here.
+        final Class<?> raw = type.getRawClass();
+        String full = raw.getName();
+
+        main_check:
+        do {
+            if (_cfgIllegalClassNames.contains(full)) {
+                break;
+            }
+
+            // 18-Dec-2017, tatu: As per [databind#1855], need bit more sophisticated handling
+            //    for some Spring framework types
+            // 05-Jan-2017, tatu: ... also, only applies to classes, not interfaces
+            if (full.startsWith(PREFIX_STRING)) {
+                for (Class<?> cls = raw; cls != Object.class; cls = cls.getSuperclass()) {

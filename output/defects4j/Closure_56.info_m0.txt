@@ -1,0 +1,218 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/SourceFile.java
+================== buggy_method ==================
+{'method_name': 'getLine', 'method_body': 'public String getLine(int lineNumber) {\n    String js = "";\n    try {\n      // NOTE(nicksantos): Right now, this is optimized for few warnings.\n      // This is probably the right trade-off, but will be slow if there\n      // are lots of warnings in one file.\n      js = getCode();\n    } catch (IOException e) {\n      return null;\n    }\n\n    int pos = 0;\n    int startLine = 1;\n\n    // If we\'ve saved a previous offset and it\'s for a line less than the\n    // one we\'re searching for, then start at that point.\n    if (lineNumber >= lastLine) {\n      pos = lastOffset;\n      startLine = lastLine;\n    }\n\n    for (int n = startLine; n < lineNumber; n++) {\n      int nextpos = js.indexOf(\'\\n\', pos);\n      if (nextpos == -1) {\n        return null;\n      }\n      pos = nextpos + 1;\n    }\n\n    // Remember this offset for the next search we do.\n    lastOffset = pos;\n    lastLine = lineNumber;\n\n    if (js.indexOf(\'\\n\', pos) == -1) {\n      // If next new line cannot be found, there are two cases\n      // 1. pos already reaches the end of file, then null should be returned\n      // 2. otherwise, return the contents between pos and the end of file.\n        return null;\n    } else {\n      return js.substring(pos, js.indexOf(\'\\n\', pos));\n    }\n  }', 'start_line': 205, 'end_line': 246, 'buggy_lines': [242]}
+================== buggy_method_src ==================
+public String getLine(int lineNumber) {
+    String js = "";
+    try {
+      // NOTE(nicksantos): Right now, this is optimized for few warnings.
+      // This is probably the right trade-off, but will be slow if there
+      // are lots of warnings in one file.
+      js = getCode();
+    } catch (IOException e) {
+      return null;
+    }
+
+    int pos = 0;
+    int startLine = 1;
+
+    // If we've saved a previous offset and it's for a line less than the
+    // one we're searching for, then start at that point.
+    if (lineNumber >= lastLine) {
+      pos = lastOffset;
+      startLine = lastLine;
+    }
+
+    for (int n = startLine; n < lineNumber; n++) {
+      int nextpos = js.indexOf('\n', pos);
+      if (nextpos == -1) {
+        return null;
+      }
+      pos = nextpos + 1;
+    }
+
+    // Remember this offset for the next search we do.
+    lastOffset = pos;
+    lastLine = lineNumber;
+
+    if (js.indexOf('\n', pos) == -1) {
+      // If next new line cannot be found, there are two cases
+      // 1. pos already reaches the end of file, then null should be returned
+      // 2. otherwise, return the contents between pos and the end of file.
+        return null;
+    } else {
+      return js.substring(pos, js.indexOf('\n', pos));
+    }
+  }
+================== test_stack ==================
+com.google.javascript.jscomp.JSCompilerSourceExcerptProviderTest::testExceptNoNewLine
+junit.framework.ComparisonFailure: expected:<foo2:third line> but was:<null>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.Assert.assertEquals(Assert.java:107)
+	at junit.framework.TestCase.assertEquals(TestCase.java:269)
+	at com.google.javascript.jscomp.JSCompilerSourceExcerptProviderTest.testExceptNoNewLine(JSCompilerSourceExcerptProviderTest.java:67)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.JsMessageExtractorTest::testSyntaxError1
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at com.google.javascript.jscomp.JsMessageExtractorTest.testSyntaxError1(JsMessageExtractorTest.java:62)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.JsMessageExtractorTest::testSyntaxError2
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at com.google.javascript.jscomp.JsMessageExtractorTest.testSyntaxError2(JsMessageExtractorTest.java:74)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals("foo2:third line", provider.getSourceLine("foo2", 3));
+
+================== buggy_lines_in_method ==================
+[38]
+================== buggy_statements ==================
+['        return null;']
+================== buggy_method_src_endswith_buggy_statement ==================
+public String getLine(int lineNumber) {
+    String js = "";
+    try {
+      // NOTE(nicksantos): Right now, this is optimized for few warnings.
+      // This is probably the right trade-off, but will be slow if there
+      // are lots of warnings in one file.
+      js = getCode();
+    } catch (IOException e) {
+      return null;
+    }
+
+    int pos = 0;
+    int startLine = 1;
+
+    // If we've saved a previous offset and it's for a line less than the
+    // one we're searching for, then start at that point.
+    if (lineNumber >= lastLine) {
+      pos = lastOffset;
+      startLine = lastLine;
+    }
+
+    for (int n = startLine; n < lineNumber; n++) {
+      int nextpos = js.indexOf('\n', pos);
+      if (nextpos == -1) {
+        return null;
+      }
+      pos = nextpos + 1;
+    }
+
+    // Remember this offset for the next search we do.
+    lastOffset = pos;
+    lastLine = lineNumber;
+
+    if (js.indexOf('\n', pos) == -1) {
+      // If next new line cannot be found, there are two cases
+      // 1. pos already reaches the end of file, then null should be returned
+      // 2. otherwise, return the contents between pos and the end of file.
+        return null;

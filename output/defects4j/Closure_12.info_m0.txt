@@ -1,0 +1,306 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/MaybeReachingVariableUse.java
+================== buggy_method ==================
+{'method_name': 'computeMayUse', 'method_body': 'private void computeMayUse(\n      Node n, Node cfgNode, ReachingUses output, boolean conditional) {\n    switch (n.getType()) {\n\n      case Token.BLOCK:\n      case Token.FUNCTION:\n        return;\n\n      case Token.NAME:\n        addToUseIfLocal(n.getString(), cfgNode, output);\n        return;\n\n      case Token.WHILE:\n      case Token.DO:\n      case Token.IF:\n        computeMayUse(\n            NodeUtil.getConditionExpression(n), cfgNode, output, conditional);\n        return;\n\n      case Token.FOR:\n        if (!NodeUtil.isForIn(n)) {\n          computeMayUse(\n              NodeUtil.getConditionExpression(n), cfgNode, output, conditional);\n        } else {\n          // for(x in y) {...}\n          Node lhs = n.getFirstChild();\n          Node rhs = lhs.getNext();\n          if (lhs.isVar()) {\n            lhs = lhs.getLastChild(); // for(var x in y) {...}\n          }\n          if (lhs.isName() && !conditional) {\n            removeFromUseIfLocal(lhs.getString(), output);\n          }\n          computeMayUse(rhs, cfgNode, output, conditional);\n        }\n        return;\n\n      case Token.AND:\n      case Token.OR:\n        computeMayUse(n.getLastChild(), cfgNode, output, true);\n        computeMayUse(n.getFirstChild(), cfgNode, output, conditional);\n        return;\n\n      case Token.HOOK:\n        computeMayUse(n.getLastChild(), cfgNode, output, true);\n        computeMayUse(n.getFirstChild().getNext(), cfgNode, output, true);\n        computeMayUse(n.getFirstChild(), cfgNode, output, conditional);\n        return;\n\n      case Token.VAR:\n        Node varName = n.getFirstChild();\n        Preconditions.checkState(n.hasChildren(), "AST should be normalized");\n\n        if (varName.hasChildren()) {\n          computeMayUse(varName.getFirstChild(), cfgNode, output, conditional);\n          if (!conditional) {\n            removeFromUseIfLocal(varName.getString(), output);\n          }\n        }\n        return;\n\n      default:\n        if (NodeUtil.isAssignmentOp(n) && n.getFirstChild().isName()) {\n          Node name = n.getFirstChild();\n          if (!conditional) {\n            removeFromUseIfLocal(name.getString(), output);\n          }\n\n          // In case of a += "Hello". There is a read of a.\n          if (!n.isAssign()) {\n            addToUseIfLocal(name.getString(), cfgNode, output);\n          }\n\n          computeMayUse(name.getNext(), cfgNode, output, conditional);\n        } else {\n          /*\n           * We want to traverse in reverse order because we want the LAST\n           * definition in the sub-tree....\n           * But we have no better way to traverse in reverse other :\'(\n           */\n          for (Node c = n.getLastChild(); c != null; c = n.getChildBefore(c)) {\n            computeMayUse(c, cfgNode, output, conditional);\n          }\n        }\n    }\n  }', 'start_line': 163, 'end_line': 248, 'buggy_lines': [165]}
+================== buggy_method_src ==================
+private void computeMayUse(
+      Node n, Node cfgNode, ReachingUses output, boolean conditional) {
+    switch (n.getType()) {
+
+      case Token.BLOCK:
+      case Token.FUNCTION:
+        return;
+
+      case Token.NAME:
+        addToUseIfLocal(n.getString(), cfgNode, output);
+        return;
+
+      case Token.WHILE:
+      case Token.DO:
+      case Token.IF:
+        computeMayUse(
+            NodeUtil.getConditionExpression(n), cfgNode, output, conditional);
+        return;
+
+      case Token.FOR:
+        if (!NodeUtil.isForIn(n)) {
+          computeMayUse(
+              NodeUtil.getConditionExpression(n), cfgNode, output, conditional);
+        } else {
+          // for(x in y) {...}
+          Node lhs = n.getFirstChild();
+          Node rhs = lhs.getNext();
+          if (lhs.isVar()) {
+            lhs = lhs.getLastChild(); // for(var x in y) {...}
+          }
+          if (lhs.isName() && !conditional) {
+            removeFromUseIfLocal(lhs.getString(), output);
+          }
+          computeMayUse(rhs, cfgNode, output, conditional);
+        }
+        return;
+
+      case Token.AND:
+      case Token.OR:
+        computeMayUse(n.getLastChild(), cfgNode, output, true);
+        computeMayUse(n.getFirstChild(), cfgNode, output, conditional);
+        return;
+
+      case Token.HOOK:
+        computeMayUse(n.getLastChild(), cfgNode, output, true);
+        computeMayUse(n.getFirstChild().getNext(), cfgNode, output, true);
+        computeMayUse(n.getFirstChild(), cfgNode, output, conditional);
+        return;
+
+      case Token.VAR:
+        Node varName = n.getFirstChild();
+        Preconditions.checkState(n.hasChildren(), "AST should be normalized");
+
+        if (varName.hasChildren()) {
+          computeMayUse(varName.getFirstChild(), cfgNode, output, conditional);
+          if (!conditional) {
+            removeFromUseIfLocal(varName.getString(), output);
+          }
+        }
+        return;
+
+      default:
+        if (NodeUtil.isAssignmentOp(n) && n.getFirstChild().isName()) {
+          Node name = n.getFirstChild();
+          if (!conditional) {
+            removeFromUseIfLocal(name.getString(), output);
+          }
+
+          // In case of a += "Hello". There is a read of a.
+          if (!n.isAssign()) {
+            addToUseIfLocal(name.getString(), cfgNode, output);
+          }
+
+          computeMayUse(name.getNext(), cfgNode, output, conditional);
+        } else {
+          /*
+           * We want to traverse in reverse order because we want the LAST
+           * definition in the sub-tree....
+           * But we have no better way to traverse in reverse other :'(
+           */
+          for (Node c = n.getLastChild(); c != null; c = n.getChildBefore(c)) {
+            computeMayUse(c, cfgNode, output, conditional);
+          }
+        }
+    }
+  }
+================== test_stack ==================
+com.google.javascript.jscomp.FlowSensitiveInlineVariablesTest::testIssue794b
+junit.framework.AssertionFailedError:
+Expected: function _func(){var x=1;try{x=x+someFunction()}catch(e){}x=x+1;try{x=x+someFunction()}catch(e$$1){}return x}
+Result: function _func(){var x;try{x=1+someFunction()}catch(e){}try{x=x+1+someFunction()}catch(e$$1){}return x}
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        FUNCTION _func 1 [source_file: expected0]
+            NAME _func 1 [source_file: expected0]
+            PARAM_LIST 1 [source_file: expected0]
+            BLOCK 1 [source_file: expected0]
+                VAR 1 [source_file: expected0]
+                    NAME x 1 [source_file: expected0]
+                        NUMBER 1.0 1 [source_file: expected0]
+                TRY 1 [source_file: expected0]
+                    BLOCK 1 [source_file: expected0]
+                        EXPR_RESULT 1 [source_file: expected0]
+                            ASSIGN 1 [source_file: expected0]
+                                NAME x 1 [source_file: expected0]
+                                ADD 1 [source_file: expected0]
+                                    NAME x 1 [source_file: expected0]
+                                    CALL 1 [free_call: 1] [source_file: expected0]
+                                        NAME someFunction 1 [source_file: expected0]
+                    BLOCK 1 [source_file: expected0]
+                        CATCH 1 [source_file: expected0]
+                            NAME e 1 [source_file: expected0]
+                            BLOCK 1 [source_file: expected0]
+                EXPR_RESULT 1 [source_file: expected0]
+                    ASSIGN 1 [source_file: expected0]
+                        NAME x 1 [source_file: expected0]
+                        ADD 1 [source_file: expected0]
+                            NAME x 1 [source_file: expected0]
+                            NUMBER 1.0 1 [source_file: expected0]
+                TRY 1 [source_file: expected0]
+                    BLOCK 1 [source_file: expected0]
+                        EXPR_RESULT 1 [source_file: expected0]
+                            ASSIGN 1 [source_file: expected0]
+                                NAME x 1 [source_file: expected0]
+                                ADD 1 [source_file: expected0]
+                                    NAME x 1 [source_file: expected0]
+                                    CALL 1 [free_call: 1] [source_file: expected0]
+                                        NAME someFunction 1 [source_file: expected0]
+                    BLOCK 1 [source_file: expected0]
+                        CATCH 1 [source_file: expected0]
+                            NAME e$$1 1 [source_file: expected0]
+                            BLOCK 1 [source_file: expected0]
+                RETURN 1 [source_file: expected0]
+                    NAME x 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        FUNCTION _func 1 [source_file: testcode]
+            NAME _func 1 [source_file: testcode]
+            PARAM_LIST 1 [source_file: testcode]
+            BLOCK 1 [source_file: testcode]
+                VAR 1 [source_file: testcode]
+                    NAME x 1 [source_file: testcode]
+                TRY 1 [source_file: testcode]
+                    BLOCK 1 [source_file: testcode]
+                        EXPR_RESULT 1 [source_file: testcode]
+                            ASSIGN 1 [source_file: testcode]
+                                NAME x 1 [source_file: testcode]
+                                ADD 1 [source_file: testcode]
+                                    NUMBER 1.0 1 [source_file: testcode]
+                                    CALL 1 [free_call: 1] [source_file: testcode]
+                                        NAME someFunction 1 [source_file: testcode]
+                    BLOCK 1 [source_file: testcode]
+                        CATCH 1 [source_file: testcode]
+                            NAME e 1 [source_file: testcode]
+                            BLOCK 1 [source_file: testcode]
+                TRY 1 [source_file: testcode]
+                    BLOCK 1 [source_file: testcode]
+                        EXPR_RESULT 1 [source_file: testcode]
+                            ASSIGN 1 [source_file: testcode]
+                                NAME x 1 [source_file: testcode]
+                                ADD 1 [source_file: testcode]
+                                    ADD 1 [source_file: testcode]
+                                        NAME x 1 [source_file: testcode]
+                                        NUMBER 1.0 1 [source_file: testcode]
+                                    CALL 1 [free_call: 1] [source_file: testcode]
+                                        NAME someFunction 1 [source_file: testcode]
+                    BLOCK 1 [source_file: testcode]
+                        CATCH 1 [source_file: testcode]
+                            NAME e$$1 1 [source_file: testcode]
+                            BLOCK 1 [source_file: testcode]
+                RETURN 1 [source_file: testcode]
+                    NAME x 1 [source_file: testcode]
+
+
+Subtree1: BLOCK 1 [source_file: expected0]
+    VAR 1 [source_file: expected0]
+        NAME x 1 [source_file: expected0]
+            NUMBER 1.0 1 [source_file: expected0]
+    TRY 1 [source_file: expected0]
+        BLOCK 1 [source_file: expected0]
+            EXPR_RESULT 1 [source_file: expected0]
+                ASSIGN 1 [source_file: expected0]
+                    NAME x 1 [source_file: expected0]
+                    ADD 1 [source_file: expected0]
+                        NAME x 1 [source_file: expected0]
+                        CALL 1 [free_call: 1] [source_file: expected0]
+                            NAME someFunction 1 [source_file: expected0]
+        BLOCK 1 [source_file: expected0]
+            CATCH 1 [source_file: expected0]
+                NAME e 1 [source_file: expected0]
+                BLOCK 1 [source_file: expected0]
+    EXPR_RESULT 1 [source_file: expected0]
+        ASSIGN 1 [source_file: expected0]
+            NAME x 1 [source_file: expected0]
+            ADD 1 [source_file: expected0]
+                NAME x 1 [source_file: expected0]
+                NUMBER 1.0 1 [source_file: expected0]
+    TRY 1 [source_file: expected0]
+        BLOCK 1 [source_file: expected0]
+            EXPR_RESULT 1 [source_file: expected0]
+                ASSIGN 1 [source_file: expected0]
+                    NAME x 1 [source_file: expected0]
+                    ADD 1 [source_file: expected0]
+                        NAME x 1 [source_file: expected0]
+                        CALL 1 [free_call: 1] [source_file: expected0]
+                            NAME someFunction 1 [source_file: expected0]
+        BLOCK 1 [source_file: expected0]
+            CATCH 1 [source_file: expected0]
+                NAME e$$1 1 [source_file: expected0]
+                BLOCK 1 [source_file: expected0]
+    RETURN 1 [source_file: expected0]
+        NAME x 1 [source_file: expected0]
+
+
+Subtree2: BLOCK 1 [source_file: testcode]
+    VAR 1 [source_file: testcode]
+        NAME x 1 [source_file: testcode]
+    TRY 1 [source_file: testcode]
+        BLOCK 1 [source_file: testcode]
+            EXPR_RESULT 1 [source_file: testcode]
+                ASSIGN 1 [source_file: testcode]
+                    NAME x 1 [source_file: testcode]
+                    ADD 1 [source_file: testcode]
+                        NUMBER 1.0 1 [source_file: testcode]
+                        CALL 1 [free_call: 1] [source_file: testcode]
+                            NAME someFunction 1 [source_file: testcode]
+        BLOCK 1 [source_file: testcode]
+            CATCH 1 [source_file: testcode]
+                NAME e 1 [source_file: testcode]
+                BLOCK 1 [source_file: testcode]
+    TRY 1 [source_file: testcode]
+        BLOCK 1 [source_file: testcode]
+            EXPR_RESULT 1 [source_file: testcode]
+                ASSIGN 1 [source_file: testcode]
+                    NAME x 1 [source_file: testcode]
+                    ADD 1 [source_file: testcode]
+                        ADD 1 [source_file: testcode]
+                            NAME x 1 [source_file: testcode]
+                            NUMBER 1.0 1 [source_file: testcode]
+                        CALL 1 [free_call: 1] [source_file: testcode]
+                            NAME someFunction 1 [source_file: testcode]
+        BLOCK 1 [source_file: testcode]
+            CATCH 1 [source_file: testcode]
+                NAME e$$1 1 [source_file: testcode]
+                BLOCK 1 [source_file: testcode]
+    RETURN 1 [source_file: testcode]
+        NAME x 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:892)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:445)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:409)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:387)
+	at com.google.javascript.jscomp.FlowSensitiveInlineVariablesTest.inline(FlowSensitiveInlineVariablesTest.java:526)
+	at com.google.javascript.jscomp.FlowSensitiveInlineVariablesTest.noInline(FlowSensitiveInlineVariablesTest.java:522)
+	at com.google.javascript.jscomp.FlowSensitiveInlineVariablesTest.testIssue794b(FlowSensitiveInlineVariablesTest.java:513)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+
+================== test_assert ==================
+noInline(
+
+================== buggy_lines_in_method ==================
+[3]
+================== buggy_statements ==================
+['    switch (n.getType()) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+private void computeMayUse(
+      Node n, Node cfgNode, ReachingUses output, boolean conditional) {
+    switch (n.getType()) {

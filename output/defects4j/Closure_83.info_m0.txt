@@ -1,0 +1,85 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/CommandLineRunner.java
+================== buggy_method ==================
+{'method_name': 'parseArguments', 'method_body': '@Override\n      public int parseArguments(Parameters params) throws CmdLineException {\n        String param = params.getParameter(0);\n\n        if (param == null) {\n          setter.addValue(true);\n          return 0;\n        } else {\n          String lowerParam = param.toLowerCase();\n          if (TRUES.contains(lowerParam)) {\n            setter.addValue(true);\n          } else if (FALSES.contains(lowerParam)) {\n            setter.addValue(false);\n          } else {\n            setter.addValue(true);\n            return 0;\n          }\n          return 1;\n        }\n      }', 'start_line': 332, 'end_line': 351, 'buggy_lines': [334]}
+================== buggy_method_src ==================
+@Override
+      public int parseArguments(Parameters params) throws CmdLineException {
+        String param = params.getParameter(0);
+
+        if (param == null) {
+          setter.addValue(true);
+          return 0;
+        } else {
+          String lowerParam = param.toLowerCase();
+          if (TRUES.contains(lowerParam)) {
+            setter.addValue(true);
+          } else if (FALSES.contains(lowerParam)) {
+            setter.addValue(false);
+          } else {
+            setter.addValue(true);
+            return 0;
+          }
+          return 1;
+        }
+      }
+================== test_stack ==================
+com.google.javascript.jscomp.CommandLineRunnerTest::testVersionFlag2
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.compile(CommandLineRunnerTest.java:754)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.test(CommandLineRunnerTest.java:673)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.test(CommandLineRunnerTest.java:662)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.testSame(CommandLineRunnerTest.java:650)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.testSame(CommandLineRunnerTest.java:646)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.testVersionFlag2(CommandLineRunnerTest.java:602)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+testSame("");
+
+================== buggy_lines_in_method ==================
+[3]
+================== buggy_statements ==================
+['        String param = params.getParameter(0);']
+================== buggy_method_src_endswith_buggy_statement ==================
+@Override
+      public int parseArguments(Parameters params) throws CmdLineException {
+        String param = params.getParameter(0);

@@ -1,0 +1,123 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/ser/BasicSerializerFactory.java
+================== buggy_method ==================
+{'method_name': 'buildCollectionSerializer', 'method_body': 'protected JsonSerializer<?> buildCollectionSerializer(SerializationConfig config,\n            CollectionType type, BeanDescription beanDesc, boolean staticTyping,\n            TypeSerializer elementTypeSerializer, JsonSerializer<Object> elementValueSerializer) \n        throws JsonMappingException\n    {\n        JsonSerializer<?> ser = null;\n        // Order of lookups:\n        // 1. Custom serializers\n        // 2. Annotations (@JsonValue, @JsonDeserialize)\n        // 3. Defaults\n        for (Serializers serializers : customSerializers()) { // (1) Custom\n            ser = serializers.findCollectionSerializer(config,\n                    type, beanDesc, elementTypeSerializer, elementValueSerializer);\n            if (ser != null) {\n                break;\n            }\n        }\n\n        if (ser == null) {\n                // We may also want to use serialize Collections "as beans", if (and only if)\n                // this is specified with `@JsonFormat(shape=Object)`\n                JsonFormat.Value format = beanDesc.findExpectedFormat(null);\n                if (format != null && format.getShape() == JsonFormat.Shape.OBJECT) {\n                    return null;\n                }\n                Class<?> raw = type.getRawClass();\n                if (EnumSet.class.isAssignableFrom(raw)) {\n                    // this may or may not be available (Class doesn\'t; type of field/method does)\n                    JavaType enumType = type.getContentType();\n                    // and even if nominally there is something, only use if it really is enum\n                    if (!enumType.isEnumType()) {\n                        enumType = null;\n                    }\n                    ser = buildEnumSetSerializer(enumType);\n                } else {\n                    Class<?> elementRaw = type.getContentType().getRawClass();\n                    if (isIndexedList(raw)) {\n                        if (elementRaw == String.class) {\n                            // [JACKSON-829] Must NOT use if we have custom serializer\n                            if (elementValueSerializer == null || ClassUtil.isJacksonStdImpl(elementValueSerializer)) {\n                                ser = IndexedStringListSerializer.instance;\n                            }\n                        } else {\n                            ser = buildIndexedListSerializer(type.getContentType(), staticTyping,\n                                elementTypeSerializer, elementValueSerializer);\n                        }\n                    } else if (elementRaw == String.class) {\n                        // [JACKSON-829] Must NOT use if we have custom serializer\n                        if (elementValueSerializer == null || ClassUtil.isJacksonStdImpl(elementValueSerializer)) {\n                            ser = StringCollectionSerializer.instance;\n                        }\n                    }\n                    if (ser == null) {\n                        ser = buildCollectionSerializer(type.getContentType(), staticTyping,\n                                elementTypeSerializer, elementValueSerializer);\n                }\n            }\n        }\n        // [databind#120]: Allow post-processing\n        if (_factoryConfig.hasSerializerModifiers()) {\n            for (BeanSerializerModifier mod : _factoryConfig.serializerModifiers()) {\n                ser = mod.modifyCollectionSerializer(config, type, beanDesc, ser);\n            }\n        }\n        return ser;\n    }', 'start_line': 636, 'end_line': 701, 'buggy_lines': [636]}
+================== buggy_method_src ==================
+protected JsonSerializer<?> buildCollectionSerializer(SerializationConfig config,
+            CollectionType type, BeanDescription beanDesc, boolean staticTyping,
+            TypeSerializer elementTypeSerializer, JsonSerializer<Object> elementValueSerializer) 
+        throws JsonMappingException
+    {
+        JsonSerializer<?> ser = null;
+        // Order of lookups:
+        // 1. Custom serializers
+        // 2. Annotations (@JsonValue, @JsonDeserialize)
+        // 3. Defaults
+        for (Serializers serializers : customSerializers()) { // (1) Custom
+            ser = serializers.findCollectionSerializer(config,
+                    type, beanDesc, elementTypeSerializer, elementValueSerializer);
+            if (ser != null) {
+                break;
+            }
+        }
+
+        if (ser == null) {
+                // We may also want to use serialize Collections "as beans", if (and only if)
+                // this is specified with `@JsonFormat(shape=Object)`
+                JsonFormat.Value format = beanDesc.findExpectedFormat(null);
+                if (format != null && format.getShape() == JsonFormat.Shape.OBJECT) {
+                    return null;
+                }
+                Class<?> raw = type.getRawClass();
+                if (EnumSet.class.isAssignableFrom(raw)) {
+                    // this may or may not be available (Class doesn't; type of field/method does)
+                    JavaType enumType = type.getContentType();
+                    // and even if nominally there is something, only use if it really is enum
+                    if (!enumType.isEnumType()) {
+                        enumType = null;
+                    }
+                    ser = buildEnumSetSerializer(enumType);
+                } else {
+                    Class<?> elementRaw = type.getContentType().getRawClass();
+                    if (isIndexedList(raw)) {
+                        if (elementRaw == String.class) {
+                            // [JACKSON-829] Must NOT use if we have custom serializer
+                            if (elementValueSerializer == null || ClassUtil.isJacksonStdImpl(elementValueSerializer)) {
+                                ser = IndexedStringListSerializer.instance;
+                            }
+                        } else {
+                            ser = buildIndexedListSerializer(type.getContentType(), staticTyping,
+                                elementTypeSerializer, elementValueSerializer);
+                        }
+                    } else if (elementRaw == String.class) {
+                        // [JACKSON-829] Must NOT use if we have custom serializer
+                        if (elementValueSerializer == null || ClassUtil.isJacksonStdImpl(elementValueSerializer)) {
+                            ser = StringCollectionSerializer.instance;
+                        }
+                    }
+                    if (ser == null) {
+                        ser = buildCollectionSerializer(type.getContentType(), staticTyping,
+                                elementTypeSerializer, elementValueSerializer);
+                }
+            }
+        }
+        // [databind#120]: Allow post-processing
+        if (_factoryConfig.hasSerializerModifiers()) {
+            for (BeanSerializerModifier mod : _factoryConfig.serializerModifiers()) {
+                ser = mod.modifyCollectionSerializer(config, type, beanDesc, ser);
+            }
+        }
+        return ser;
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.ser.TestJsonValue::testJsonValueWithCustomOverride
+junit.framework.ComparisonFailure: expected:<[42]> but was:<["value"]>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.Assert.assertEquals(Assert.java:107)
+	at junit.framework.TestCase.assertEquals(TestCase.java:269)
+	at com.fasterxml.jackson.databind.ser.TestJsonValue.testJsonValueWithCustomOverride(TestJsonValue.java:282)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals("42", mapper.writeValueAsString(INPUT));
+
+================== buggy_lines_in_method ==================
+[1]
+================== buggy_statements ==================
+['protected JsonSerializer<?> buildCollectionSerializer(SerializationConfig config,']
+================== buggy_method_src_endswith_buggy_statement ==================
+protected JsonSerializer<?> buildCollectionSerializer(SerializationConfig config,

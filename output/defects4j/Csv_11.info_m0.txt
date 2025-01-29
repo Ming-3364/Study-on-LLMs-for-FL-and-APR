@@ -1,0 +1,124 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/csv/CSVParser.java
+================== buggy_method ==================
+{'method_name': 'initializeHeader', 'method_body': 'private Map<String, Integer> initializeHeader() throws IOException {\n        Map<String, Integer> hdrMap = null;\n        final String[] formatHeader = this.format.getHeader();\n        if (formatHeader != null) {\n            hdrMap = new LinkedHashMap<String, Integer>();\n\n            String[] headerRecord = null;\n            if (formatHeader.length == 0) {\n                // read the header from the first line of the file\n                final CSVRecord nextRecord = this.nextRecord();\n                if (nextRecord != null) {\n                    headerRecord = nextRecord.values();\n                }\n            } else {\n                if (this.format.getSkipHeaderRecord()) {\n                    this.nextRecord();\n                }\n                headerRecord = formatHeader;\n            }\n\n            // build the name to index mappings\n            if (headerRecord != null) {\n                for (int i = 0; i < headerRecord.length; i++) {\n                    final String header = headerRecord[i];\n                    final boolean containsHeader = hdrMap.containsKey(header);\n                    final boolean emptyHeader = header.trim().isEmpty();\n                    if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders()))) {\n                        throw new IllegalArgumentException("The header contains a duplicate name: \\"" + header +\n                                "\\" in " + Arrays.toString(headerRecord));\n                    }\n                    hdrMap.put(header, Integer.valueOf(i));\n                }\n            }\n        }\n        return hdrMap;\n    }', 'start_line': 359, 'end_line': 394, 'buggy_lines': [384]}
+================== buggy_method_src ==================
+private Map<String, Integer> initializeHeader() throws IOException {
+        Map<String, Integer> hdrMap = null;
+        final String[] formatHeader = this.format.getHeader();
+        if (formatHeader != null) {
+            hdrMap = new LinkedHashMap<String, Integer>();
+
+            String[] headerRecord = null;
+            if (formatHeader.length == 0) {
+                // read the header from the first line of the file
+                final CSVRecord nextRecord = this.nextRecord();
+                if (nextRecord != null) {
+                    headerRecord = nextRecord.values();
+                }
+            } else {
+                if (this.format.getSkipHeaderRecord()) {
+                    this.nextRecord();
+                }
+                headerRecord = formatHeader;
+            }
+
+            // build the name to index mappings
+            if (headerRecord != null) {
+                for (int i = 0; i < headerRecord.length; i++) {
+                    final String header = headerRecord[i];
+                    final boolean containsHeader = hdrMap.containsKey(header);
+                    final boolean emptyHeader = header.trim().isEmpty();
+                    if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders()))) {
+                        throw new IllegalArgumentException("The header contains a duplicate name: \"" + header +
+                                "\" in " + Arrays.toString(headerRecord));
+                    }
+                    hdrMap.put(header, Integer.valueOf(i));
+                }
+            }
+        }
+        return hdrMap;
+    }
+================== test_stack ==================
+org.apache.commons.csv.CSVParserTest::testHeaderMissingWithNull
+java.lang.NullPointerException
+	at org.apache.commons.csv.CSVParser.initializeHeader(CSVParser.java:384)
+	at org.apache.commons.csv.CSVParser.<init>(CSVParser.java:250)
+	at org.apache.commons.csv.CSVFormat.parse(CSVFormat.java:611)
+	at org.apache.commons.csv.CSVParserTest.testHeaderMissingWithNull(CSVParserTest.java:670)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+CSVFormat.DEFAULT.withHeader().withNullString("").withIgnoreEmptyHeaders(true).parse(in).iterator();
+
+================== buggy_lines_in_method ==================
+[26]
+================== buggy_statements ==================
+['                    final boolean emptyHeader = header.trim().isEmpty();']
+================== buggy_method_src_endswith_buggy_statement ==================
+private Map<String, Integer> initializeHeader() throws IOException {
+        Map<String, Integer> hdrMap = null;
+        final String[] formatHeader = this.format.getHeader();
+        if (formatHeader != null) {
+            hdrMap = new LinkedHashMap<String, Integer>();
+
+            String[] headerRecord = null;
+            if (formatHeader.length == 0) {
+                // read the header from the first line of the file
+                final CSVRecord nextRecord = this.nextRecord();
+                if (nextRecord != null) {
+                    headerRecord = nextRecord.values();
+                }
+            } else {
+                if (this.format.getSkipHeaderRecord()) {
+                    this.nextRecord();
+                }
+                headerRecord = formatHeader;
+            }
+
+            // build the name to index mappings
+            if (headerRecord != null) {
+                for (int i = 0; i < headerRecord.length; i++) {
+                    final String header = headerRecord[i];
+                    final boolean containsHeader = hdrMap.containsKey(header);
+                    final boolean emptyHeader = header.trim().isEmpty();

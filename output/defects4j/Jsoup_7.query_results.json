@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "3",
+            "ernie-3.5-128k": "**3**",
+            "qwen-turbo": "2",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "3"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "3",
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "59",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "59"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "59",
+            "ernie-3.5-128k": "**59**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "59"
+        },
+        "prompt_fl_4": {
+            "doubao-pro-4k": "return super.html();",
+            "ernie-3.5-128k": "return super.html();",
+            "qwen-turbo": "return super.html(); // no outer wrapper tag",
+            "deepseek-chat": "return super.html(); // no outer wrapper tag",
+            "gpt-4o-mini": "return super.html(); // no outer wrapper tag"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "return super.html(); // no outer wrapper tag",
+            "ernie-3.5-128k": "return super.html();",
+            "doubao-pro-4k": "return super.html();",
+            "deepseek-chat": "return super.html(); // no outer wrapper tag",
+            "gpt-4o-mini": "return super.html(); // no outer wrapper tag"
+        },
+        "prompt_fl_6": {
+            "doubao-pro-4k": "return super.html();",
+            "ernie-3.5-128k": "return super.html();",
+            "qwen-turbo": "assertEquals(\"<html><head><script>one</script><noscript></noscript></head><body><p>two</p><p>three</p></body></html>\", TextUtil.stripNewlines(doc.html()));",
+            "deepseek-chat": "return super.html(); // no outer wrapper tag",
+            "gpt-4o-mini": "return super.html(); // no outer wrapper tag"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "```java\n@Override\npublic String outerHtml() {\n    return super.outerHtml(); // no outer wrapper tag\n}\n```",
+            "deepseek-chat": "@Override\npublic String outerHtml() {\n    return super.outerHtml(); // Use outerHtml() instead of html() to include the outer wrapper tag\n}",
+            "ernie-3.5-128k": "Certainly! Here is the complete corrected method:\n\npublic String outerHtml() {\n    return this.html(); // Corrected to use 'this' to refer to the current instance's html method\n}",
+            "doubao-pro-4k": "@Override\npublic String outerHtml() {\n    return super.outerHtml(); // corrected to call outerHtml() instead of html()\n}",
+            "gpt-4o-mini": "@Override\npublic String outerHtml() {\n    return \"<\" + tagName() + \">\" + super.html() + \"</\" + tagName() + \">\"; // add outer wrapper tag\n}"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "@Override\npublic String outerHtml() {\n    return super.outerHtml(); // Ensure the correct method name is used\n}",
+            "doubao-pro-4k": "@Override\npublic String outerHtml() {\n    return super.outerHtml(); // no outer wrapper tag\n}",
+            "gpt-4o-mini": "public String outerHtml() {\n    return \"<\" + tagName() + \">\" + super.html() + \"</\" + tagName() + \">\";\n}",
+            "deepseek-chat": "@Override\npublic String outerHtml() {\n    StringBuilder accum = new StringBuilder();\n    outerHtml(accum);\n    return accum.toString();\n}\n\nprivate void outerHtml(StringBuilder accum) {\n    if (this instanceof Document) {\n        for (Element element : childElements()) {\n            element.outerHtml(accum);\n        }\n    } else if (this instanceof TextNode) {\n        accum.append(((TextNode) this).getWholeText());\n    } else if (this instanceof DataNode) {\n        accum.append(((DataNode) this).getWholeData());\n    } else if (this instanceof Comment) {\n        accum.append(\"<!--\").append(((Comment) this).getData()).append(\"-->\");\n    } else if (this instanceof Element) {\n        Element element = (Element) this;\n        accum.append(\"<\").append(element.tagName());\n        for (Attribute attribute : element.attributes()) {\n            accum.append(\" \").append(attribute.getKey()).append(\"=\\\"\").append(attribute.getValue()).append(\"\\\"\");\n        }\n        if (element.childNodes().isEmpty() && element.isSelfClosing()) {\n            accum.append(\" />\");\n        } else {\n            accum.append(\">\");\n            for (Node node : element.childNodes()) {\n                node.outerHtml(accum);\n            }\n            accum.append(\"</\").append(element.tagName()).append(\">\");\n        }\n    }\n}",
+            "ernie-3.5-128k": "Sure, here is the corrected method. Based on the context, it seems like you want to override the `outerHtml()` method to return the HTML without an outer wrapper tag, but you are incorrectly calling `super.html()` which might not be the correct method to call. Assuming you have a base class with a proper `html()` method that returns the inner HTML, and you want to define `outerHtml()` to include some wrapper, but in this case, you don't want the wrapper, so you'll directly use the inner HTML. However, typically, `outerHtml()` should include some form of outer tag. If your intention is truly as stated (no outer wrapper), you might need to review if this is the correct design.\n\nHere's a possible correction assuming you just want to return the same HTML as `html()`:\n\npublic String outerHtml() {\n    return this.html(); // Assuming html() returns the desired inner HTML without any outer wrapper\n}\n\nIf `html()` in the superclass does include an outer wrapper and you need to strip it out, you might need additional logic here, but based on your comment, this is a straightforward override assuming `html()` is correct.\n\nPlease note that this might not be the best design if `outerHtml()` by definition should include an outer tag. If `html()` already includes the necessary content and no outer tag is needed, the above code is appropriate."
+        },
+        "prompt_apr_3": {
+            "ernie-3.5-128k": "public String outerHtml() {",
+            "qwen-turbo": "```java\n@Override\npublic String outerHtml() {\n    if (this instanceof HasElement) {\n        return ((HasElement) this).element().outerHTML();\n    }\n}\n```",
+            "doubao-pro-4k": "@Override\npublic String outerHtml() {\n    // Bug fix here\n    return \"\"; \n}",
+            "deepseek-chat": "@Override\npublic String outerHtml() {\n    StringBuilder accum = new StringBuilder();\n    if (childNodes != null && !childNodes.isEmpty()) {\n        for (Node node : childNodes) {\n            accum.append(node.outerHtml());\n        }\n    }\n    return accum.toString();",
+            "gpt-4o-mini": "@Override\npublic String outerHtml() {\n    if (someCondition) {\n        return \"<div>Content</div>\";\n    }\n    return \"<div>Default</div>\";\n}"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return super.outerHtml();\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return super.outerHtml(); // no outer wrapper tag\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return super.outerHtml();\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return super.outerHtml(); // return outer HTML including the wrapper tag\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return super.outerHtml();\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"    public String outerHtml() {\"\n    },\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"        return super.outerHtml(); // no outer wrapper tag\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"@Override\\n    public String outerHtml() {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"public String outerHtml() {\"\n    },\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"    return super.outerHtml(); // no outer wrapper tag\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"    public String outerHtml() {\"\n    },\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"        return super.outerHtml(); // no outer wrapper tag\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"    @Override\\n    public String outerHtml() {\\n        return \\\"<\\\" + getTagName() + \\\">\\\" + super.html() + \\\"</\\\" + getTagName() + \\\">\\\";\\n    }\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return super().outerHtml();\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"        return null;\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"        return this.toString(); // Assuming you want to return the HTML representation of the object\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"@Override\\n    public String outerHtml() { return this.ownerDocument().outerHtml(); }\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"public String outerHtml() {\"\n    }\n]"
+        }
+    }
+]

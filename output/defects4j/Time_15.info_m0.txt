@@ -1,0 +1,77 @@
+
+================== buggy_file ==================
+src/main/java/org/joda/time/field/FieldUtils.java
+================== buggy_method ==================
+{'method_name': 'safeMultiply', 'method_body': 'public static long safeMultiply(long val1, int val2) {\n        switch (val2) {\n            case -1:\n                return -val1;\n            case 0:\n                return 0L;\n            case 1:\n                return val1;\n        }\n        long total = val1 * val2;\n        if (total / val2 != val1) {\n          throw new ArithmeticException("Multiplication overflows a long: " + val1 + " * " + val2);\n        }\n        return total;\n    }', 'start_line': 135, 'end_line': 149, 'buggy_lines': [140]}
+================== buggy_method_src ==================
+public static long safeMultiply(long val1, int val2) {
+        switch (val2) {
+            case -1:
+                return -val1;
+            case 0:
+                return 0L;
+            case 1:
+                return val1;
+        }
+        long total = val1 * val2;
+        if (total / val2 != val1) {
+          throw new ArithmeticException("Multiplication overflows a long: " + val1 + " * " + val2);
+        }
+        return total;
+    }
+================== test_stack ==================
+org.joda.time.field.TestFieldUtils::testSafeMultiplyLongInt
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.fail(Assert.java:64)
+	at junit.framework.TestCase.fail(TestCase.java:235)
+	at org.joda.time.field.TestFieldUtils.testSafeMultiplyLongInt(TestFieldUtils.java:261)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+fail();
+
+================== buggy_lines_in_method ==================
+[6]
+================== buggy_statements ==================
+['                return 0L;']
+================== buggy_method_src_endswith_buggy_statement ==================
+public static long safeMultiply(long val1, int val2) {
+        switch (val2) {
+            case -1:
+                return -val1;
+            case 0:
+                return 0L;

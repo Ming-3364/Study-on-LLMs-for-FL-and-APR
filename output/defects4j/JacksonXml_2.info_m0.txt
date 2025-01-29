@@ -1,0 +1,124 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/dataformat/xml/deser/XmlTokenStream.java
+================== buggy_method ==================
+{'method_name': '_next', 'method_body': 'private final int _next() throws XMLStreamException\n    {\n        switch (_currentState) {\n        case XML_ATTRIBUTE_VALUE:\n            ++_nextAttributeIndex;\n            // fall through\n        case XML_START_ELEMENT: // attributes to return?\n            if (_nextAttributeIndex < _attributeCount) {\n                _localName = _xmlReader.getAttributeLocalName(_nextAttributeIndex);\n                _namespaceURI = _xmlReader.getAttributeNamespace(_nextAttributeIndex);\n                _textValue = _xmlReader.getAttributeValue(_nextAttributeIndex);\n                return (_currentState = XML_ATTRIBUTE_NAME);\n            }\n            // otherwise need to find START/END_ELEMENT or text\n            String text = _collectUntilTag();\n            // If we have no/all-whitespace text followed by START_ELEMENT, ignore text\n            if (_xmlReader.getEventType() == XMLStreamReader.START_ELEMENT) {\n                    return _initStartElement();\n            }\n            // For END_ELEMENT we will return text, if any\n            if (text != null) {\n                _textValue = text;\n                return (_currentState = XML_TEXT);\n            }\n            return _handleEndElement();\n\n        case XML_ATTRIBUTE_NAME:\n            // if we just returned name, will need to just send value next\n            return (_currentState = XML_ATTRIBUTE_VALUE);\n        case XML_TEXT:\n            // mixed text with other elements\n            // text followed by END_ELEMENT\n            return _handleEndElement();\n        case XML_END:\n            return XML_END;\n//            throw new IllegalStateException("No more XML tokens available (end of input)");\n        }\n\n        // Ok: must be END_ELEMENT; see what tag we get (or end)\n        switch (_skipUntilTag()) {\n        case XMLStreamConstants.END_DOCUMENT:\n            return (_currentState = XML_END);\n        case XMLStreamConstants.END_ELEMENT:\n            return _handleEndElement();\n        }\n        // START_ELEMENT...\n        return _initStartElement();\n    }', 'start_line': 309, 'end_line': 356, 'buggy_lines': [325]}
+================== buggy_method_src ==================
+private final int _next() throws XMLStreamException
+    {
+        switch (_currentState) {
+        case XML_ATTRIBUTE_VALUE:
+            ++_nextAttributeIndex;
+            // fall through
+        case XML_START_ELEMENT: // attributes to return?
+            if (_nextAttributeIndex < _attributeCount) {
+                _localName = _xmlReader.getAttributeLocalName(_nextAttributeIndex);
+                _namespaceURI = _xmlReader.getAttributeNamespace(_nextAttributeIndex);
+                _textValue = _xmlReader.getAttributeValue(_nextAttributeIndex);
+                return (_currentState = XML_ATTRIBUTE_NAME);
+            }
+            // otherwise need to find START/END_ELEMENT or text
+            String text = _collectUntilTag();
+            // If we have no/all-whitespace text followed by START_ELEMENT, ignore text
+            if (_xmlReader.getEventType() == XMLStreamReader.START_ELEMENT) {
+                    return _initStartElement();
+            }
+            // For END_ELEMENT we will return text, if any
+            if (text != null) {
+                _textValue = text;
+                return (_currentState = XML_TEXT);
+            }
+            return _handleEndElement();
+
+        case XML_ATTRIBUTE_NAME:
+            // if we just returned name, will need to just send value next
+            return (_currentState = XML_ATTRIBUTE_VALUE);
+        case XML_TEXT:
+            // mixed text with other elements
+            // text followed by END_ELEMENT
+            return _handleEndElement();
+        case XML_END:
+            return XML_END;
+//            throw new IllegalStateException("No more XML tokens available (end of input)");
+        }
+
+        // Ok: must be END_ELEMENT; see what tag we get (or end)
+        switch (_skipUntilTag()) {
+        case XMLStreamConstants.END_DOCUMENT:
+            return (_currentState = XML_END);
+        case XMLStreamConstants.END_ELEMENT:
+            return _handleEndElement();
+        }
+        // START_ELEMENT...
+        return _initStartElement();
+    }
+================== test_stack ==================
+com.fasterxml.jackson.dataformat.xml.misc.XmlTextTest::testMixedContent
+junit.framework.AssertionFailedError: expected:<27> but was:<0>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.Assert.assertEquals(Assert.java:241)
+	at junit.framework.TestCase.assertEquals(TestCase.java:409)
+	at com.fasterxml.jackson.dataformat.xml.misc.XmlTextTest.testMixedContent(XmlTextTest.java:70)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals(27, result.value);
+
+================== buggy_lines_in_method ==================
+[17]
+================== buggy_statements ==================
+['            if (_xmlReader.getEventType() == XMLStreamReader.START_ELEMENT) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+private final int _next() throws XMLStreamException
+    {
+        switch (_currentState) {
+        case XML_ATTRIBUTE_VALUE:
+            ++_nextAttributeIndex;
+            // fall through
+        case XML_START_ELEMENT: // attributes to return?
+            if (_nextAttributeIndex < _attributeCount) {
+                _localName = _xmlReader.getAttributeLocalName(_nextAttributeIndex);
+                _namespaceURI = _xmlReader.getAttributeNamespace(_nextAttributeIndex);
+                _textValue = _xmlReader.getAttributeValue(_nextAttributeIndex);
+                return (_currentState = XML_ATTRIBUTE_NAME);
+            }
+            // otherwise need to find START/END_ELEMENT or text
+            String text = _collectUntilTag();
+            // If we have no/all-whitespace text followed by START_ELEMENT, ignore text
+            if (_xmlReader.getEventType() == XMLStreamReader.START_ELEMENT) {

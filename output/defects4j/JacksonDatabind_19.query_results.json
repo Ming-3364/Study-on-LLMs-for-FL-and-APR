@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "11",
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "24",
+            "deepseek-chat": "5",
+            "gpt-4o-mini": "12"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "13",
+            "qwen-turbo": "113",
+            "ernie-3.5-128k": "28",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "12"
+        },
+        "prompt_fl_3": {
+            "qwen-turbo": "113",
+            "ernie-3.5-128k": "**113**",
+            "deepseek-chat": "113",
+            "gpt-4o-mini": "113",
+            "doubao-pro-4k": "113"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "if (typeParams == null) {\n",
+            "doubao-pro-4k": "if (typeParams.length!= 2) {",
+            "ernie-3.5-128k": "if (typeParams == null) {",
+            "deepseek-chat": "JavaType[] typeParams = findTypeParameters(rawClass, Map.class);",
+            "gpt-4o-mini": "MapType.construct(rawClass, _unknownType(), _unknownType());"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "assertSame(String.class, type);",
+            "doubao-pro-4k": "if (typeParams == null) {",
+            "deepseek-chat": "return MapType.construct(rawClass, _unknownType(), _unknownType());",
+            "ernie-3.5-128k": "JavaType[] typeParams = findTypeParameters(rawClass, Map.class);",
+            "gpt-4o-mini": "JavaType[] typeParams = findTypeParameters(rawClass, Map.class);"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "assertEquals(\"129\", props.getProperty(\"A\"));",
+            "doubao-pro-4k": "assertEquals(\"129\", props.getProperty(\"A\"));",
+            "deepseek-chat": "return MapType.construct(rawClass, _unknownType(), _unknownType());",
+            "ernie-3.5-128k": "_mapType(rawClass, _unknownType(), _unknownType());",
+            "gpt-4o-mini": "assertEquals(\"129\", props.getProperty(\"A\"));"
+        },
+        "prompt_apr_1": {
+            "deepseek-chat": "private JavaType _mapType(Class<?> rawClass)\n    {\n        // 28-May-2015, tatu: Properties are special, as per [databind#810]\n        JavaType[] typeParams = findTypeParameters(rawClass, Map.class);\n        // ok to have no types (\"raw\")\n        if (typeParams == null || typeParams.length == 0) {\n            return MapType.construct(rawClass, _unknownType(), _unknownType());\n        }\n        // but exactly 2 types if any found\n        if (typeParams.length != 2) {\n            throw new IllegalArgumentException(\"Strange Map type \"+rawClass.getName()+\": can not determine type parameters\");\n        }\n        return MapType.construct(rawClass, typeParams[0], typeParams[1]);\n    }",
+            "doubao-pro-4k": "private JavaType _mapType(Class<?> rawClass)\n    {\n        // 28-May-2015, tatu: Properties are special, as per [databind#810]\n        JavaType[] typeParams = findTypeParameters(rawClass, Map.class);\n        // ok to have no types (\"raw\")\n        if (typeParams == null || typeParams.length == 0) {\n            return MapType.construct(rawClass, _unknownType(), _unknownType());\n        }\n        // but exactly 2 types if any found\n        if (typeParams.length!= 2) {\n            throw new IllegalArgumentException(\"Strange Map type \"+rawClass.getName()+\": can not determine type parameters\");\n        }\n        return MapType.construct(rawClass, typeParams[0], typeParams[1]);\n    }",
+            "qwen-turbo": "Certainly! The issue on line 6 seems to be related to how the unknown types are being handled. Specifically, the `_unknownType()` method is being called twice without any parameters, which might not be the intended behavior. Instead, you should use `SimpleType.unknownType()` from the Jackson library to represent unknown types.\n\nHere is the complete corrected method:\n\n```java\nprivate JavaType _mapType(Class<?> rawClass) {\n    // 28-May-2015, tatu: Properties are special, as per [databind#810]\n    JavaType[] typeParams = findTypeParameters(rawClass, Map.class);\n    // ok to have no types (\"raw\")\n    if (typeParams == null) {\n        return MapType.construct(rawClass, SimpleType.unknownType(), SimpleType.unknownType());\n    }\n    // but exactly 2 types if any found\n    if (typeParams.length != 2) {\n        throw new IllegalArgumentException(\"Strange Map type \" + rawClass.getName() + \": can not determine type parameters\");\n    }\n    return MapType.construct(rawClass, typeParams[0], typeParams[1]);\n}\n```\n\nIn this correction, `SimpleType.unknownType()` is used to handle the unknown types appropriately. Make sure that `SimpleType` is imported correctly from the Jackson library.",
+            "gpt-4o-mini": "private JavaType _mapType(Class<?> rawClass)\n{\n    // 28-May-2015, tatu: Properties are special, as per [databind#810]\n    JavaType[] typeParams = findTypeParameters(rawClass, Map.class);\n    \n    // ok to have no types (\"raw\")\n    if (typeParams == null || typeParams.length == 0) {\n        return MapType.construct(rawClass, _unknownType(), _unknownType());\n    }\n    \n    // but exactly 2 types if any found\n    if (typeParams.length != 2) {\n        throw new IllegalArgumentException(\"Strange Map type \"+rawClass.getName()+\": can not determine type parameters\");\n    }\n    \n    return MapType.construct(rawClass, typeParams[0], typeParams[1]);\n}",
+            "ernie-3.5-128k": "private JavaType _mapType(Class<?> rawClass)\n    {\n        // 28-May-2015, tatu: Properties are special, as per [databind#810]\n        JavaType[] typeParams = findTypeParameters(rawClass, Map.class);\n        // ok to have no types (\"raw\")\n        if (typeParams == null || typeParams.length == 0) {\n            return MapType.construct(rawClass, _unknownType(), _unknownType());\n        }\n        // but exactly 2 types if any found\n        if (typeParams.length != 2) {\n            throw new IllegalArgumentException(\"Strange Map type \"+rawClass.getName()+\": can not determine type parameters\");\n        }\n        return MapType.construct(rawClass, typeParams[0], typeParams[1]);\n    }"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "Certainly! The issue with the current implementation is that `_unknownType()` might not be the correct approach for handling unknown type parameters, especially since `_unknownType()` isn't defined within the provided snippet. Instead, we should use `UnknownType.instance()` from the Jackson library to handle unknown types.\n\nHere's the complete corrected method:\n\n```java\nprivate JavaType _mapType(Class<?> rawClass) {\n    // 28-May-2015, tatu: Properties are special, as per [databind#810]\n    JavaType[] typeParams = findTypeParameters(rawClass, Map.class);\n    // ok to have no types (\"raw\")\n    if (typeParams == null) {\n        return MapType.construct(rawClass, UnknownType.instance(), UnknownType.instance());\n    }\n    // but exactly 2 types if any found\n    if (typeParams.length != 2) {\n        throw new IllegalArgumentException(\"Strange Map type \" + rawClass.getName() + \": can not determine type parameters\");\n    }\n    return MapType.construct(rawClass, typeParams[0], typeParams[1]);\n}\n```\n\nThis correction ensures that when `typeParams` is `null`, the method uses `UnknownType.instance()` to represent the unknown type parameters for the map.",
+            "deepseek-chat": "private JavaType _mapType(Class<?> rawClass)\n    {\n        // 28-May-2015, tatu: Properties are special, as per [databind#810]\n        JavaType[] typeParams = findTypeParameters(rawClass, Map.class);\n        // ok to have no types (\"raw\")\n        if (typeParams == null || typeParams.length == 0) {\n            return MapType.construct(rawClass, _unknownType(), _unknownType());\n        }\n        // but exactly 2 types if any found\n        if (typeParams.length != 2) {\n            throw new IllegalArgumentException(\"Strange Map type \"+rawClass.getName()+\": can not determine type parameters\");\n        }\n        return MapType.construct(rawClass, typeParams[0], typeParams[1]);\n    }",
+            "doubao-pro-4k": "private JavaType _mapType(Class<?> rawClass)\n    {\n        // 28-May-2015, tatu: Properties are special, as per [databind#810]\n        JavaType[] typeParams = findTypeParameters(rawClass, Map.class);\n        // ok to have no types (\"raw\")\n        if (typeParams == null || typeParams.length == 0) {\n            return MapType.construct(rawClass, _unknownType(), _unknownType());\n        }\n        // but exactly 2 types if any found\n        if (typeParams.length!= 2) {\n            throw new IllegalArgumentException(\"Strange Map type \"+rawClass.getName()+\": can not determine type parameters\");\n        }\n        return MapType.construct(rawClass, typeParams[0], typeParams[1]);\n    }",
+            "gpt-4o-mini": "private JavaType _mapType(Class<?> rawClass)\n{\n    // 28-May-2015, tatu: Properties are special, as per [databind#810]\n    JavaType[] typeParams = findTypeParameters(rawClass, Map.class);\n    // Check if typeParams is empty or null and handle accordingly\n    if (typeParams == null || typeParams.length == 0) {\n        return MapType.construct(rawClass, _unknownType(), _unknownType());\n    }\n    // But exactly 2 types if any found\n    if (typeParams.length != 2) {\n        throw new IllegalArgumentException(\"Strange Map type \" + rawClass.getName() + \": can not determine type parameters\");\n    }\n    return MapType.construct(rawClass, typeParams[0], typeParams[1]);\n}",
+            "ernie-3.5-128k": "private JavaType _mapType(Class<?> rawClass)\n    {\n        // 28-May-2015, tatu: Properties are special, as per [databind#810]\n        JavaType[] typeParams = findTypeParameters(rawClass, Map.class);\n        // ok to have no types (\"raw\"), should handle null and empty array\n        if (typeParams == null || typeParams.length == 0) {\n            return MapType.construct(rawClass, _unknownType(), _unknownType());\n        }\n        // but exactly 2 types if any found\n        if (typeParams.length != 2) {\n            throw new IllegalArgumentException(\"Strange Map type \" + rawClass.getName() + \": can not determine type parameters\");\n        }\n        return MapType.construct(rawClass, typeParams[0], typeParams[1]);\n    }"
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\nprivate JavaType _mapType(Class<?> rawClass) {\n    // 28-May-2015, tatu: Properties are special, as per [databind#810]\n    JavaType[] typeParams = findTypeParameters(rawClass, Map.class);\n    // ok to have no types (\"raw\")\n    if (typeParams == null) {\n```",
+            "doubao-pro-4k": "private JavaType _mapType(Class<?> rawClass)\n    {\n        // 28-May-2015, tatu: Properties are special, as per [databind#810]\n        JavaType[] typeParams = findTypeParameters(rawClass, Map.class);\n        // ok to have no types (\"raw\")\n        if (typeParams == null || typeParams.length == 0) {",
+            "deepseek-chat": "```java\nprivate JavaType _mapType(Class<?> rawClass)\n{\n    // 28-May-2015, tatu: Properties are special, as per [databind#810]\n    JavaType[] typeParams = findTypeParameters(rawClass, Map.class);\n    // ok to have no types (\"raw\")\n    if (typeParams == null) {\n        return _fromClass(rawClass, null);\n    }\n```",
+            "gpt-4o-mini": "private JavaType _mapType(Class<?> rawClass)\n{\n    // 28-May-2015, tatu: Properties are special, as per [databind#810]\n    JavaType[] typeParams = findTypeParameters(rawClass, Map.class);\n    // ok to have no types (\"raw\")\n    if (typeParams == null || typeParams.length == 0) {",
+            "ernie-3.5-128k": "private JavaType _mapType(Class<?> rawClass)\n    {\n        // 28-May-2015, tatu: Properties are special, as per [databind#810]\n        JavaType[] typeParams = findTypeParameters(rawClass, Map.class);\n        // ok to have no types (\"raw\"), should return a default or handle accordingly\n        if (typeParams == null || typeParams.length == 0) {"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"JavaType[] typeParams = findTypeParameters(rawClass, Map.class, 2);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"if (typeParams == null || typeParams.length!= 2) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"JavaType[] typeParams = findTypeParameters(rawClass, Map.class, null);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return MapType.construct(rawClass, _unknownType(), _unknownType());\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return MapType.construct(rawClass, typeParams[0], typeParams[1]);\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"JavaType[] typeParams = (JavaType[]) findTypeParameters(rawClass, Map.class);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"if (typeParams == null || typeParams.length == 0) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"if (typeParams == null || typeParams.length == 0) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"if (typeParams.length == 0) {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"if (typeParams == null || typeParams.length == 0) {\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"if (typeParams == null || typeParams.length == 0) {\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"if (typeParams == null || typeParams.length == 0) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"if (typeParams == null || typeParams.length == 0) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"if (typeParams == null || typeParams.length == 0) {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"if (typeParams == null || typeParams.length == 0) {\"\n    }\n]"
+        }
+    }
+]

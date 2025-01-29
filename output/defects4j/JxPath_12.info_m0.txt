@@ -1,0 +1,130 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/jxpath/ri/model/dom/DOMNodePointer.java
+================== buggy_method ==================
+{'method_name': 'testNode', 'method_body': 'public static boolean testNode(Node node, NodeTest test) {\n        if (test == null) {\n            return true;\n        }\n        if (test instanceof NodeNameTest) {\n            if (node.getNodeType() != Node.ELEMENT_NODE) {\n                return false;\n            }\n\n            NodeNameTest nodeNameTest = (NodeNameTest) test;\n            QName testName = nodeNameTest.getNodeName();\n            String namespaceURI = nodeNameTest.getNamespaceURI();\n            boolean wildcard = nodeNameTest.isWildcard();\n            String testPrefix = testName.getPrefix();\n            if (wildcard && testPrefix == null) {\n                return true;\n            }\n            if (wildcard\n                || testName.getName()\n                        .equals(DOMNodePointer.getLocalName(node))) {\n                String nodeNS = DOMNodePointer.getNamespaceURI(node);\n                return equalStrings(namespaceURI, nodeNS);\n            }\n            return false;\n        }\n        if (test instanceof NodeTypeTest) {\n            int nodeType = node.getNodeType();\n            switch (((NodeTypeTest) test).getNodeType()) {\n                case Compiler.NODE_TYPE_NODE :\n                    return nodeType == Node.ELEMENT_NODE\n                            || nodeType == Node.DOCUMENT_NODE;\n                case Compiler.NODE_TYPE_TEXT :\n                    return nodeType == Node.CDATA_SECTION_NODE\n                        || nodeType == Node.TEXT_NODE;\n                case Compiler.NODE_TYPE_COMMENT :\n                    return nodeType == Node.COMMENT_NODE;\n                case Compiler.NODE_TYPE_PI :\n                    return nodeType == Node.PROCESSING_INSTRUCTION_NODE;\n            }\n            return false;\n        }\n        if (test instanceof ProcessingInstructionTest) {\n            if (node.getNodeType() == Node.PROCESSING_INSTRUCTION_NODE) {\n                String testPI = ((ProcessingInstructionTest) test).getTarget();\n                String nodePI = ((ProcessingInstruction) node).getTarget();\n                return testPI.equals(nodePI);\n            }\n        }\n        return false;\n    }', 'start_line': 87, 'end_line': 136, 'buggy_lines': [108]}
+================== buggy_method_src ==================
+public static boolean testNode(Node node, NodeTest test) {
+        if (test == null) {
+            return true;
+        }
+        if (test instanceof NodeNameTest) {
+            if (node.getNodeType() != Node.ELEMENT_NODE) {
+                return false;
+            }
+
+            NodeNameTest nodeNameTest = (NodeNameTest) test;
+            QName testName = nodeNameTest.getNodeName();
+            String namespaceURI = nodeNameTest.getNamespaceURI();
+            boolean wildcard = nodeNameTest.isWildcard();
+            String testPrefix = testName.getPrefix();
+            if (wildcard && testPrefix == null) {
+                return true;
+            }
+            if (wildcard
+                || testName.getName()
+                        .equals(DOMNodePointer.getLocalName(node))) {
+                String nodeNS = DOMNodePointer.getNamespaceURI(node);
+                return equalStrings(namespaceURI, nodeNS);
+            }
+            return false;
+        }
+        if (test instanceof NodeTypeTest) {
+            int nodeType = node.getNodeType();
+            switch (((NodeTypeTest) test).getNodeType()) {
+                case Compiler.NODE_TYPE_NODE :
+                    return nodeType == Node.ELEMENT_NODE
+                            || nodeType == Node.DOCUMENT_NODE;
+                case Compiler.NODE_TYPE_TEXT :
+                    return nodeType == Node.CDATA_SECTION_NODE
+                        || nodeType == Node.TEXT_NODE;
+                case Compiler.NODE_TYPE_COMMENT :
+                    return nodeType == Node.COMMENT_NODE;
+                case Compiler.NODE_TYPE_PI :
+                    return nodeType == Node.PROCESSING_INSTRUCTION_NODE;
+            }
+            return false;
+        }
+        if (test instanceof ProcessingInstructionTest) {
+            if (node.getNodeType() == Node.PROCESSING_INSTRUCTION_NODE) {
+                String testPI = ((ProcessingInstructionTest) test).getTarget();
+                String nodePI = ((ProcessingInstruction) node).getTarget();
+                return testPI.equals(nodePI);
+            }
+        }
+        return false;
+    }
+================== test_stack ==================
+org.apache.commons.jxpath.ri.model.ExternalXMLNamespaceTest::testElementDOM
+org.apache.commons.jxpath.JXPathNotFoundException: No value for xpath: /ElementA/B:ElementB
+	at org.apache.commons.jxpath.ri.JXPathContextReferenceImpl.getValue(JXPathContextReferenceImpl.java:355)
+	at org.apache.commons.jxpath.ri.JXPathContextReferenceImpl.getValue(JXPathContextReferenceImpl.java:289)
+	at org.apache.commons.jxpath.JXPathTestCase.assertXPathValue(JXPathTestCase.java:54)
+	at org.apache.commons.jxpath.ri.model.ExternalXMLNamespaceTest.doTest(ExternalXMLNamespaceTest.java:54)
+	at org.apache.commons.jxpath.ri.model.ExternalXMLNamespaceTest.doTestElement(ExternalXMLNamespaceTest.java:62)
+	at org.apache.commons.jxpath.ri.model.ExternalXMLNamespaceTest.testElementDOM(ExternalXMLNamespaceTest.java:70)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+doTestElement(DocumentContainer.MODEL_DOM);
+
+================== buggy_lines_in_method ==================
+[22]
+================== buggy_statements ==================
+['                return equalStrings(namespaceURI, nodeNS);']
+================== buggy_method_src_endswith_buggy_statement ==================
+public static boolean testNode(Node node, NodeTest test) {
+        if (test == null) {
+            return true;
+        }
+        if (test instanceof NodeNameTest) {
+            if (node.getNodeType() != Node.ELEMENT_NODE) {
+                return false;
+            }
+
+            NodeNameTest nodeNameTest = (NodeNameTest) test;
+            QName testName = nodeNameTest.getNodeName();
+            String namespaceURI = nodeNameTest.getNamespaceURI();
+            boolean wildcard = nodeNameTest.isWildcard();
+            String testPrefix = testName.getPrefix();
+            if (wildcard && testPrefix == null) {
+                return true;
+            }
+            if (wildcard
+                || testName.getName()
+                        .equals(DOMNodePointer.getLocalName(node))) {
+                String nodeNS = DOMNodePointer.getNamespaceURI(node);
+                return equalStrings(namespaceURI, nodeNS);

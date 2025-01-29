@@ -1,0 +1,256 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/lang3/StringUtils.java
+================== buggy_method ==================
+{'method_name': 'replaceEach', 'method_body': 'private static String replaceEach(String text, String[] searchList, String[] replacementList, \n                                      boolean repeat, int timeToLive) \n    {\n\n        // mchyzer Performance note: This creates very few new objects (one major goal)\n        // let me know if there are performance requests, we can create a harness to measure\n\n        if (text == null || text.length() == 0 || searchList == null || \n            searchList.length == 0 || replacementList == null || replacementList.length == 0) \n        {\n            return text;\n        }\n\n        // if recursing, this shouldnt be less than 0\n        if (timeToLive < 0) {\n            throw new IllegalStateException("TimeToLive of " + timeToLive + " is less than 0: " + text);\n        }\n\n        int searchLength = searchList.length;\n        int replacementLength = replacementList.length;\n\n        // make sure lengths are ok, these need to be equal\n        if (searchLength != replacementLength) {\n            throw new IllegalArgumentException("Search and Replace array lengths don\'t match: "\n                + searchLength\n                + " vs "\n                + replacementLength);\n        }\n\n        // keep track of which still have matches\n        boolean[] noMoreMatchesForReplIndex = new boolean[searchLength];\n\n        // index on index that the match was found\n        int textIndex = -1;\n        int replaceIndex = -1;\n        int tempIndex = -1;\n\n        // index of replace array that will replace the search string found\n        // NOTE: logic duplicated below START\n        for (int i = 0; i < searchLength; i++) {\n            if (noMoreMatchesForReplIndex[i] || searchList[i] == null || \n                searchList[i].length() == 0 || replacementList[i] == null) \n            {\n                continue;\n            }\n            tempIndex = text.indexOf(searchList[i]);\n\n            // see if we need to keep searching for this\n            if (tempIndex == -1) {\n                noMoreMatchesForReplIndex[i] = true;\n            } else {\n                if (textIndex == -1 || tempIndex < textIndex) {\n                    textIndex = tempIndex;\n                    replaceIndex = i;\n                }\n            }\n        }\n        // NOTE: logic mostly below END\n\n        // no search strings found, we are done\n        if (textIndex == -1) {\n            return text;\n        }\n\n        int start = 0;\n\n        // get a good guess on the size of the result buffer so it doesnt have to double if it goes over a bit\n        int increase = 0;\n\n        // count the replacement text elements that are larger than their corresponding text being replaced\n        for (int i = 0; i < searchList.length; i++) {\n            int greater = replacementList[i].length() - searchList[i].length();\n            if (greater > 0) {\n                increase += 3 * greater; // assume 3 matches\n            }\n        }\n        // have upper-bound at 20% increase, then let Java take over\n        increase = Math.min(increase, text.length() / 5);\n\n        StringBuilder buf = new StringBuilder(text.length() + increase);\n\n        while (textIndex != -1) {\n\n            for (int i = start; i < textIndex; i++) {\n                buf.append(text.charAt(i));\n            }\n            buf.append(replacementList[replaceIndex]);\n\n            start = textIndex + searchList[replaceIndex].length();\n\n            textIndex = -1;\n            replaceIndex = -1;\n            tempIndex = -1;\n            // find the next earliest match\n            // NOTE: logic mostly duplicated above START\n            for (int i = 0; i < searchLength; i++) {\n                if (noMoreMatchesForReplIndex[i] || searchList[i] == null || \n                    searchList[i].length() == 0 || replacementList[i] == null) \n                {\n                    continue;\n                }\n                tempIndex = text.indexOf(searchList[i], start);\n\n                // see if we need to keep searching for this\n                if (tempIndex == -1) {\n                    noMoreMatchesForReplIndex[i] = true;\n                } else {\n                    if (textIndex == -1 || tempIndex < textIndex) {\n                        textIndex = tempIndex;\n                        replaceIndex = i;\n                    }\n                }\n            }\n            // NOTE: logic duplicated above END\n\n        }\n        int textLength = text.length();\n        for (int i = start; i < textLength; i++) {\n            buf.append(text.charAt(i));\n        }\n        String result = buf.toString();\n        if (!repeat) {\n            return result;\n        }\n\n        return replaceEach(result, searchList, replacementList, repeat, timeToLive - 1);\n    }', 'start_line': 3605, 'end_line': 3731, 'buggy_lines': [3678]}
+================== buggy_method_src ==================
+private static String replaceEach(String text, String[] searchList, String[] replacementList, 
+                                      boolean repeat, int timeToLive) 
+    {
+
+        // mchyzer Performance note: This creates very few new objects (one major goal)
+        // let me know if there are performance requests, we can create a harness to measure
+
+        if (text == null || text.length() == 0 || searchList == null || 
+            searchList.length == 0 || replacementList == null || replacementList.length == 0) 
+        {
+            return text;
+        }
+
+        // if recursing, this shouldnt be less than 0
+        if (timeToLive < 0) {
+            throw new IllegalStateException("TimeToLive of " + timeToLive + " is less than 0: " + text);
+        }
+
+        int searchLength = searchList.length;
+        int replacementLength = replacementList.length;
+
+        // make sure lengths are ok, these need to be equal
+        if (searchLength != replacementLength) {
+            throw new IllegalArgumentException("Search and Replace array lengths don't match: "
+                + searchLength
+                + " vs "
+                + replacementLength);
+        }
+
+        // keep track of which still have matches
+        boolean[] noMoreMatchesForReplIndex = new boolean[searchLength];
+
+        // index on index that the match was found
+        int textIndex = -1;
+        int replaceIndex = -1;
+        int tempIndex = -1;
+
+        // index of replace array that will replace the search string found
+        // NOTE: logic duplicated below START
+        for (int i = 0; i < searchLength; i++) {
+            if (noMoreMatchesForReplIndex[i] || searchList[i] == null || 
+                searchList[i].length() == 0 || replacementList[i] == null) 
+            {
+                continue;
+            }
+            tempIndex = text.indexOf(searchList[i]);
+
+            // see if we need to keep searching for this
+            if (tempIndex == -1) {
+                noMoreMatchesForReplIndex[i] = true;
+            } else {
+                if (textIndex == -1 || tempIndex < textIndex) {
+                    textIndex = tempIndex;
+                    replaceIndex = i;
+                }
+            }
+        }
+        // NOTE: logic mostly below END
+
+        // no search strings found, we are done
+        if (textIndex == -1) {
+            return text;
+        }
+
+        int start = 0;
+
+        // get a good guess on the size of the result buffer so it doesnt have to double if it goes over a bit
+        int increase = 0;
+
+        // count the replacement text elements that are larger than their corresponding text being replaced
+        for (int i = 0; i < searchList.length; i++) {
+            int greater = replacementList[i].length() - searchList[i].length();
+            if (greater > 0) {
+                increase += 3 * greater; // assume 3 matches
+            }
+        }
+        // have upper-bound at 20% increase, then let Java take over
+        increase = Math.min(increase, text.length() / 5);
+
+        StringBuilder buf = new StringBuilder(text.length() + increase);
+
+        while (textIndex != -1) {
+
+            for (int i = start; i < textIndex; i++) {
+                buf.append(text.charAt(i));
+            }
+            buf.append(replacementList[replaceIndex]);
+
+            start = textIndex + searchList[replaceIndex].length();
+
+            textIndex = -1;
+            replaceIndex = -1;
+            tempIndex = -1;
+            // find the next earliest match
+            // NOTE: logic mostly duplicated above START
+            for (int i = 0; i < searchLength; i++) {
+                if (noMoreMatchesForReplIndex[i] || searchList[i] == null || 
+                    searchList[i].length() == 0 || replacementList[i] == null) 
+                {
+                    continue;
+                }
+                tempIndex = text.indexOf(searchList[i], start);
+
+                // see if we need to keep searching for this
+                if (tempIndex == -1) {
+                    noMoreMatchesForReplIndex[i] = true;
+                } else {
+                    if (textIndex == -1 || tempIndex < textIndex) {
+                        textIndex = tempIndex;
+                        replaceIndex = i;
+                    }
+                }
+            }
+            // NOTE: logic duplicated above END
+
+        }
+        int textLength = text.length();
+        for (int i = start; i < textLength; i++) {
+            buf.append(text.charAt(i));
+        }
+        String result = buf.toString();
+        if (!repeat) {
+            return result;
+        }
+
+        return replaceEach(result, searchList, replacementList, repeat, timeToLive - 1);
+    }
+================== test_stack ==================
+org.apache.commons.lang3.StringUtilsTest::testReplace_StringStringArrayStringArray
+java.lang.NullPointerException
+	at org.apache.commons.lang3.StringUtils.replaceEach(StringUtils.java:3676)
+	at org.apache.commons.lang3.StringUtils.replaceEach(StringUtils.java:3502)
+	at org.apache.commons.lang3.StringUtilsTest.testReplace_StringStringArrayStringArray(StringUtilsTest.java:1039)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals(StringUtils.replaceEach("aba", new String[]{"a", "b"}, new String[]{"c", null}),"cbc");
+
+================== buggy_lines_in_method ==================
+[74]
+================== buggy_statements ==================
+['                increase += 3 * greater; // assume 3 matches']
+================== buggy_method_src_endswith_buggy_statement ==================
+private static String replaceEach(String text, String[] searchList, String[] replacementList, 
+                                      boolean repeat, int timeToLive) 
+    {
+
+        // mchyzer Performance note: This creates very few new objects (one major goal)
+        // let me know if there are performance requests, we can create a harness to measure
+
+        if (text == null || text.length() == 0 || searchList == null || 
+            searchList.length == 0 || replacementList == null || replacementList.length == 0) 
+        {
+            return text;
+        }
+
+        // if recursing, this shouldnt be less than 0
+        if (timeToLive < 0) {
+            throw new IllegalStateException("TimeToLive of " + timeToLive + " is less than 0: " + text);
+        }
+
+        int searchLength = searchList.length;
+        int replacementLength = replacementList.length;
+
+        // make sure lengths are ok, these need to be equal
+        if (searchLength != replacementLength) {
+            throw new IllegalArgumentException("Search and Replace array lengths don't match: "
+                + searchLength
+                + " vs "
+                + replacementLength);
+        }
+
+        // keep track of which still have matches
+        boolean[] noMoreMatchesForReplIndex = new boolean[searchLength];
+
+        // index on index that the match was found
+        int textIndex = -1;
+        int replaceIndex = -1;
+        int tempIndex = -1;
+
+        // index of replace array that will replace the search string found
+        // NOTE: logic duplicated below START
+        for (int i = 0; i < searchLength; i++) {
+            if (noMoreMatchesForReplIndex[i] || searchList[i] == null || 
+                searchList[i].length() == 0 || replacementList[i] == null) 
+            {
+                continue;
+            }
+            tempIndex = text.indexOf(searchList[i]);
+
+            // see if we need to keep searching for this
+            if (tempIndex == -1) {
+                noMoreMatchesForReplIndex[i] = true;
+            } else {
+                if (textIndex == -1 || tempIndex < textIndex) {
+                    textIndex = tempIndex;
+                    replaceIndex = i;
+                }
+            }
+        }
+        // NOTE: logic mostly below END
+
+        // no search strings found, we are done
+        if (textIndex == -1) {
+            return text;
+        }
+
+        int start = 0;
+
+        // get a good guess on the size of the result buffer so it doesnt have to double if it goes over a bit
+        int increase = 0;
+
+        // count the replacement text elements that are larger than their corresponding text being replaced
+        for (int i = 0; i < searchList.length; i++) {
+            int greater = replacementList[i].length() - searchList[i].length();
+            if (greater > 0) {
+                increase += 3 * greater; // assume 3 matches

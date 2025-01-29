@@ -1,0 +1,247 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/compress/archivers/zip/ZipArchiveInputStream.java
+================== buggy_method ==================
+{'method_name': 'getNextZipEntry', 'method_body': 'public ZipArchiveEntry getNextZipEntry() throws IOException {\n        boolean firstEntry = true;\n        if (closed || hitCentralDirectory) {\n            return null;\n        }\n        if (current != null) {\n            closeEntry();\n            firstEntry = false;\n        }\n\n        try {\n            if (firstEntry) {\n                // split archives have a special signature before the\n                // first local file header - look for it and fail with\n                // the appropriate error message if this is a split\n                // archive.\n                readFirstLocalFileHeader(LFH_BUF);\n            } else {\n                readFully(LFH_BUF);\n            }\n        } catch (final EOFException e) {\n            return null;\n        }\n\n        final ZipLong sig = new ZipLong(LFH_BUF);\n        if (sig.equals(ZipLong.CFH_SIG) || sig.equals(ZipLong.AED_SIG)) {\n            hitCentralDirectory = true;\n            skipRemainderOfArchive();\n        }\n        if (!sig.equals(ZipLong.LFH_SIG)) {\n            return null;\n        }\n\n        int off = WORD;\n        current = new CurrentEntry();\n\n        final int versionMadeBy = ZipShort.getValue(LFH_BUF, off);\n        off += SHORT;\n        current.entry.setPlatform((versionMadeBy >> ZipFile.BYTE_SHIFT) & ZipFile.NIBLET_MASK);\n\n        final GeneralPurposeBit gpFlag = GeneralPurposeBit.parse(LFH_BUF, off);\n        final boolean hasUTF8Flag = gpFlag.usesUTF8ForNames();\n        final ZipEncoding entryEncoding = hasUTF8Flag ? ZipEncodingHelper.UTF8_ZIP_ENCODING : zipEncoding;\n        current.hasDataDescriptor = gpFlag.usesDataDescriptor();\n        current.entry.setGeneralPurposeBit(gpFlag);\n\n        off += SHORT;\n\n        current.entry.setMethod(ZipShort.getValue(LFH_BUF, off));\n        off += SHORT;\n\n        final long time = ZipUtil.dosToJavaTime(ZipLong.getValue(LFH_BUF, off));\n        current.entry.setTime(time);\n        off += WORD;\n\n        ZipLong size = null, cSize = null;\n        if (!current.hasDataDescriptor) {\n            current.entry.setCrc(ZipLong.getValue(LFH_BUF, off));\n            off += WORD;\n\n            cSize = new ZipLong(LFH_BUF, off);\n            off += WORD;\n\n            size = new ZipLong(LFH_BUF, off);\n            off += WORD;\n        } else {\n            off += 3 * WORD;\n        }\n\n        final int fileNameLen = ZipShort.getValue(LFH_BUF, off);\n\n        off += SHORT;\n\n        final int extraLen = ZipShort.getValue(LFH_BUF, off);\n        off += SHORT;\n\n        final byte[] fileName = new byte[fileNameLen];\n        readFully(fileName);\n        current.entry.setName(entryEncoding.decode(fileName), fileName);\n\n        final byte[] extraData = new byte[extraLen];\n        readFully(extraData);\n        current.entry.setExtra(extraData);\n\n        if (!hasUTF8Flag && useUnicodeExtraFields) {\n            ZipUtil.setNameAndCommentFromExtraFields(current.entry, fileName, null);\n        }\n\n        processZip64Extra(size, cSize);\n\n        if (current.entry.getCompressedSize() != ArchiveEntry.SIZE_UNKNOWN) {\n            if (current.entry.getMethod() == ZipMethod.UNSHRINKING.getCode()) {\n                current.in = new UnshrinkingInputStream(new BoundedInputStream(in, current.entry.getCompressedSize()));\n            } else if (current.entry.getMethod() == ZipMethod.IMPLODING.getCode()) {\n                current.in = new ExplodingInputStream(\n                        current.entry.getGeneralPurposeBit().getSlidingDictionarySize(),\n                        current.entry.getGeneralPurposeBit().getNumberOfShannonFanoTrees(),\n                        new BoundedInputStream(in, current.entry.getCompressedSize()));\n            } else if (current.entry.getMethod() == ZipMethod.BZIP2.getCode()) {\n                current.in = new BZip2CompressorInputStream(new BoundedInputStream(in, current.entry.getCompressedSize()));\n            }\n        }\n        \n        entriesRead++;\n        return current.entry;\n    }', 'start_line': 219, 'end_line': 324, 'buggy_lines': [249]}
+================== buggy_method_src ==================
+public ZipArchiveEntry getNextZipEntry() throws IOException {
+        boolean firstEntry = true;
+        if (closed || hitCentralDirectory) {
+            return null;
+        }
+        if (current != null) {
+            closeEntry();
+            firstEntry = false;
+        }
+
+        try {
+            if (firstEntry) {
+                // split archives have a special signature before the
+                // first local file header - look for it and fail with
+                // the appropriate error message if this is a split
+                // archive.
+                readFirstLocalFileHeader(LFH_BUF);
+            } else {
+                readFully(LFH_BUF);
+            }
+        } catch (final EOFException e) {
+            return null;
+        }
+
+        final ZipLong sig = new ZipLong(LFH_BUF);
+        if (sig.equals(ZipLong.CFH_SIG) || sig.equals(ZipLong.AED_SIG)) {
+            hitCentralDirectory = true;
+            skipRemainderOfArchive();
+        }
+        if (!sig.equals(ZipLong.LFH_SIG)) {
+            return null;
+        }
+
+        int off = WORD;
+        current = new CurrentEntry();
+
+        final int versionMadeBy = ZipShort.getValue(LFH_BUF, off);
+        off += SHORT;
+        current.entry.setPlatform((versionMadeBy >> ZipFile.BYTE_SHIFT) & ZipFile.NIBLET_MASK);
+
+        final GeneralPurposeBit gpFlag = GeneralPurposeBit.parse(LFH_BUF, off);
+        final boolean hasUTF8Flag = gpFlag.usesUTF8ForNames();
+        final ZipEncoding entryEncoding = hasUTF8Flag ? ZipEncodingHelper.UTF8_ZIP_ENCODING : zipEncoding;
+        current.hasDataDescriptor = gpFlag.usesDataDescriptor();
+        current.entry.setGeneralPurposeBit(gpFlag);
+
+        off += SHORT;
+
+        current.entry.setMethod(ZipShort.getValue(LFH_BUF, off));
+        off += SHORT;
+
+        final long time = ZipUtil.dosToJavaTime(ZipLong.getValue(LFH_BUF, off));
+        current.entry.setTime(time);
+        off += WORD;
+
+        ZipLong size = null, cSize = null;
+        if (!current.hasDataDescriptor) {
+            current.entry.setCrc(ZipLong.getValue(LFH_BUF, off));
+            off += WORD;
+
+            cSize = new ZipLong(LFH_BUF, off);
+            off += WORD;
+
+            size = new ZipLong(LFH_BUF, off);
+            off += WORD;
+        } else {
+            off += 3 * WORD;
+        }
+
+        final int fileNameLen = ZipShort.getValue(LFH_BUF, off);
+
+        off += SHORT;
+
+        final int extraLen = ZipShort.getValue(LFH_BUF, off);
+        off += SHORT;
+
+        final byte[] fileName = new byte[fileNameLen];
+        readFully(fileName);
+        current.entry.setName(entryEncoding.decode(fileName), fileName);
+
+        final byte[] extraData = new byte[extraLen];
+        readFully(extraData);
+        current.entry.setExtra(extraData);
+
+        if (!hasUTF8Flag && useUnicodeExtraFields) {
+            ZipUtil.setNameAndCommentFromExtraFields(current.entry, fileName, null);
+        }
+
+        processZip64Extra(size, cSize);
+
+        if (current.entry.getCompressedSize() != ArchiveEntry.SIZE_UNKNOWN) {
+            if (current.entry.getMethod() == ZipMethod.UNSHRINKING.getCode()) {
+                current.in = new UnshrinkingInputStream(new BoundedInputStream(in, current.entry.getCompressedSize()));
+            } else if (current.entry.getMethod() == ZipMethod.IMPLODING.getCode()) {
+                current.in = new ExplodingInputStream(
+                        current.entry.getGeneralPurposeBit().getSlidingDictionarySize(),
+                        current.entry.getGeneralPurposeBit().getNumberOfShannonFanoTrees(),
+                        new BoundedInputStream(in, current.entry.getCompressedSize()));
+            } else if (current.entry.getMethod() == ZipMethod.BZIP2.getCode()) {
+                current.in = new BZip2CompressorInputStream(new BoundedInputStream(in, current.entry.getCompressedSize()));
+            }
+        }
+        
+        entriesRead++;
+        return current.entry;
+    }
+================== test_stack ==================
+org.apache.commons.compress.archivers.ZipTestCase::testListAllFilesWithNestedArchive
+junit.framework.AssertionFailedError: expected:<1> but was:<0>
+	at org.junit.Assert.fail(Assert.java:88)
+	at org.junit.Assert.failNotEquals(Assert.java:743)
+	at org.junit.Assert.assertEquals(Assert.java:118)
+	at org.junit.Assert.assertEquals(Assert.java:555)
+	at org.junit.Assert.assertEquals(Assert.java:542)
+	at org.apache.commons.compress.archivers.ZipTestCase.testListAllFilesWithNestedArchive(ZipTestCase.java:281)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.apache.commons.compress.archivers.zip.ZipArchiveInputStreamTest::testThrowOnInvalidEntry
+junit.framework.AssertionFailedError: IOException expected
+	at org.junit.Assert.fail(Assert.java:88)
+	at org.apache.commons.compress.archivers.zip.ZipArchiveInputStreamTest.testThrowOnInvalidEntry(ZipArchiveInputStreamTest.java:243)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals(1, expectedExceptions.size());
+
+================== buggy_lines_in_method ==================
+[31]
+================== buggy_statements ==================
+['            return null;']
+================== buggy_method_src_endswith_buggy_statement ==================
+public ZipArchiveEntry getNextZipEntry() throws IOException {
+        boolean firstEntry = true;
+        if (closed || hitCentralDirectory) {
+            return null;
+        }
+        if (current != null) {
+            closeEntry();
+            firstEntry = false;
+        }
+
+        try {
+            if (firstEntry) {
+                // split archives have a special signature before the
+                // first local file header - look for it and fail with
+                // the appropriate error message if this is a split
+                // archive.
+                readFirstLocalFileHeader(LFH_BUF);
+            } else {
+                readFully(LFH_BUF);
+            }
+        } catch (final EOFException e) {
+            return null;
+        }
+
+        final ZipLong sig = new ZipLong(LFH_BUF);
+        if (sig.equals(ZipLong.CFH_SIG) || sig.equals(ZipLong.AED_SIG)) {
+            hitCentralDirectory = true;
+            skipRemainderOfArchive();
+        }
+        if (!sig.equals(ZipLong.LFH_SIG)) {
+            return null;

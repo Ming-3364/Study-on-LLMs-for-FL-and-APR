@@ -1,0 +1,125 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/deser/std/CollectionDeserializer.java
+================== buggy_method ==================
+{'method_name': 'createContextual', 'method_body': '@Override\n    public CollectionDeserializer createContextual(DeserializationContext ctxt,\n            BeanProperty property) throws JsonMappingException\n    {\n        // May need to resolve types for delegate-based creators:\n        JsonDeserializer<Object> delegateDeser = null;\n        if (_valueInstantiator != null) {\n            if (_valueInstantiator.canCreateUsingDelegate()) {\n                JavaType delegateType = _valueInstantiator.getDelegateType(ctxt.getConfig());\n                if (delegateType == null) {\n                    throw new IllegalArgumentException("Invalid delegate-creator definition for "+_collectionType\n                            +": value instantiator ("+_valueInstantiator.getClass().getName()\n                            +") returned true for \'canCreateUsingDelegate()\', but null for \'getDelegateType()\'");\n                }\n                delegateDeser = findDeserializer(ctxt, delegateType, property);\n            }\n        }\n        // [databind#1043]: allow per-property allow-wrapping of single overrides:\n        // 11-Dec-2015, tatu: Should we pass basic `Collection.class`, or more refined? Mostly\n        //   comes down to "List vs Collection" I suppose... for now, pass Collection\n        Boolean unwrapSingle = findFormatFeature(ctxt, property, Collection.class,\n                JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY);\n        // also, often value deserializer is resolved here:\n        JsonDeserializer<?> valueDeser = _valueDeserializer;\n        \n        // May have a content converter\n        valueDeser = findConvertingContentDeserializer(ctxt, property, valueDeser);\n        final JavaType vt = _collectionType.getContentType();\n        if (valueDeser == null) {\n            valueDeser = ctxt.findContextualValueDeserializer(vt, property);\n        } else { // if directly assigned, probably not yet contextual, so:\n            valueDeser = ctxt.handleSecondaryContextualization(valueDeser, property, vt);\n        }\n        // and finally, type deserializer needs context as well\n        TypeDeserializer valueTypeDeser = _valueTypeDeserializer;\n        if (valueTypeDeser != null) {\n            valueTypeDeser = valueTypeDeser.forProperty(property);\n        }\n        return withResolved(delegateDeser, valueDeser, valueTypeDeser, unwrapSingle);\n    }', 'start_line': 169, 'end_line': 208, 'buggy_lines': [191]}
+================== buggy_method_src ==================
+@Override
+    public CollectionDeserializer createContextual(DeserializationContext ctxt,
+            BeanProperty property) throws JsonMappingException
+    {
+        // May need to resolve types for delegate-based creators:
+        JsonDeserializer<Object> delegateDeser = null;
+        if (_valueInstantiator != null) {
+            if (_valueInstantiator.canCreateUsingDelegate()) {
+                JavaType delegateType = _valueInstantiator.getDelegateType(ctxt.getConfig());
+                if (delegateType == null) {
+                    throw new IllegalArgumentException("Invalid delegate-creator definition for "+_collectionType
+                            +": value instantiator ("+_valueInstantiator.getClass().getName()
+                            +") returned true for 'canCreateUsingDelegate()', but null for 'getDelegateType()'");
+                }
+                delegateDeser = findDeserializer(ctxt, delegateType, property);
+            }
+        }
+        // [databind#1043]: allow per-property allow-wrapping of single overrides:
+        // 11-Dec-2015, tatu: Should we pass basic `Collection.class`, or more refined? Mostly
+        //   comes down to "List vs Collection" I suppose... for now, pass Collection
+        Boolean unwrapSingle = findFormatFeature(ctxt, property, Collection.class,
+                JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
+        // also, often value deserializer is resolved here:
+        JsonDeserializer<?> valueDeser = _valueDeserializer;
+        
+        // May have a content converter
+        valueDeser = findConvertingContentDeserializer(ctxt, property, valueDeser);
+        final JavaType vt = _collectionType.getContentType();
+        if (valueDeser == null) {
+            valueDeser = ctxt.findContextualValueDeserializer(vt, property);
+        } else { // if directly assigned, probably not yet contextual, so:
+            valueDeser = ctxt.handleSecondaryContextualization(valueDeser, property, vt);
+        }
+        // and finally, type deserializer needs context as well
+        TypeDeserializer valueTypeDeser = _valueTypeDeserializer;
+        if (valueTypeDeser != null) {
+            valueTypeDeser = valueTypeDeser.forProperty(property);
+        }
+        return withResolved(delegateDeser, valueDeser, valueTypeDeser, unwrapSingle);
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.creators.ArrayDelegatorCreatorForCollectionTest::testUnmodifiable
+java.lang.IllegalStateException: No default constructor for [collection type; class java.util.Collections$UnmodifiableSet, contains [simple type, class java.lang.Object]]
+	at com.fasterxml.jackson.databind.deser.std.StdValueInstantiator.createUsingDefault(StdValueInstantiator.java:240)
+	at com.fasterxml.jackson.databind.deser.std.CollectionDeserializer.deserialize(CollectionDeserializer.java:251)
+	at com.fasterxml.jackson.databind.deser.std.CollectionDeserializer.deserialize(CollectionDeserializer.java:26)
+	at com.fasterxml.jackson.databind.jsontype.impl.AsArrayTypeDeserializer._deserialize(AsArrayTypeDeserializer.java:110)
+	at com.fasterxml.jackson.databind.jsontype.impl.AsArrayTypeDeserializer.deserializeTypedFromArray(AsArrayTypeDeserializer.java:50)
+	at com.fasterxml.jackson.databind.deser.std.CollectionDeserializer.deserializeWithType(CollectionDeserializer.java:312)
+	at com.fasterxml.jackson.databind.deser.impl.TypeWrappedDeserializer.deserialize(TypeWrappedDeserializer.java:63)
+	at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:3807)
+	at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:2797)
+	at com.fasterxml.jackson.databind.creators.ArrayDelegatorCreatorForCollectionTest.testUnmodifiable(ArrayDelegatorCreatorForCollectionTest.java:28)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+Set<?> foo = mapper.readValue(EXPECTED_JSON, Set.class);
+
+================== buggy_lines_in_method ==================
+[23]
+================== buggy_statements ==================
+['        // also, often value deserializer is resolved here:']
+================== buggy_method_src_endswith_buggy_statement ==================
+@Override
+    public CollectionDeserializer createContextual(DeserializationContext ctxt,
+            BeanProperty property) throws JsonMappingException
+    {
+        // May need to resolve types for delegate-based creators:
+        JsonDeserializer<Object> delegateDeser = null;
+        if (_valueInstantiator != null) {
+            if (_valueInstantiator.canCreateUsingDelegate()) {
+                JavaType delegateType = _valueInstantiator.getDelegateType(ctxt.getConfig());
+                if (delegateType == null) {
+                    throw new IllegalArgumentException("Invalid delegate-creator definition for "+_collectionType
+                            +": value instantiator ("+_valueInstantiator.getClass().getName()
+                            +") returned true for 'canCreateUsingDelegate()', but null for 'getDelegateType()'");
+                }
+                delegateDeser = findDeserializer(ctxt, delegateType, property);
+            }
+        }
+        // [databind#1043]: allow per-property allow-wrapping of single overrides:
+        // 11-Dec-2015, tatu: Should we pass basic `Collection.class`, or more refined? Mostly
+        //   comes down to "List vs Collection" I suppose... for now, pass Collection
+        Boolean unwrapSingle = findFormatFeature(ctxt, property, Collection.class,
+                JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
+        // also, often value deserializer is resolved here:

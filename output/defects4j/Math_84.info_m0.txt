@@ -1,0 +1,185 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/math/optimization/direct/MultiDirectional.java
+================== buggy_method ==================
+{'method_name': 'iterateSimplex', 'method_body': '@Override\n    protected void iterateSimplex(final Comparator<RealPointValuePair> comparator)\n        throws FunctionEvaluationException, OptimizationException, IllegalArgumentException {\n\n        while (true) {\n\n            incrementIterationsCounter();\n\n            // save the original vertex\n            final RealPointValuePair[] original = simplex;\n            final RealPointValuePair best = original[0];\n\n            // perform a reflection step\n            final RealPointValuePair reflected = evaluateNewSimplex(original, 1.0, comparator);\n            if (comparator.compare(reflected, best) < 0) {\n\n                // compute the expanded simplex\n                final RealPointValuePair[] reflectedSimplex = simplex;\n                final RealPointValuePair expanded = evaluateNewSimplex(original, khi, comparator);\n                if (comparator.compare(reflected, expanded) <= 0) {\n                    // accept the reflected simplex\n                    simplex = reflectedSimplex;\n                }\n\n                return;\n\n            }\n\n            // compute the contracted simplex\n            final RealPointValuePair contracted = evaluateNewSimplex(original, gamma, comparator);\n            if (comparator.compare(contracted, best) < 0) {\n                // accept the contracted simplex\n\n            // check convergence\n                return;\n            }\n\n        }\n\n    }', 'start_line': 60, 'end_line': 99, 'buggy_lines': [64, 94]}
+================== buggy_method_src ==================
+@Override
+    protected void iterateSimplex(final Comparator<RealPointValuePair> comparator)
+        throws FunctionEvaluationException, OptimizationException, IllegalArgumentException {
+
+        while (true) {
+
+            incrementIterationsCounter();
+
+            // save the original vertex
+            final RealPointValuePair[] original = simplex;
+            final RealPointValuePair best = original[0];
+
+            // perform a reflection step
+            final RealPointValuePair reflected = evaluateNewSimplex(original, 1.0, comparator);
+            if (comparator.compare(reflected, best) < 0) {
+
+                // compute the expanded simplex
+                final RealPointValuePair[] reflectedSimplex = simplex;
+                final RealPointValuePair expanded = evaluateNewSimplex(original, khi, comparator);
+                if (comparator.compare(reflected, expanded) <= 0) {
+                    // accept the reflected simplex
+                    simplex = reflectedSimplex;
+                }
+
+                return;
+
+            }
+
+            // compute the contracted simplex
+            final RealPointValuePair contracted = evaluateNewSimplex(original, gamma, comparator);
+            if (comparator.compare(contracted, best) < 0) {
+                // accept the contracted simplex
+
+            // check convergence
+                return;
+            }
+
+        }
+
+    }
+================== test_stack ==================
+org.apache.commons.math.optimization.direct.MultiDirectionalTest::testMinimizeMaximize
+junit.framework.AssertionFailedError
+	at org.junit.Assert.fail(Assert.java:86)
+	at org.junit.Assert.assertTrue(Assert.java:41)
+	at org.junit.Assert.assertTrue(Assert.java:52)
+	at org.apache.commons.math.optimization.direct.MultiDirectionalTest.testMinimizeMaximize(MultiDirectionalTest.java:103)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.apache.commons.math.optimization.direct.MultiDirectionalTest::testMath283
+org.apache.commons.math.optimization.OptimizationException: org.apache.commons.math.MaxIterationsExceededException: Maximal number of iterations (100) exceeded
+	at org.apache.commons.math.optimization.direct.DirectSearchOptimizer.incrementIterationsCounter(DirectSearchOptimizer.java:320)
+	at org.apache.commons.math.optimization.direct.MultiDirectional.iterateSimplex(MultiDirectional.java:66)
+	at org.apache.commons.math.optimization.direct.DirectSearchOptimizer.optimize(DirectSearchOptimizer.java:307)
+	at org.apache.commons.math.optimization.direct.MultiDirectionalTest.testMath283(MultiDirectionalTest.java:203)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+Caused by: org.apache.commons.math.MaxIterationsExceededException: Maximal number of iterations (100) exceeded
+	... 44 more
+
+================== test_assert ==================
+Assert.assertTrue(optimizer.getEvaluations() < 150);
+
+================== buggy_lines_in_method ==================
+[5, 35]
+================== buggy_statements ==================
+['        while (true) {', '                return;']
+================== buggy_method_src_endswith_buggy_statement ==================
+@Override
+    protected void iterateSimplex(final Comparator<RealPointValuePair> comparator)
+        throws FunctionEvaluationException, OptimizationException, IllegalArgumentException {
+
+        while (true) {
+
+            incrementIterationsCounter();
+
+            // save the original vertex
+            final RealPointValuePair[] original = simplex;
+            final RealPointValuePair best = original[0];
+
+            // perform a reflection step
+            final RealPointValuePair reflected = evaluateNewSimplex(original, 1.0, comparator);
+            if (comparator.compare(reflected, best) < 0) {
+
+                // compute the expanded simplex
+                final RealPointValuePair[] reflectedSimplex = simplex;
+                final RealPointValuePair expanded = evaluateNewSimplex(original, khi, comparator);
+                if (comparator.compare(reflected, expanded) <= 0) {
+                    // accept the reflected simplex
+                    simplex = reflectedSimplex;
+                }
+
+                return;
+
+            }
+
+            // compute the contracted simplex
+            final RealPointValuePair contracted = evaluateNewSimplex(original, gamma, comparator);
+            if (comparator.compare(contracted, best) < 0) {
+                // accept the contracted simplex
+
+            // check convergence
+                return;

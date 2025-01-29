@@ -1,0 +1,128 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/ObjectMapper.java
+================== buggy_method ==================
+{'method_name': '_convert', 'method_body': '@SuppressWarnings("resource")\n    protected Object _convert(Object fromValue, JavaType toValueType)\n        throws IllegalArgumentException\n    {        \n        // also, as per [Issue-11], consider case for simple cast\n        /* But with caveats: one is that while everything is Object.class, we don\'t\n         * want to "optimize" that out; and the other is that we also do not want\n         * to lose conversions of generic types.\n         */\n        Class<?> targetType = toValueType.getRawClass();\n        if (targetType != Object.class\n                && !toValueType.hasGenericTypes()\n                && targetType.isAssignableFrom(fromValue.getClass())) {\n            return fromValue;\n        }\n        \n        // Then use TokenBuffer, which is a JsonGenerator:\n        TokenBuffer buf = new TokenBuffer(this, false);\n        try {\n            // inlined \'writeValue\' with minor changes:\n            // first: disable wrapping when writing\n            SerializationConfig config = getSerializationConfig().without(SerializationFeature.WRAP_ROOT_VALUE);\n            // no need to check for closing of TokenBuffer\n            _serializerProvider(config).serializeValue(buf, fromValue);\n\n            // then matching read, inlined \'readValue\' with minor mods:\n            final JsonParser jp = buf.asParser();\n            Object result;\n            // ok to pass in existing feature flags; unwrapping handled by mapper\n            final DeserializationConfig deserConfig = getDeserializationConfig();\n            JsonToken t = _initForReading(jp);\n            if (t == JsonToken.VALUE_NULL) {\n                DeserializationContext ctxt = createDeserializationContext(jp, deserConfig);\n                result = _findRootDeserializer(ctxt, toValueType).getNullValue(ctxt);\n            } else if (t == JsonToken.END_ARRAY || t == JsonToken.END_OBJECT) {\n                result = null;\n            } else { // pointing to event other than null\n                DeserializationContext ctxt = createDeserializationContext(jp, deserConfig);\n                JsonDeserializer<Object> deser = _findRootDeserializer(ctxt, toValueType);\n                // note: no handling of unwarpping\n                result = deser.deserialize(jp, ctxt);\n            }\n            jp.close();\n            return result;\n        } catch (IOException e) { // should not occur, no real i/o...\n            throw new IllegalArgumentException(e.getMessage(), e);\n        }\n    }', 'start_line': 3408, 'end_line': 3455, 'buggy_lines': [3431]}
+================== buggy_method_src ==================
+@SuppressWarnings("resource")
+    protected Object _convert(Object fromValue, JavaType toValueType)
+        throws IllegalArgumentException
+    {        
+        // also, as per [Issue-11], consider case for simple cast
+        /* But with caveats: one is that while everything is Object.class, we don't
+         * want to "optimize" that out; and the other is that we also do not want
+         * to lose conversions of generic types.
+         */
+        Class<?> targetType = toValueType.getRawClass();
+        if (targetType != Object.class
+                && !toValueType.hasGenericTypes()
+                && targetType.isAssignableFrom(fromValue.getClass())) {
+            return fromValue;
+        }
+        
+        // Then use TokenBuffer, which is a JsonGenerator:
+        TokenBuffer buf = new TokenBuffer(this, false);
+        try {
+            // inlined 'writeValue' with minor changes:
+            // first: disable wrapping when writing
+            SerializationConfig config = getSerializationConfig().without(SerializationFeature.WRAP_ROOT_VALUE);
+            // no need to check for closing of TokenBuffer
+            _serializerProvider(config).serializeValue(buf, fromValue);
+
+            // then matching read, inlined 'readValue' with minor mods:
+            final JsonParser jp = buf.asParser();
+            Object result;
+            // ok to pass in existing feature flags; unwrapping handled by mapper
+            final DeserializationConfig deserConfig = getDeserializationConfig();
+            JsonToken t = _initForReading(jp);
+            if (t == JsonToken.VALUE_NULL) {
+                DeserializationContext ctxt = createDeserializationContext(jp, deserConfig);
+                result = _findRootDeserializer(ctxt, toValueType).getNullValue(ctxt);
+            } else if (t == JsonToken.END_ARRAY || t == JsonToken.END_OBJECT) {
+                result = null;
+            } else { // pointing to event other than null
+                DeserializationContext ctxt = createDeserializationContext(jp, deserConfig);
+                JsonDeserializer<Object> deser = _findRootDeserializer(ctxt, toValueType);
+                // note: no handling of unwarpping
+                result = deser.deserialize(jp, ctxt);
+            }
+            jp.close();
+            return result;
+        } catch (IOException e) { // should not occur, no real i/o...
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.jsontype.TestExternalId::testBigDecimal965
+junit.framework.AssertionFailedError: Expected BigDecimal = -10000000000.0000000001; got back BigDecimal = -1.0E+10
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.TestCase.assertTrue(TestCase.java:192)
+	at com.fasterxml.jackson.databind.jsontype.TestExternalId.testBigDecimal965(TestExternalId.java:564)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertTrue(String.format("Expected %s = %s; got back %s = %s",
+
+================== buggy_lines_in_method ==================
+[24]
+================== buggy_statements ==================
+['            _serializerProvider(config).serializeValue(buf, fromValue);']
+================== buggy_method_src_endswith_buggy_statement ==================
+@SuppressWarnings("resource")
+    protected Object _convert(Object fromValue, JavaType toValueType)
+        throws IllegalArgumentException
+    {        
+        // also, as per [Issue-11], consider case for simple cast
+        /* But with caveats: one is that while everything is Object.class, we don't
+         * want to "optimize" that out; and the other is that we also do not want
+         * to lose conversions of generic types.
+         */
+        Class<?> targetType = toValueType.getRawClass();
+        if (targetType != Object.class
+                && !toValueType.hasGenericTypes()
+                && targetType.isAssignableFrom(fromValue.getClass())) {
+            return fromValue;
+        }
+        
+        // Then use TokenBuffer, which is a JsonGenerator:
+        TokenBuffer buf = new TokenBuffer(this, false);
+        try {
+            // inlined 'writeValue' with minor changes:
+            // first: disable wrapping when writing
+            SerializationConfig config = getSerializationConfig().without(SerializationFeature.WRAP_ROOT_VALUE);
+            // no need to check for closing of TokenBuffer
+            _serializerProvider(config).serializeValue(buf, fromValue);

@@ -1,0 +1,188 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/JsonMappingException.java
+================== buggy_method ==================
+{'method_name': 'getDescription', 'method_body': 'public String getDescription() {\n            if (_desc == null) {\n                StringBuilder sb = new StringBuilder();\n\n                if (_from == null) { // can this ever occur?\n                    sb.append("UNKNOWN");\n                } else {\n                    Class<?> cls = (_from instanceof Class<?>) ? (Class<?>)_from : _from.getClass();\n                    // Hmmh. Although Class.getName() is mostly ok, it does look\n                    // butt-ugly for arrays.\n                    // 06-Oct-2016, tatu: as per [databind#1403], `getSimpleName()` not so good\n                    //   as it drops enclosing class. So let\'s try bit different approach\n                    String pkgName = com.fasterxml.jackson.databind.util.ClassUtil.getPackageName(cls);\n                    if (pkgName != null) {\n                        sb.append(pkgName);\n                        sb.append(\'.\');\n                    }\n                    sb.append(cls.getSimpleName());\n                }\n                sb.append(\'[\');\n                if (_fieldName != null) {\n                    sb.append(\'"\');\n                    sb.append(_fieldName);\n                    sb.append(\'"\');\n                } else if (_index >= 0) {\n                    sb.append(_index);\n                } else {\n                    sb.append(\'?\');\n                }\n                sb.append(\']\');\n                _desc = sb.toString();\n            }\n            return _desc;\n        }', 'start_line': 118, 'end_line': 151, 'buggy_lines': [130, 135]}
+================== buggy_method_src ==================
+public String getDescription() {
+            if (_desc == null) {
+                StringBuilder sb = new StringBuilder();
+
+                if (_from == null) { // can this ever occur?
+                    sb.append("UNKNOWN");
+                } else {
+                    Class<?> cls = (_from instanceof Class<?>) ? (Class<?>)_from : _from.getClass();
+                    // Hmmh. Although Class.getName() is mostly ok, it does look
+                    // butt-ugly for arrays.
+                    // 06-Oct-2016, tatu: as per [databind#1403], `getSimpleName()` not so good
+                    //   as it drops enclosing class. So let's try bit different approach
+                    String pkgName = com.fasterxml.jackson.databind.util.ClassUtil.getPackageName(cls);
+                    if (pkgName != null) {
+                        sb.append(pkgName);
+                        sb.append('.');
+                    }
+                    sb.append(cls.getSimpleName());
+                }
+                sb.append('[');
+                if (_fieldName != null) {
+                    sb.append('"');
+                    sb.append(_fieldName);
+                    sb.append('"');
+                } else if (_index >= 0) {
+                    sb.append(_index);
+                } else {
+                    sb.append('?');
+                }
+                sb.append(']');
+                _desc = sb.toString();
+            }
+            return _desc;
+        }
+================== test_stack ==================
+com.fasterxml.jackson.databind.deser.exc.ExceptionPathTest::testReferenceChainForInnerClass
+junit.framework.ComparisonFailure: expected:<....databind.deser.exc.[ExceptionPathTest$]Outer["inner"]> but was:<....databind.deser.exc.[]Outer["inner"]>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.Assert.assertEquals(Assert.java:107)
+	at junit.framework.TestCase.assertEquals(TestCase.java:269)
+	at com.fasterxml.jackson.databind.deser.exc.ExceptionPathTest.testReferenceChainForInnerClass(ExceptionPathTest.java:37)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.databind.deser.exc.TestExceptionHandlingWithDefaultDeserialization::testShouldThrowJsonMappingExceptionWithPathReference
+junit.framework.ComparisonFailure: expected:<....databind.deser.exc.[TestExceptionHandlingWithDefaultDeserialization$Foo["bar"]->com.fasterxml.jackson.databind.deser.exc.TestExceptionHandlingWithDefaultDeserialization$]Bar["baz"]> but was:<....databind.deser.exc.[Foo["bar"]->com.fasterxml.jackson.databind.deser.exc.]Bar["baz"]>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.Assert.assertEquals(Assert.java:107)
+	at junit.framework.TestCase.assertEquals(TestCase.java:269)
+	at com.fasterxml.jackson.databind.deser.exc.TestExceptionHandlingWithDefaultDeserialization.testShouldThrowJsonMappingExceptionWithPathReference(TestExceptionHandlingWithDefaultDeserialization.java:53)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.databind.deser.exc.TestExceptionHandlingWithJsonCreatorDeserialization::testShouldThrowJsonMappingExceptionWithPathReference
+junit.framework.ComparisonFailure: expected:<....databind.deser.exc.[TestExceptionHandlingWithJsonCreatorDeserialization$Foo["bar"]->com.fasterxml.jackson.databind.deser.exc.TestExceptionHandlingWithJsonCreatorDeserialization$]Bar["baz"]> but was:<....databind.deser.exc.[Foo["bar"]->com.fasterxml.jackson.databind.deser.exc.]Bar["baz"]>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.Assert.assertEquals(Assert.java:107)
+	at junit.framework.TestCase.assertEquals(TestCase.java:269)
+	at com.fasterxml.jackson.databind.deser.exc.TestExceptionHandlingWithJsonCreatorDeserialization.testShouldThrowJsonMappingExceptionWithPathReference(TestExceptionHandlingWithJsonCreatorDeserialization.java:64)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals(getClass().getName()+"$Outer[\"inner\"]",
+
+================== buggy_lines_in_method ==================
+[13, 18]
+================== buggy_statements ==================
+['                    String pkgName = com.fasterxml.jackson.databind.util.ClassUtil.getPackageName(cls);', '                    sb.append(cls.getSimpleName());']
+================== buggy_method_src_endswith_buggy_statement ==================
+public String getDescription() {
+            if (_desc == null) {
+                StringBuilder sb = new StringBuilder();
+
+                if (_from == null) { // can this ever occur?
+                    sb.append("UNKNOWN");
+                } else {
+                    Class<?> cls = (_from instanceof Class<?>) ? (Class<?>)_from : _from.getClass();
+                    // Hmmh. Although Class.getName() is mostly ok, it does look
+                    // butt-ugly for arrays.
+                    // 06-Oct-2016, tatu: as per [databind#1403], `getSimpleName()` not so good
+                    //   as it drops enclosing class. So let's try bit different approach
+                    String pkgName = com.fasterxml.jackson.databind.util.ClassUtil.getPackageName(cls);
+                    if (pkgName != null) {
+                        sb.append(pkgName);
+                        sb.append('.');
+                    }
+                    sb.append(cls.getSimpleName());

@@ -1,0 +1,164 @@
+
+================== buggy_file ==================
+source/org/jfree/data/general/DatasetUtilities.java
+================== buggy_method ==================
+{'method_name': 'iterateDomainBounds', 'method_body': 'public static Range iterateDomainBounds(XYDataset dataset,\n                                            boolean includeInterval) {\n        if (dataset == null) {\n            throw new IllegalArgumentException("Null \'dataset\' argument.");\n        }\n        double minimum = Double.POSITIVE_INFINITY;\n        double maximum = Double.NEGATIVE_INFINITY;\n        int seriesCount = dataset.getSeriesCount();\n        double lvalue;\n        double uvalue;\n        if (includeInterval && dataset instanceof IntervalXYDataset) {\n            IntervalXYDataset intervalXYData = (IntervalXYDataset) dataset;\n            for (int series = 0; series < seriesCount; series++) {\n                int itemCount = dataset.getItemCount(series);\n                for (int item = 0; item < itemCount; item++) {\n                    lvalue = intervalXYData.getStartXValue(series, item);\n                    uvalue = intervalXYData.getEndXValue(series, item);\n                    if (!Double.isNaN(lvalue)) {\n                        minimum = Math.min(minimum, lvalue);\n                    }\n                    if (!Double.isNaN(uvalue)) {\n                        maximum = Math.max(maximum, uvalue);\n                    }\n                }\n            }\n        }\n        else {\n            for (int series = 0; series < seriesCount; series++) {\n                int itemCount = dataset.getItemCount(series);\n                for (int item = 0; item < itemCount; item++) {\n                    lvalue = dataset.getXValue(series, item);\n                    uvalue = lvalue;\n                    if (!Double.isNaN(lvalue)) {\n                        minimum = Math.min(minimum, lvalue);\n                        maximum = Math.max(maximum, uvalue);\n                    }\n                }\n            }\n        }\n        if (minimum > maximum) {\n            return null;\n        }\n        else {\n            return new Range(minimum, maximum);\n        }\n    }', 'start_line': 740, 'end_line': 785, 'buggy_lines': [755, 761, 764, 767]}
+================== buggy_method_src ==================
+public static Range iterateDomainBounds(XYDataset dataset,
+                                            boolean includeInterval) {
+        if (dataset == null) {
+            throw new IllegalArgumentException("Null 'dataset' argument.");
+        }
+        double minimum = Double.POSITIVE_INFINITY;
+        double maximum = Double.NEGATIVE_INFINITY;
+        int seriesCount = dataset.getSeriesCount();
+        double lvalue;
+        double uvalue;
+        if (includeInterval && dataset instanceof IntervalXYDataset) {
+            IntervalXYDataset intervalXYData = (IntervalXYDataset) dataset;
+            for (int series = 0; series < seriesCount; series++) {
+                int itemCount = dataset.getItemCount(series);
+                for (int item = 0; item < itemCount; item++) {
+                    lvalue = intervalXYData.getStartXValue(series, item);
+                    uvalue = intervalXYData.getEndXValue(series, item);
+                    if (!Double.isNaN(lvalue)) {
+                        minimum = Math.min(minimum, lvalue);
+                    }
+                    if (!Double.isNaN(uvalue)) {
+                        maximum = Math.max(maximum, uvalue);
+                    }
+                }
+            }
+        }
+        else {
+            for (int series = 0; series < seriesCount; series++) {
+                int itemCount = dataset.getItemCount(series);
+                for (int item = 0; item < itemCount; item++) {
+                    lvalue = dataset.getXValue(series, item);
+                    uvalue = lvalue;
+                    if (!Double.isNaN(lvalue)) {
+                        minimum = Math.min(minimum, lvalue);
+                        maximum = Math.max(maximum, uvalue);
+                    }
+                }
+            }
+        }
+        if (minimum > maximum) {
+            return null;
+        }
+        else {
+            return new Range(minimum, maximum);
+        }
+    }
+================== test_stack ==================
+org.jfree.data.general.junit.DatasetUtilitiesTests::testBug2849731_2
+java.lang.NullPointerException
+	at org.jfree.data.general.junit.DatasetUtilitiesTests.testBug2849731_2(DatasetUtilitiesTests.java:1276)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.jfree.data.general.junit.DatasetUtilitiesTests::testBug2849731_3
+java.lang.NullPointerException
+	at org.jfree.data.general.junit.DatasetUtilitiesTests.testBug2849731_3(DatasetUtilitiesTests.java:1299)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals(1.0, r.getLowerBound(), EPSILON);
+
+================== buggy_lines_in_method ==================
+[16, 22, 25, 28]
+================== buggy_statements ==================
+['                    lvalue = intervalXYData.getStartXValue(series, item);', '                        maximum = Math.max(maximum, uvalue);', '            }', '            for (int series = 0; series < seriesCount; series++) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+public static Range iterateDomainBounds(XYDataset dataset,
+                                            boolean includeInterval) {
+        if (dataset == null) {
+            throw new IllegalArgumentException("Null 'dataset' argument.");
+        }
+        double minimum = Double.POSITIVE_INFINITY;
+        double maximum = Double.NEGATIVE_INFINITY;
+        int seriesCount = dataset.getSeriesCount();
+        double lvalue;
+        double uvalue;
+        if (includeInterval && dataset instanceof IntervalXYDataset) {
+            IntervalXYDataset intervalXYData = (IntervalXYDataset) dataset;
+            for (int series = 0; series < seriesCount; series++) {
+                int itemCount = dataset.getItemCount(series);
+                for (int item = 0; item < itemCount; item++) {
+                    lvalue = intervalXYData.getStartXValue(series, item);
+                    uvalue = intervalXYData.getEndXValue(series, item);
+                    if (!Double.isNaN(lvalue)) {
+                        minimum = Math.min(minimum, lvalue);
+                    }
+                    if (!Double.isNaN(uvalue)) {
+                        maximum = Math.max(maximum, uvalue);
+                    }
+                }
+            }
+        }
+        else {
+            for (int series = 0; series < seriesCount; series++) {

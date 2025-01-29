@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "4",
+            "qwen-turbo": "3",
+            "ernie-3.5-128k": "**7**",
+            "deepseek-chat": "4",
+            "gpt-4o-mini": "12"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "878",
+            "ernie-3.5-128k": "878",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "18"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "878",
+            "qwen-turbo": "878",
+            "ernie-3.5-128k": "**878**",
+            "deepseek-chat": "4",
+            "gpt-4o-mini": "878"
+        },
+        "prompt_fl_4": {
+            "doubao-pro-4k": "Validate.noNullElements(children);",
+            "qwen-turbo": "reparentChild(in);",
+            "ernie-3.5-128k": "childNodes.add(index, in);",
+            "deepseek-chat": "childNodes.add(index, in);",
+            "gpt-4o-mini": "childNodes.add(index, in);"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "childNodes.add(index, in);",
+            "ernie-3.5-128k": "childNodes.add(index, in);",
+            "deepseek-chat": "childNodes.add(index, in);",
+            "doubao-pro-4k": "reparentChild(in);",
+            "gpt-4o-mini": "childNodes.add(index, in);"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "childNodes.add(index, in);",
+            "ernie-3.5-128k": "childNodes.add(index, in);",
+            "deepseek-chat": "childNodes.add(index, in);",
+            "doubao-pro-4k": "assertEquals(\"<body><div3>Check</div3><div4></div4><div1></div1><div2></div2></body>\", result);",
+            "gpt-4o-mini": "childNodes.add(index, in);"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "Certainly! The bug seems to be related to the reindexing logic after adding children nodes. The reindexing should start from the given index and go through all the subsequent children. Here is the complete corrected method:\n\n```java\nprotected void addChildren(int index, Node... children) {\n    Validate.noNullElements(children);\n    ensureChildNodes();\n    for (int i = children.length - 1; i >= 0; i--) {\n        Node in = children[i];\n        reparentChild(in);\n        childNodes.add(index, in);\n    }\n    reindexChildren(index, childNodes.size() - 1); // Corrected line\n}\n```\n\nIn this correction, the `reindexChildren` method is called with the correct range starting from the given index to the last child node.",
+            "doubao-pro-4k": "protected void addChildren(int index, Node... children) {\n        Validate.noNullElements(children);\n        ensureChildNodes();\n        for (int i = children.length - 1; i >= 0; i--) {\n            Node in = children[i];\n            reparentChild(in);\n            childNodes.add(index + i, in); // Bug fixed: Changed index to index + i\n        }\n        reindexChildren(index);\n    }",
+            "gpt-4o-mini": "protected void addChildren(int index, Node... children) {\n    Validate.noNullElements(children);\n    ensureChildNodes();\n    for (int i = children.length - 1; i >= 0; i--) {\n        Node in = children[i];\n        reparentChild(in);\n        childNodes.add(index, in);\n        index++;  // Fix: Increment index to maintain correct insertion position for the next child\n    }\n    reindexChildren(index);\n}",
+            "deepseek-chat": "protected void addChildren(int index, Node... children) {\n    Validate.noNullElements(children);\n    ensureChildNodes();\n    for (int i = children.length - 1; i >= 0; i--) {\n        Node in = children[i];\n        reparentChild(in);\n        childNodes.add(index, in);\n    }\n    reindexChildren(index + children.length);\n}\n\nThe bug in line [9] was that the `reindexChildren` method was being called with the original `index` value, which does not account for the newly added children. The correct approach is to pass `index + children.length` to `reindexChildren` to ensure that the reindexing starts from the correct position after all the new children have been added. This ensures that the indices of the children are correctly updated.",
+            "ernie-3.5-128k": "protected void addChildren(int index, Node... children) {\n        Validate.noNullElements(children);\n        ensureChildNodes();\n        for (int i = children.length - 1; i >= 0; i--) {\n            Node in = children[i];\n            in.setParent(null);  // Fix for line 9: Explicitly set the parent to null before reparenting\n            reparentChild(in);\n            childNodes.add(index, in);\n        }\n        reindexChildren(index);\n    }"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\nprotected void addChildren(int index, Node... children) {\n    Validate.noNullElements(children);\n    ensureChildNodes();\n    for (int i = children.length - 1; i >= 0; i--) {\n        Node in = children[i];\n        reparentChild(in);\n        childNodes.add(index, in);\n    }\n    // Adjust the index to account for the new children added\n    reindexChildren(index + children.length);\n}\n```",
+            "deepseek-chat": "protected void addChildren(int index, Node... children) {\n    Validate.noNullElements(children);\n    ensureChildNodes();\n    for (int i = children.length - 1; i >= 0; i--) {\n        Node in = children[i];\n        reparentChild(in);\n        childNodes.add(index, in);\n    }\n    reindexChildren(index + children.length);\n}",
+            "doubao-pro-4k": "protected void addChildren(int index, Node... children) {\n        Validate.noNullElements(children);\n        ensureChildNodes();\n        for (int i = children.length - 1; i >= 0; i--) {\n            Node in = children[i];\n            reparentChild(in);\n            childNodes.add(index, in);\n        }\n        reindexChildren(index + children.length);\n    }",
+            "gpt-4o-mini": "protected void addChildren(int index, Node... children) {\n    Validate.noNullElements(children);\n    ensureChildNodes();\n    for (int i = children.length - 1; i >= 0; i--) {\n        Node in = children[i];\n        reparentChild(in);\n        childNodes.add(index, in);\n    }\n    reindexChildren(); // Fix: Call reindexChildren without parameters, assuming it reindexes all children\n}",
+            "ernie-3.5-128k": "protected void addChildren(int index, Node... children) {\n    Validate.noNullElements(children);\n    ensureChildNodes();\n    for (int i = children.length - 1; i >= 0; i--) {\n        Node in = children[i];\n        reparentChild(in);\n        childNodes.add(index, in);\n    }\n    reindexChildren(index, children.length);\n}\n\n// Assuming you have a method `reindexChildren` that looks like this:\n// private void reindexChildren(int startIndex, int addedCount) {\n//     // Logic to reindex the children starting from startIndex,\n//     // taking into account the addedCount of new children.\n// }\n\n// Example implementation for `reindexChildren`:\n// private void reindexChildren(int startIndex, int addedCount) {\n//     for (int i = startIndex; i < childNodes.size(); i++) {\n//         // Update the index of each child node accordingly.\n//         // This is a placeholder, the actual implementation depends on your use case.\n//         // For example, if you have an index field in Node, you might do:\n//         // childNodes.get(i).setIndex(i);\n//     }\n// }"
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\nprotected void addChildren(int index, Node... children) {\n    Validate.noNullElements(children);\n    ensureChildNodes();\n    for (int i = children.length - 1; i >= 0; i--) {\n        Node in = children[i];\n        reparentChild(in);\n        childNodes.add(index, in);\n    }\n    reindexChildren(index, children.length);\n}\n```",
+            "ernie-3.5-128k": "protected void addChildren(int index, Node... children) {\n    Validate.noNullElements(children);\n    ensureChildNodes();\n    for (int i = children.length - 1; i >= 0; i--) {\n        Node in = children[i];\n        reparentChild(in);\n        childNodes.add(index, in);\n    }\n    reindexChildren();",
+            "deepseek-chat": "protected void addChildren(int index, Node... children) {\n        Validate.noNullElements(children);\n        ensureChildNodes();\n        for (int i = children.length - 1; i >= 0; i--) {\n            Node in = children[i];\n            reparentChild(in);\n            childNodes.add(index, in);\n        }\n        reindexChildren(index + children.length);",
+            "doubao-pro-4k": "protected void addChildren(int index, Node... children) {\n        Validate.noNullElements(children);\n        ensureChildNodes();\n        for (int i = children.length - 1; i >= 0; i--) {\n            Node in = children[i];\n            reparentChild(in);\n            childNodes.add(index, in);\n        }\n        reindexChildren(0);\n}",
+            "gpt-4o-mini": "protected void addChildren(int index, Node... children) {\n    Validate.noNullElements(children);\n    ensureChildNodes();\n    for (int i = children.length - 1; i >= 0; i--) {\n        Node in = children[i];\n        reparentChild(in);\n        childNodes.add(index, in);\n    }\n    reindexChildren();"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"childNodes.add(index, in);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"reparentChild(in); childNodes.add(index, in);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"childNodes.add(index + i, in);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"childNodes.add(index, reparentChild(in));\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"childNodes.add(index, in);\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"reindexChildren(index, children.length);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"reindexChildren(childNodes.size());\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"reindexChildren(index + children.length);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"reindexChildren(index + children.length);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"reindexChildren(index, children.length);\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"reindexChildren(index, children.length);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"reindexChildren();\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"reindexChildren(index + children.length);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"reindexChildren(index + children.length);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"reindexChildren(index + children.length);\"\n    }\n]"
+        }
+    }
+]

@@ -1,0 +1,250 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/AnnotationIntrospector.java
+================== buggy_method ==================
+{'method_name': 'refineSerializationType', 'method_body': 'public JavaType refineSerializationType(final MapperConfig<?> config,\n            final Annotated a, final JavaType baseType) throws JsonMappingException\n    {\n        JavaType type = baseType;\n        final TypeFactory tf = config.getTypeFactory();\n        \n        // 10-Oct-2015, tatu: For 2.7, we\'ll need to delegate back to\n        //    now-deprecated secondary methods; this because while\n        //    direct sub-class not yet retrofitted may only override\n        //    those methods. With 2.8 or later we may consider removal\n        //    of these methods\n\n        \n        // Ok: start by refining the main type itself; common to all types\n        Class<?> serClass = findSerializationType(a);\n        if (serClass != null) {\n            if (type.hasRawClass(serClass)) {\n                // 30-Nov-2015, tatu: As per [databind#1023], need to allow forcing of\n                //    static typing this way\n                type = type.withStaticTyping();\n            } else {\n                try {\n                    // 11-Oct-2015, tatu: For deser, we call `TypeFactory.constructSpecializedType()`,\n                    //   may be needed here too in future?\n                        type = tf.constructGeneralizedType(type, serClass);\n                } catch (IllegalArgumentException iae) {\n                    throw new JsonMappingException(null,\n                            String.format("Failed to widen type %s with annotation (value %s), from \'%s\': %s",\n                                    type, serClass.getName(), a.getName(), iae.getMessage()),\n                                    iae);\n                }\n            }\n        }\n        // Then further processing for container types\n\n        // First, key type (for Maps, Map-like types):\n        if (type.isMapLikeType()) {\n            JavaType keyType = type.getKeyType();\n            Class<?> keyClass = findSerializationKeyType(a, keyType);\n            if (keyClass != null) {\n                if (keyType.hasRawClass(keyClass)) {\n                    keyType = keyType.withStaticTyping();\n                } else {\n                    Class<?> currRaw = keyType.getRawClass();\n                    try {\n                        // 19-May-2016, tatu: As per [databind#1231], [databind#1178] may need to actually\n                        //   specialize (narrow) type sometimes, even if more commonly opposite\n                        //   is needed.\n                        if (keyClass.isAssignableFrom(currRaw)) { // common case\n                            keyType = tf.constructGeneralizedType(keyType, keyClass);\n                        } else if (currRaw.isAssignableFrom(keyClass)) { // specialization, ok as well\n                            keyType = tf.constructSpecializedType(keyType, keyClass);\n                        } else {\n                            throw new JsonMappingException(null,\n                                    String.format("Can not refine serialization key type %s into %s; types not related",\n                                            keyType, keyClass.getName()));\n                        }\n                    } catch (IllegalArgumentException iae) {\n                        throw new JsonMappingException(null,\n                                String.format("Failed to widen key type of %s with concrete-type annotation (value %s), from \'%s\': %s",\n                                        type, keyClass.getName(), a.getName(), iae.getMessage()),\n                                        iae);\n                    }\n                }\n                type = ((MapLikeType) type).withKeyType(keyType);\n            }\n        }\n\n        JavaType contentType = type.getContentType();\n        if (contentType != null) { // collection[like], map[like], array, reference\n            // And then value types for all containers:\n           Class<?> contentClass = findSerializationContentType(a, contentType);\n           if (contentClass != null) {\n               if (contentType.hasRawClass(contentClass)) {\n                   contentType = contentType.withStaticTyping();\n               } else {\n                   // 03-Apr-2016, tatu: As per [databind#1178], may need to actually\n                   //   specialize (narrow) type sometimes, even if more commonly opposite\n                   //   is needed.\n                   Class<?> currRaw = contentType.getRawClass();\n                   try {\n                       if (contentClass.isAssignableFrom(currRaw)) { // common case\n                           contentType = tf.constructGeneralizedType(contentType, contentClass);\n                       } else if (currRaw.isAssignableFrom(contentClass)) { // specialization, ok as well\n                           contentType = tf.constructSpecializedType(contentType, contentClass);\n                       } else {\n                           throw new JsonMappingException(null,\n                                   String.format("Can not refine serialization content type %s into %s; types not related",\n                                           contentType, contentClass.getName()));\n                       }\n                   } catch (IllegalArgumentException iae) { // shouldn\'t really happen\n                       throw new JsonMappingException(null,\n                               String.format("Internal error: failed to refine value type of %s with concrete-type annotation (value %s), from \'%s\': %s",\n                                       type, contentClass.getName(), a.getName(), iae.getMessage()),\n                                       iae);\n                   }\n               }\n               type = type.withContentType(contentType);\n           }\n        }\n        return type;\n    }', 'start_line': 795, 'end_line': 896, 'buggy_lines': [816, 820, 828]}
+================== buggy_method_src ==================
+public JavaType refineSerializationType(final MapperConfig<?> config,
+            final Annotated a, final JavaType baseType) throws JsonMappingException
+    {
+        JavaType type = baseType;
+        final TypeFactory tf = config.getTypeFactory();
+        
+        // 10-Oct-2015, tatu: For 2.7, we'll need to delegate back to
+        //    now-deprecated secondary methods; this because while
+        //    direct sub-class not yet retrofitted may only override
+        //    those methods. With 2.8 or later we may consider removal
+        //    of these methods
+
+        
+        // Ok: start by refining the main type itself; common to all types
+        Class<?> serClass = findSerializationType(a);
+        if (serClass != null) {
+            if (type.hasRawClass(serClass)) {
+                // 30-Nov-2015, tatu: As per [databind#1023], need to allow forcing of
+                //    static typing this way
+                type = type.withStaticTyping();
+            } else {
+                try {
+                    // 11-Oct-2015, tatu: For deser, we call `TypeFactory.constructSpecializedType()`,
+                    //   may be needed here too in future?
+                        type = tf.constructGeneralizedType(type, serClass);
+                } catch (IllegalArgumentException iae) {
+                    throw new JsonMappingException(null,
+                            String.format("Failed to widen type %s with annotation (value %s), from '%s': %s",
+                                    type, serClass.getName(), a.getName(), iae.getMessage()),
+                                    iae);
+                }
+            }
+        }
+        // Then further processing for container types
+
+        // First, key type (for Maps, Map-like types):
+        if (type.isMapLikeType()) {
+            JavaType keyType = type.getKeyType();
+            Class<?> keyClass = findSerializationKeyType(a, keyType);
+            if (keyClass != null) {
+                if (keyType.hasRawClass(keyClass)) {
+                    keyType = keyType.withStaticTyping();
+                } else {
+                    Class<?> currRaw = keyType.getRawClass();
+                    try {
+                        // 19-May-2016, tatu: As per [databind#1231], [databind#1178] may need to actually
+                        //   specialize (narrow) type sometimes, even if more commonly opposite
+                        //   is needed.
+                        if (keyClass.isAssignableFrom(currRaw)) { // common case
+                            keyType = tf.constructGeneralizedType(keyType, keyClass);
+                        } else if (currRaw.isAssignableFrom(keyClass)) { // specialization, ok as well
+                            keyType = tf.constructSpecializedType(keyType, keyClass);
+                        } else {
+                            throw new JsonMappingException(null,
+                                    String.format("Can not refine serialization key type %s into %s; types not related",
+                                            keyType, keyClass.getName()));
+                        }
+                    } catch (IllegalArgumentException iae) {
+                        throw new JsonMappingException(null,
+                                String.format("Failed to widen key type of %s with concrete-type annotation (value %s), from '%s': %s",
+                                        type, keyClass.getName(), a.getName(), iae.getMessage()),
+                                        iae);
+                    }
+                }
+                type = ((MapLikeType) type).withKeyType(keyType);
+            }
+        }
+
+        JavaType contentType = type.getContentType();
+        if (contentType != null) { // collection[like], map[like], array, reference
+            // And then value types for all containers:
+           Class<?> contentClass = findSerializationContentType(a, contentType);
+           if (contentClass != null) {
+               if (contentType.hasRawClass(contentClass)) {
+                   contentType = contentType.withStaticTyping();
+               } else {
+                   // 03-Apr-2016, tatu: As per [databind#1178], may need to actually
+                   //   specialize (narrow) type sometimes, even if more commonly opposite
+                   //   is needed.
+                   Class<?> currRaw = contentType.getRawClass();
+                   try {
+                       if (contentClass.isAssignableFrom(currRaw)) { // common case
+                           contentType = tf.constructGeneralizedType(contentType, contentClass);
+                       } else if (currRaw.isAssignableFrom(contentClass)) { // specialization, ok as well
+                           contentType = tf.constructSpecializedType(contentType, contentClass);
+                       } else {
+                           throw new JsonMappingException(null,
+                                   String.format("Can not refine serialization content type %s into %s; types not related",
+                                           contentType, contentClass.getName()));
+                       }
+                   } catch (IllegalArgumentException iae) { // shouldn't really happen
+                       throw new JsonMappingException(null,
+                               String.format("Internal error: failed to refine value type of %s with concrete-type annotation (value %s), from '%s': %s",
+                                       type, contentClass.getName(), a.getName(), iae.getMessage()),
+                                       iae);
+                   }
+               }
+               type = type.withContentType(contentType);
+           }
+        }
+        return type;
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.ser.TestJsonSerialize::testBrokenAnnotation
+junit.framework.AssertionFailedError: Expected an exception with one of substrings ([types not related]): got one with message "Failed to widen type [simple type, class java.lang.Long] with annotation (value java.lang.String), from 'getValue': Class java.lang.String not a super-type of [simple type, class java.lang.Long]"
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.TestCase.fail(TestCase.java:227)
+	at com.fasterxml.jackson.databind.BaseTest.verifyException(BaseTest.java:368)
+	at com.fasterxml.jackson.databind.ser.TestJsonSerialize.testBrokenAnnotation(TestJsonSerialize.java:152)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.databind.ser.TestJsonSerializeAs::testSpecializedAsIntermediate
+com.fasterxml.jackson.databind.JsonMappingException: Failed to widen type [simple type, class com.fasterxml.jackson.databind.ser.TestJsonSerializeAs$Bean1178Base] with annotation (value com.fasterxml.jackson.databind.ser.TestJsonSerializeAs$Bean1178Abstract), from 'value': Class com.fasterxml.jackson.databind.ser.TestJsonSerializeAs$Bean1178Abstract not a super-type of [simple type, class com.fasterxml.jackson.databind.ser.TestJsonSerializeAs$Bean1178Base]
+	at com.fasterxml.jackson.databind.AnnotationIntrospector.refineSerializationType(AnnotationIntrospector.java:821)
+	at com.fasterxml.jackson.databind.ser.PropertyBuilder.findSerializationType(PropertyBuilder.java:194)
+	at com.fasterxml.jackson.databind.ser.PropertyBuilder.buildWriter(PropertyBuilder.java:73)
+	at com.fasterxml.jackson.databind.ser.BeanSerializerFactory._constructWriter(BeanSerializerFactory.java:805)
+	at com.fasterxml.jackson.databind.ser.BeanSerializerFactory.findBeanProperties(BeanSerializerFactory.java:610)
+	at com.fasterxml.jackson.databind.ser.BeanSerializerFactory.constructBeanSerializer(BeanSerializerFactory.java:388)
+	at com.fasterxml.jackson.databind.ser.BeanSerializerFactory.findBeanSerializer(BeanSerializerFactory.java:271)
+	at com.fasterxml.jackson.databind.ser.BeanSerializerFactory._createSerializer2(BeanSerializerFactory.java:223)
+	at com.fasterxml.jackson.databind.ser.BeanSerializerFactory.createSerializer(BeanSerializerFactory.java:157)
+	at com.fasterxml.jackson.databind.SerializerProvider._createUntypedSerializer(SerializerProvider.java:1215)
+	at com.fasterxml.jackson.databind.SerializerProvider._createAndCacheUntypedSerializer(SerializerProvider.java:1167)
+	at com.fasterxml.jackson.databind.SerializerProvider.findValueSerializer(SerializerProvider.java:490)
+	at com.fasterxml.jackson.databind.SerializerProvider.findTypedValueSerializer(SerializerProvider.java:688)
+	at com.fasterxml.jackson.databind.ser.DefaultSerializerProvider.serializeValue(DefaultSerializerProvider.java:107)
+	at com.fasterxml.jackson.databind.ObjectWriter$Prefetch.serialize(ObjectWriter.java:1428)
+	at com.fasterxml.jackson.databind.ObjectWriter._configAndWriteValue(ObjectWriter.java:1129)
+	at com.fasterxml.jackson.databind.ObjectWriter.writeValueAsString(ObjectWriter.java:1001)
+	at com.fasterxml.jackson.databind.ser.TestJsonSerializeAs.testSpecializedAsIntermediate(TestJsonSerializeAs.java:118)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+Caused by: java.lang.IllegalArgumentException: Class com.fasterxml.jackson.databind.ser.TestJsonSerializeAs$Bean1178Abstract not a super-type of [simple type, class com.fasterxml.jackson.databind.ser.TestJsonSerializeAs$Bean1178Base]
+	at com.fasterxml.jackson.databind.type.TypeFactory.constructGeneralizedType(TypeFactory.java:482)
+	at com.fasterxml.jackson.databind.AnnotationIntrospector.refineSerializationType(AnnotationIntrospector.java:819)
+	... 51 more
+
+================== test_assert ==================
+verifyException(e, "types not related");
+
+================== buggy_lines_in_method ==================
+[22, 26, 34]
+================== buggy_statements ==================
+['                try {', '                } catch (IllegalArgumentException iae) {', '        // Then further processing for container types']
+================== buggy_method_src_endswith_buggy_statement ==================
+public JavaType refineSerializationType(final MapperConfig<?> config,
+            final Annotated a, final JavaType baseType) throws JsonMappingException
+    {
+        JavaType type = baseType;
+        final TypeFactory tf = config.getTypeFactory();
+        
+        // 10-Oct-2015, tatu: For 2.7, we'll need to delegate back to
+        //    now-deprecated secondary methods; this because while
+        //    direct sub-class not yet retrofitted may only override
+        //    those methods. With 2.8 or later we may consider removal
+        //    of these methods
+
+        
+        // Ok: start by refining the main type itself; common to all types
+        Class<?> serClass = findSerializationType(a);
+        if (serClass != null) {
+            if (type.hasRawClass(serClass)) {
+                // 30-Nov-2015, tatu: As per [databind#1023], need to allow forcing of
+                //    static typing this way
+                type = type.withStaticTyping();
+            } else {
+                try {
+                    // 11-Oct-2015, tatu: For deser, we call `TypeFactory.constructSpecializedType()`,
+                    //   may be needed here too in future?
+                        type = tf.constructGeneralizedType(type, serClass);
+                } catch (IllegalArgumentException iae) {
+                    throw new JsonMappingException(null,
+                            String.format("Failed to widen type %s with annotation (value %s), from '%s': %s",
+                                    type, serClass.getName(), a.getName(), iae.getMessage()),
+                                    iae);
+                }
+            }
+        }
+        // Then further processing for container types

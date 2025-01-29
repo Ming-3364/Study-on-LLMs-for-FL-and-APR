@@ -1,0 +1,266 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/ProcessClosurePrimitives.java
+================== buggy_method ==================
+{'method_name': 'replace', 'method_body': "void replace() {\n      if (firstNode == null) {\n        // Don't touch the base case ('goog').\n        replacementNode = candidateDefinition;\n        return;\n      }\n\n      // Handle the case where there is a duplicate definition for an explicitly\n      // provided symbol.\n      if (candidateDefinition != null && explicitNode != null) {\n        explicitNode.detachFromParent();\n        compiler.reportCodeChange();\n\n        // Does this need a VAR keyword?\n        replacementNode = candidateDefinition;\n        if (NodeUtil.isExpressionNode(candidateDefinition)) {\n          candidateDefinition.putBooleanProp(Node.IS_NAMESPACE, true);\n          Node assignNode = candidateDefinition.getFirstChild();\n          Node nameNode = assignNode.getFirstChild();\n          if (nameNode.getType() == Token.NAME) {\n            // Need to convert this assign to a var declaration.\n            Node valueNode = nameNode.getNext();\n            assignNode.removeChild(nameNode);\n            assignNode.removeChild(valueNode);\n            nameNode.addChildToFront(valueNode);\n            Node varNode = new Node(Token.VAR, nameNode);\n            varNode.copyInformationFrom(candidateDefinition);\n            candidateDefinition.getParent().replaceChild(\n                candidateDefinition, varNode);\n            nameNode.setJSDocInfo(assignNode.getJSDocInfo());\n            compiler.reportCodeChange();\n            replacementNode = varNode;\n          }\n        }\n      } else {\n        // Handle the case where there's not a duplicate definition.\n        replacementNode = createDeclarationNode();\n        if (firstModule == minimumModule) {\n          firstNode.getParent().addChildBefore(replacementNode, firstNode);\n        } else {\n          // In this case, the name was implicitly provided by two independent\n          // modules. We need to move this code up to a common module.\n          int indexOfDot = namespace.indexOf('.');\n          if (indexOfDot == -1) {\n            // Any old place is fine.\n            compiler.getNodeForCodeInsertion(minimumModule)\n                .addChildToBack(replacementNode);\n          } else {\n            // Add it after the parent namespace.\n            ProvidedName parentName =\n                providedNames.get(namespace.substring(0, indexOfDot));\n            Preconditions.checkNotNull(parentName);\n            Preconditions.checkNotNull(parentName.replacementNode);\n            parentName.replacementNode.getParent().addChildAfter(\n                replacementNode, parentName.replacementNode);\n          }\n        }\n        if (explicitNode != null) {\n          explicitNode.detachFromParent();\n        }\n        compiler.reportCodeChange();\n      }\n    }", 'start_line': 747, 'end_line': 809, 'buggy_lines': [789]}
+================== buggy_method_src ==================
+void replace() {
+      if (firstNode == null) {
+        // Don't touch the base case ('goog').
+        replacementNode = candidateDefinition;
+        return;
+      }
+
+      // Handle the case where there is a duplicate definition for an explicitly
+      // provided symbol.
+      if (candidateDefinition != null && explicitNode != null) {
+        explicitNode.detachFromParent();
+        compiler.reportCodeChange();
+
+        // Does this need a VAR keyword?
+        replacementNode = candidateDefinition;
+        if (NodeUtil.isExpressionNode(candidateDefinition)) {
+          candidateDefinition.putBooleanProp(Node.IS_NAMESPACE, true);
+          Node assignNode = candidateDefinition.getFirstChild();
+          Node nameNode = assignNode.getFirstChild();
+          if (nameNode.getType() == Token.NAME) {
+            // Need to convert this assign to a var declaration.
+            Node valueNode = nameNode.getNext();
+            assignNode.removeChild(nameNode);
+            assignNode.removeChild(valueNode);
+            nameNode.addChildToFront(valueNode);
+            Node varNode = new Node(Token.VAR, nameNode);
+            varNode.copyInformationFrom(candidateDefinition);
+            candidateDefinition.getParent().replaceChild(
+                candidateDefinition, varNode);
+            nameNode.setJSDocInfo(assignNode.getJSDocInfo());
+            compiler.reportCodeChange();
+            replacementNode = varNode;
+          }
+        }
+      } else {
+        // Handle the case where there's not a duplicate definition.
+        replacementNode = createDeclarationNode();
+        if (firstModule == minimumModule) {
+          firstNode.getParent().addChildBefore(replacementNode, firstNode);
+        } else {
+          // In this case, the name was implicitly provided by two independent
+          // modules. We need to move this code up to a common module.
+          int indexOfDot = namespace.indexOf('.');
+          if (indexOfDot == -1) {
+            // Any old place is fine.
+            compiler.getNodeForCodeInsertion(minimumModule)
+                .addChildToBack(replacementNode);
+          } else {
+            // Add it after the parent namespace.
+            ProvidedName parentName =
+                providedNames.get(namespace.substring(0, indexOfDot));
+            Preconditions.checkNotNull(parentName);
+            Preconditions.checkNotNull(parentName.replacementNode);
+            parentName.replacementNode.getParent().addChildAfter(
+                replacementNode, parentName.replacementNode);
+          }
+        }
+        if (explicitNode != null) {
+          explicitNode.detachFromParent();
+        }
+        compiler.reportCodeChange();
+      }
+    }
+================== test_stack ==================
+com.google.javascript.jscomp.ProcessClosurePrimitivesTest::testProvideInIndependentModules4
+junit.framework.AssertionFailedError:
+Expected: var apps={};apps.foo={};apps.foo.bar={};apps.foo.bar.B={};apps.foo.bar.C={}
+Result: var apps={};apps.foo.bar={};apps.foo={};apps.foo.bar.B={};apps.foo.bar.C={}
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [sourcename: expected0] [synthetic: 1]
+        VAR 1 [sourcename: expected0]
+            NAME apps 1 [sourcename: expected0]
+                OBJECTLIT 1 [sourcename: expected0]
+        EXPR_RESULT 1 [sourcename: expected0]
+            ASSIGN 1 [sourcename: expected0]
+                GETPROP 1 [sourcename: expected0]
+                    NAME apps 1 [sourcename: expected0]
+                    STRING foo 1 [sourcename: expected0]
+                OBJECTLIT 1 [sourcename: expected0]
+        EXPR_RESULT 1 [sourcename: expected0]
+            ASSIGN 1 [sourcename: expected0]
+                GETPROP 1 [sourcename: expected0]
+                    GETPROP 1 [sourcename: expected0]
+                        NAME apps 1 [sourcename: expected0]
+                        STRING foo 1 [sourcename: expected0]
+                    STRING bar 1 [sourcename: expected0]
+                OBJECTLIT 1 [sourcename: expected0]
+    SCRIPT 1 [sourcename: expected1] [synthetic: 1]
+        EXPR_RESULT 1 [sourcename: expected1]
+            ASSIGN 1 [sourcename: expected1]
+                GETPROP 1 [sourcename: expected1]
+                    GETPROP 1 [sourcename: expected1]
+                        GETPROP 1 [sourcename: expected1]
+                            NAME apps 1 [sourcename: expected1]
+                            STRING foo 1 [sourcename: expected1]
+                        STRING bar 1 [sourcename: expected1]
+                    STRING B 1 [sourcename: expected1] [is_constant_name: 1]
+                OBJECTLIT 1 [sourcename: expected1]
+    SCRIPT 1 [sourcename: expected2] [synthetic: 1]
+        EXPR_RESULT 1 [sourcename: expected2]
+            ASSIGN 1 [sourcename: expected2]
+                GETPROP 1 [sourcename: expected2]
+                    GETPROP 1 [sourcename: expected2]
+                        GETPROP 1 [sourcename: expected2]
+                            NAME apps 1 [sourcename: expected2]
+                            STRING foo 1 [sourcename: expected2]
+                        STRING bar 1 [sourcename: expected2]
+                    STRING C 1 [sourcename: expected2] [is_constant_name: 1]
+                OBJECTLIT 1 [sourcename: expected2]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [sourcename: i0] [synthetic: 1]
+        VAR 1 [sourcename: i0] [is_namespace: 1]
+            NAME apps 1 [sourcename: i0]
+                OBJECTLIT 1 [sourcename: i0] : {}
+        EXPR_RESULT 1 [sourcename: i1] [is_namespace: 1]
+            ASSIGN 1 [sourcename: i1]
+                GETPROP 1 [sourcename: i1] [originalname: apps.foo.bar]
+                    GETPROP 1 [sourcename: i1]
+                        NAME apps 1 [sourcename: i1]
+                        STRING foo 1 [sourcename: i1]
+                    STRING bar 1 [sourcename: i1]
+                OBJECTLIT 1 [sourcename: i1] : {}
+        EXPR_RESULT 1 [sourcename: i1] [is_namespace: 1]
+            ASSIGN 1 [sourcename: i1]
+                GETPROP 1 [sourcename: i1] [originalname: apps.foo]
+                    NAME apps 1 [sourcename: i1]
+                    STRING foo 1 [sourcename: i1]
+                OBJECTLIT 1 [sourcename: i1] : {}
+    SCRIPT 1 [sourcename: i1] [synthetic: 1]
+        EXPR_RESULT 1 [sourcename: i1] [is_namespace: 1]
+            ASSIGN 1 [sourcename: i1]
+                GETPROP 1 [sourcename: i1] [originalname: apps.foo.bar.B]
+                    GETPROP 1 [sourcename: i1]
+                        GETPROP 1 [sourcename: i1]
+                            NAME apps 1 [sourcename: i1]
+                            STRING foo 1 [sourcename: i1]
+                        STRING bar 1 [sourcename: i1]
+                    STRING B 1 [sourcename: i1]
+                OBJECTLIT 1 [sourcename: i1] : {}
+    SCRIPT 1 [sourcename: i2] [synthetic: 1]
+        EXPR_RESULT 1 [sourcename: i2] [is_namespace: 1]
+            ASSIGN 1 [sourcename: i2]
+                GETPROP 1 [sourcename: i2] [originalname: apps.foo.bar.C]
+                    GETPROP 1 [sourcename: i2]
+                        GETPROP 1 [sourcename: i2]
+                            NAME apps 1 [sourcename: i2]
+                            STRING foo 1 [sourcename: i2]
+                        STRING bar 1 [sourcename: i2]
+                    STRING C 1 [sourcename: i2]
+                OBJECTLIT 1 [sourcename: i2] : {}
+
+
+Subtree1: NAME apps 1 [sourcename: expected0]
+
+
+Subtree2: GETPROP 1 [sourcename: i1]
+    NAME apps 1 [sourcename: i1]
+    STRING foo 1 [sourcename: i1]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:797)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:645)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:482)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:463)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:450)
+	at com.google.javascript.jscomp.ProcessClosurePrimitivesTest.testProvideInIndependentModules4(ProcessClosurePrimitivesTest.java:777)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+test(
+
+================== buggy_lines_in_method ==================
+[43]
+================== buggy_statements ==================
+["          int indexOfDot = namespace.indexOf('.');"]
+================== buggy_method_src_endswith_buggy_statement ==================
+void replace() {
+      if (firstNode == null) {
+        // Don't touch the base case ('goog').
+        replacementNode = candidateDefinition;
+        return;
+      }
+
+      // Handle the case where there is a duplicate definition for an explicitly
+      // provided symbol.
+      if (candidateDefinition != null && explicitNode != null) {
+        explicitNode.detachFromParent();
+        compiler.reportCodeChange();
+
+        // Does this need a VAR keyword?
+        replacementNode = candidateDefinition;
+        if (NodeUtil.isExpressionNode(candidateDefinition)) {
+          candidateDefinition.putBooleanProp(Node.IS_NAMESPACE, true);
+          Node assignNode = candidateDefinition.getFirstChild();
+          Node nameNode = assignNode.getFirstChild();
+          if (nameNode.getType() == Token.NAME) {
+            // Need to convert this assign to a var declaration.
+            Node valueNode = nameNode.getNext();
+            assignNode.removeChild(nameNode);
+            assignNode.removeChild(valueNode);
+            nameNode.addChildToFront(valueNode);
+            Node varNode = new Node(Token.VAR, nameNode);
+            varNode.copyInformationFrom(candidateDefinition);
+            candidateDefinition.getParent().replaceChild(
+                candidateDefinition, varNode);
+            nameNode.setJSDocInfo(assignNode.getJSDocInfo());
+            compiler.reportCodeChange();
+            replacementNode = varNode;
+          }
+        }
+      } else {
+        // Handle the case where there's not a duplicate definition.
+        replacementNode = createDeclarationNode();
+        if (firstModule == minimumModule) {
+          firstNode.getParent().addChildBefore(replacementNode, firstNode);
+        } else {
+          // In this case, the name was implicitly provided by two independent
+          // modules. We need to move this code up to a common module.
+          int indexOfDot = namespace.indexOf('.');

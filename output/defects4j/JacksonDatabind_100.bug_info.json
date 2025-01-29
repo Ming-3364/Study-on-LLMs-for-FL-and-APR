@@ -1,0 +1,48 @@
+[
+    {
+        "buggy_file": "src/main/java/com/fasterxml/jackson/databind/node/TreeTraversingParser.java",
+        "buggy_method": {
+            "method_name": "getBinaryValue",
+            "method_body": "@Override\n    public byte[] getBinaryValue(Base64Variant b64variant)\n        throws IOException, JsonParseException\n    {\n        // Multiple possibilities...\n        JsonNode n = currentNode();\n        if (n != null) {\n            // [databind#2096]: although `binaryValue()` works for real binary node\n            // and embedded \"POJO\" node, coercion from TextNode may require variant, so:\n            byte[] data = n.binaryValue();\n            if (data != null) {\n                return data;\n            }\n            if (n.isPojo()) {\n                Object ob = ((POJONode) n).getPojo();\n                if (ob instanceof byte[]) {\n                    return (byte[]) ob;\n                }\n            }\n        }\n        // otherwise return null to mark we have no binary content\n        return null;\n    }",
+            "start_line": 354,
+            "end_line": 376,
+            "buggy_lines": [
+                363,
+                364,
+                365,
+                366,
+                367,
+                368,
+                369,
+                370,
+                371
+            ]
+        },
+        "buggy_method_src": "@Override\n    public byte[] getBinaryValue(Base64Variant b64variant)\n        throws IOException, JsonParseException\n    {\n        // Multiple possibilities...\n        JsonNode n = currentNode();\n        if (n != null) {\n            // [databind#2096]: although `binaryValue()` works for real binary node\n            // and embedded \"POJO\" node, coercion from TextNode may require variant, so:\n            byte[] data = n.binaryValue();\n            if (data != null) {\n                return data;\n            }\n            if (n.isPojo()) {\n                Object ob = ((POJONode) n).getPojo();\n                if (ob instanceof byte[]) {\n                    return (byte[]) ob;\n                }\n            }\n        }\n        // otherwise return null to mark we have no binary content\n        return null;\n    }",
+        "test_stack": "com.fasterxml.jackson.databind.node.TestConversions::testBase64Text\njunit.framework.AssertionFailedError: Failed (variant MODIFIED-FOR-URL, data length 1): Cannot access contents of TextNode as binary due to broken Base64 encoding: Unexpected end-of-String in base64 content\n\tat junit.framework.Assert.fail(Assert.java:57)\n\tat junit.framework.TestCase.fail(TestCase.java:227)\n\tat com.fasterxml.jackson.databind.node.TestConversions.testBase64Text(TestConversions.java:189)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n\tat sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.lang.reflect.Method.invoke(Method.java:498)\n\tat junit.framework.TestCase.runTest(TestCase.java:176)\n\tat junit.framework.TestCase.runBare(TestCase.java:141)\n\tat junit.framework.TestResult$1.protect(TestResult.java:122)\n\tat junit.framework.TestResult.runProtected(TestResult.java:142)\n\tat junit.framework.TestResult.run(TestResult.java:125)\n\tat junit.framework.TestCase.run(TestCase.java:129)\n\tat junit.framework.TestSuite.runTest(TestSuite.java:255)\n\tat junit.framework.TestSuite.run(TestSuite.java:250)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)\n\tat org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)\n\tat sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)\n\tat sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.lang.reflect.Method.invoke(Method.java:498)\n\tat org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)\n\tat org.apache.tools.ant.Task.perform(Task.java:348)\n\tat org.apache.tools.ant.Target.execute(Target.java:392)\n\tat org.apache.tools.ant.Target.performTasks(Target.java:413)\n\tat org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)\n\tat org.apache.tools.ant.Project.executeTarget(Project.java:1368)\n\tat org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)\n\tat org.apache.tools.ant.Project.executeTargets(Project.java:1251)\n\tat org.apache.tools.ant.Main.runBuild(Main.java:811)\n\tat org.apache.tools.ant.Main.startAnt(Main.java:217)\n\tat org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)\n\tat org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)\n",
+        "test_assert": "fail(\"Failed (variant \"+variant+\", data length \"+len+\"): \"+e.getMessage());\n",
+        "buggy_lines_in_method": [
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+        ],
+        "buggy_statements": [
+            "            byte[] data = n.binaryValue();",
+            "            if (data != null) {",
+            "                return data;",
+            "            }",
+            "            if (n.isPojo()) {",
+            "                Object ob = ((POJONode) n).getPojo();",
+            "                if (ob instanceof byte[]) {",
+            "                    return (byte[]) ob;",
+            "                }"
+        ],
+        "buggy_method_src_endswith_buggy_statement": "@Override\n    public byte[] getBinaryValue(Base64Variant b64variant)\n        throws IOException, JsonParseException\n    {\n        // Multiple possibilities...\n        JsonNode n = currentNode();\n        if (n != null) {\n            // [databind#2096]: although `binaryValue()` works for real binary node\n            // and embedded \"POJO\" node, coercion from TextNode may require variant, so:\n            byte[] data = n.binaryValue();\n            if (data != null) {\n                return data;\n            }\n            if (n.isPojo()) {\n                Object ob = ((POJONode) n).getPojo();\n                if (ob instanceof byte[]) {\n                    return (byte[]) ob;\n                }"
+    }
+]

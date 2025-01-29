@@ -1,0 +1,2530 @@
+
+================== prompt_fl_1 ==================
+
+source code:
+private static Type resolve(Type context, Class<?> contextRawType, Type toResolve,
+                              Collection<TypeVariable> visitedTypeVariables) {
+    // this implementation is made a little more complicated in an attempt to avoid object-creation
+    while (true) {
+      if (toResolve instanceof TypeVariable) {
+        TypeVariable<?> typeVariable = (TypeVariable<?>) toResolve;
+          // cannot reduce due to infinite recursion
+        toResolve = resolveTypeVariable(context, contextRawType, typeVariable);
+        if (toResolve == typeVariable) {
+          return toResolve;
+        }
+
+      } else if (toResolve instanceof Class && ((Class<?>) toResolve).isArray()) {
+        Class<?> original = (Class<?>) toResolve;
+        Type componentType = original.getComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof GenericArrayType) {
+        GenericArrayType original = (GenericArrayType) toResolve;
+        Type componentType = original.getGenericComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof ParameterizedType) {
+        ParameterizedType original = (ParameterizedType) toResolve;
+        Type ownerType = original.getOwnerType();
+        Type newOwnerType = resolve(context, contextRawType, ownerType, visitedTypeVariables);
+        boolean changed = newOwnerType != ownerType;
+
+        Type[] args = original.getActualTypeArguments();
+        for (int t = 0, length = args.length; t < length; t++) {
+          Type resolvedTypeArgument = resolve(context, contextRawType, args[t], visitedTypeVariables);
+          if (resolvedTypeArgument != args[t]) {
+            if (!changed) {
+              args = args.clone();
+              changed = true;
+            }
+            args[t] = resolvedTypeArgument;
+          }
+        }
+
+        return changed
+            ? newParameterizedTypeWithOwner(newOwnerType, original.getRawType(), args)
+            : original;
+
+      } else if (toResolve instanceof WildcardType) {
+        WildcardType original = (WildcardType) toResolve;
+        Type[] originalLowerBound = original.getLowerBounds();
+        Type[] originalUpperBound = original.getUpperBounds();
+
+        if (originalLowerBound.length == 1) {
+          Type lowerBound = resolve(context, contextRawType, originalLowerBound[0], visitedTypeVariables);
+          if (lowerBound != originalLowerBound[0]) {
+            return supertypeOf(lowerBound);
+          }
+        } else if (originalUpperBound.length == 1) {
+          Type upperBound = resolve(context, contextRawType, originalUpperBound[0], visitedTypeVariables);
+          if (upperBound != originalUpperBound[0]) {
+            return subtypeOf(upperBound);
+          }
+        }
+        return original;
+
+      } else {
+        return toResolve;
+      }
+    }
+  }
+
+There is a bug in the above code, please help me locate it.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_2 ==================
+
+source code:
+private static Type resolve(Type context, Class<?> contextRawType, Type toResolve,
+                              Collection<TypeVariable> visitedTypeVariables) {
+    // this implementation is made a little more complicated in an attempt to avoid object-creation
+    while (true) {
+      if (toResolve instanceof TypeVariable) {
+        TypeVariable<?> typeVariable = (TypeVariable<?>) toResolve;
+          // cannot reduce due to infinite recursion
+        toResolve = resolveTypeVariable(context, contextRawType, typeVariable);
+        if (toResolve == typeVariable) {
+          return toResolve;
+        }
+
+      } else if (toResolve instanceof Class && ((Class<?>) toResolve).isArray()) {
+        Class<?> original = (Class<?>) toResolve;
+        Type componentType = original.getComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof GenericArrayType) {
+        GenericArrayType original = (GenericArrayType) toResolve;
+        Type componentType = original.getGenericComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof ParameterizedType) {
+        ParameterizedType original = (ParameterizedType) toResolve;
+        Type ownerType = original.getOwnerType();
+        Type newOwnerType = resolve(context, contextRawType, ownerType, visitedTypeVariables);
+        boolean changed = newOwnerType != ownerType;
+
+        Type[] args = original.getActualTypeArguments();
+        for (int t = 0, length = args.length; t < length; t++) {
+          Type resolvedTypeArgument = resolve(context, contextRawType, args[t], visitedTypeVariables);
+          if (resolvedTypeArgument != args[t]) {
+            if (!changed) {
+              args = args.clone();
+              changed = true;
+            }
+            args[t] = resolvedTypeArgument;
+          }
+        }
+
+        return changed
+            ? newParameterizedTypeWithOwner(newOwnerType, original.getRawType(), args)
+            : original;
+
+      } else if (toResolve instanceof WildcardType) {
+        WildcardType original = (WildcardType) toResolve;
+        Type[] originalLowerBound = original.getLowerBounds();
+        Type[] originalUpperBound = original.getUpperBounds();
+
+        if (originalLowerBound.length == 1) {
+          Type lowerBound = resolve(context, contextRawType, originalLowerBound[0], visitedTypeVariables);
+          if (lowerBound != originalLowerBound[0]) {
+            return supertypeOf(lowerBound);
+          }
+        } else if (originalUpperBound.length == 1) {
+          Type upperBound = resolve(context, contextRawType, originalUpperBound[0], visitedTypeVariables);
+          if (upperBound != originalUpperBound[0]) {
+            return subtypeOf(upperBound);
+          }
+        }
+        return original;
+
+      } else {
+        return toResolve;
+      }
+    }
+  }
+
+stack trace:
+com.google.gson.internal.bind.RecursiveTypesResolveTest::testRecursiveTypeVariablesResolve12
+java.lang.StackOverflowError
+	at java.lang.String.lastIndexOf(String.java:1611)
+	at sun.reflect.misc.ReflectUtil.isNonPublicProxyClass(ReflectUtil.java:287)
+	at sun.reflect.misc.ReflectUtil.checkPackageAccess(ReflectUtil.java:165)
+	at sun.reflect.generics.reflectiveObjects.TypeVariableImpl.getGenericDeclaration(TypeVariableImpl.java:164)
+	at com.google.gson.internal.$Gson$Types.declaringClassOf($Gson$Types.java:441)
+	at com.google.gson.internal.$Gson$Types.resolveTypeVariable($Gson$Types.java:411)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:343)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+com.google.gson.internal.bind.RecursiveTypesResolveTest::testRecursiveTypeVariablesResolve1
+java.lang.StackOverflowError
+	at sun.reflect.generics.repository.GenericDeclRepository.getTypeParameters(GenericDeclRepository.java:83)
+	at java.lang.Class.getTypeParameters(Class.java:715)
+	at com.google.gson.internal.$Gson$Types.resolveTypeVariable($Gson$Types.java:420)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:343)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_3 ==================
+
+source code:
+private static Type resolve(Type context, Class<?> contextRawType, Type toResolve,
+                              Collection<TypeVariable> visitedTypeVariables) {
+    // this implementation is made a little more complicated in an attempt to avoid object-creation
+    while (true) {
+      if (toResolve instanceof TypeVariable) {
+        TypeVariable<?> typeVariable = (TypeVariable<?>) toResolve;
+          // cannot reduce due to infinite recursion
+        toResolve = resolveTypeVariable(context, contextRawType, typeVariable);
+        if (toResolve == typeVariable) {
+          return toResolve;
+        }
+
+      } else if (toResolve instanceof Class && ((Class<?>) toResolve).isArray()) {
+        Class<?> original = (Class<?>) toResolve;
+        Type componentType = original.getComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof GenericArrayType) {
+        GenericArrayType original = (GenericArrayType) toResolve;
+        Type componentType = original.getGenericComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof ParameterizedType) {
+        ParameterizedType original = (ParameterizedType) toResolve;
+        Type ownerType = original.getOwnerType();
+        Type newOwnerType = resolve(context, contextRawType, ownerType, visitedTypeVariables);
+        boolean changed = newOwnerType != ownerType;
+
+        Type[] args = original.getActualTypeArguments();
+        for (int t = 0, length = args.length; t < length; t++) {
+          Type resolvedTypeArgument = resolve(context, contextRawType, args[t], visitedTypeVariables);
+          if (resolvedTypeArgument != args[t]) {
+            if (!changed) {
+              args = args.clone();
+              changed = true;
+            }
+            args[t] = resolvedTypeArgument;
+          }
+        }
+
+        return changed
+            ? newParameterizedTypeWithOwner(newOwnerType, original.getRawType(), args)
+            : original;
+
+      } else if (toResolve instanceof WildcardType) {
+        WildcardType original = (WildcardType) toResolve;
+        Type[] originalLowerBound = original.getLowerBounds();
+        Type[] originalUpperBound = original.getUpperBounds();
+
+        if (originalLowerBound.length == 1) {
+          Type lowerBound = resolve(context, contextRawType, originalLowerBound[0], visitedTypeVariables);
+          if (lowerBound != originalLowerBound[0]) {
+            return supertypeOf(lowerBound);
+          }
+        } else if (originalUpperBound.length == 1) {
+          Type upperBound = resolve(context, contextRawType, originalUpperBound[0], visitedTypeVariables);
+          if (upperBound != originalUpperBound[0]) {
+            return subtypeOf(upperBound);
+          }
+        }
+        return original;
+
+      } else {
+        return toResolve;
+      }
+    }
+  }
+
+stack trace:
+com.google.gson.internal.bind.RecursiveTypesResolveTest::testRecursiveTypeVariablesResolve12
+java.lang.StackOverflowError
+	at java.lang.String.lastIndexOf(String.java:1611)
+	at sun.reflect.misc.ReflectUtil.isNonPublicProxyClass(ReflectUtil.java:287)
+	at sun.reflect.misc.ReflectUtil.checkPackageAccess(ReflectUtil.java:165)
+	at sun.reflect.generics.reflectiveObjects.TypeVariableImpl.getGenericDeclaration(TypeVariableImpl.java:164)
+	at com.google.gson.internal.$Gson$Types.declaringClassOf($Gson$Types.java:441)
+	at com.google.gson.internal.$Gson$Types.resolveTypeVariable($Gson$Types.java:411)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:343)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+com.google.gson.internal.bind.RecursiveTypesResolveTest::testRecursiveTypeVariablesResolve1
+java.lang.StackOverflowError
+	at sun.reflect.generics.repository.GenericDeclRepository.getTypeParameters(GenericDeclRepository.java:83)
+	at java.lang.Class.getTypeParameters(Class.java:715)
+	at com.google.gson.internal.$Gson$Types.resolveTypeVariable($Gson$Types.java:420)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:343)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+
+
+failure assertion code:
+public void testRecursiveTypeVariablesResolve12() throws Exception {
+    TypeAdapter<TestType2> adapter = new Gson().getAdapter(TestType2.class);
+    assertNotNull(adapter);
+  }
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_4 ==================
+
+source code:
+private static Type resolve(Type context, Class<?> contextRawType, Type toResolve,
+                              Collection<TypeVariable> visitedTypeVariables) {
+    // this implementation is made a little more complicated in an attempt to avoid object-creation
+    while (true) {
+      if (toResolve instanceof TypeVariable) {
+        TypeVariable<?> typeVariable = (TypeVariable<?>) toResolve;
+          // cannot reduce due to infinite recursion
+        toResolve = resolveTypeVariable(context, contextRawType, typeVariable);
+        if (toResolve == typeVariable) {
+          return toResolve;
+        }
+
+      } else if (toResolve instanceof Class && ((Class<?>) toResolve).isArray()) {
+        Class<?> original = (Class<?>) toResolve;
+        Type componentType = original.getComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof GenericArrayType) {
+        GenericArrayType original = (GenericArrayType) toResolve;
+        Type componentType = original.getGenericComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof ParameterizedType) {
+        ParameterizedType original = (ParameterizedType) toResolve;
+        Type ownerType = original.getOwnerType();
+        Type newOwnerType = resolve(context, contextRawType, ownerType, visitedTypeVariables);
+        boolean changed = newOwnerType != ownerType;
+
+        Type[] args = original.getActualTypeArguments();
+        for (int t = 0, length = args.length; t < length; t++) {
+          Type resolvedTypeArgument = resolve(context, contextRawType, args[t], visitedTypeVariables);
+          if (resolvedTypeArgument != args[t]) {
+            if (!changed) {
+              args = args.clone();
+              changed = true;
+            }
+            args[t] = resolvedTypeArgument;
+          }
+        }
+
+        return changed
+            ? newParameterizedTypeWithOwner(newOwnerType, original.getRawType(), args)
+            : original;
+
+      } else if (toResolve instanceof WildcardType) {
+        WildcardType original = (WildcardType) toResolve;
+        Type[] originalLowerBound = original.getLowerBounds();
+        Type[] originalUpperBound = original.getUpperBounds();
+
+        if (originalLowerBound.length == 1) {
+          Type lowerBound = resolve(context, contextRawType, originalLowerBound[0], visitedTypeVariables);
+          if (lowerBound != originalLowerBound[0]) {
+            return supertypeOf(lowerBound);
+          }
+        } else if (originalUpperBound.length == 1) {
+          Type upperBound = resolve(context, contextRawType, originalUpperBound[0], visitedTypeVariables);
+          if (upperBound != originalUpperBound[0]) {
+            return subtypeOf(upperBound);
+          }
+        }
+        return original;
+
+      } else {
+        return toResolve;
+      }
+    }
+  }
+
+There is a bug in the above code, please help me locate it.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_5 ==================
+
+source code:
+private static Type resolve(Type context, Class<?> contextRawType, Type toResolve,
+                              Collection<TypeVariable> visitedTypeVariables) {
+    // this implementation is made a little more complicated in an attempt to avoid object-creation
+    while (true) {
+      if (toResolve instanceof TypeVariable) {
+        TypeVariable<?> typeVariable = (TypeVariable<?>) toResolve;
+          // cannot reduce due to infinite recursion
+        toResolve = resolveTypeVariable(context, contextRawType, typeVariable);
+        if (toResolve == typeVariable) {
+          return toResolve;
+        }
+
+      } else if (toResolve instanceof Class && ((Class<?>) toResolve).isArray()) {
+        Class<?> original = (Class<?>) toResolve;
+        Type componentType = original.getComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof GenericArrayType) {
+        GenericArrayType original = (GenericArrayType) toResolve;
+        Type componentType = original.getGenericComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof ParameterizedType) {
+        ParameterizedType original = (ParameterizedType) toResolve;
+        Type ownerType = original.getOwnerType();
+        Type newOwnerType = resolve(context, contextRawType, ownerType, visitedTypeVariables);
+        boolean changed = newOwnerType != ownerType;
+
+        Type[] args = original.getActualTypeArguments();
+        for (int t = 0, length = args.length; t < length; t++) {
+          Type resolvedTypeArgument = resolve(context, contextRawType, args[t], visitedTypeVariables);
+          if (resolvedTypeArgument != args[t]) {
+            if (!changed) {
+              args = args.clone();
+              changed = true;
+            }
+            args[t] = resolvedTypeArgument;
+          }
+        }
+
+        return changed
+            ? newParameterizedTypeWithOwner(newOwnerType, original.getRawType(), args)
+            : original;
+
+      } else if (toResolve instanceof WildcardType) {
+        WildcardType original = (WildcardType) toResolve;
+        Type[] originalLowerBound = original.getLowerBounds();
+        Type[] originalUpperBound = original.getUpperBounds();
+
+        if (originalLowerBound.length == 1) {
+          Type lowerBound = resolve(context, contextRawType, originalLowerBound[0], visitedTypeVariables);
+          if (lowerBound != originalLowerBound[0]) {
+            return supertypeOf(lowerBound);
+          }
+        } else if (originalUpperBound.length == 1) {
+          Type upperBound = resolve(context, contextRawType, originalUpperBound[0], visitedTypeVariables);
+          if (upperBound != originalUpperBound[0]) {
+            return subtypeOf(upperBound);
+          }
+        }
+        return original;
+
+      } else {
+        return toResolve;
+      }
+    }
+  }
+
+stack trace:
+com.google.gson.internal.bind.RecursiveTypesResolveTest::testRecursiveTypeVariablesResolve12
+java.lang.StackOverflowError
+	at java.lang.String.lastIndexOf(String.java:1611)
+	at sun.reflect.misc.ReflectUtil.isNonPublicProxyClass(ReflectUtil.java:287)
+	at sun.reflect.misc.ReflectUtil.checkPackageAccess(ReflectUtil.java:165)
+	at sun.reflect.generics.reflectiveObjects.TypeVariableImpl.getGenericDeclaration(TypeVariableImpl.java:164)
+	at com.google.gson.internal.$Gson$Types.declaringClassOf($Gson$Types.java:441)
+	at com.google.gson.internal.$Gson$Types.resolveTypeVariable($Gson$Types.java:411)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:343)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+com.google.gson.internal.bind.RecursiveTypesResolveTest::testRecursiveTypeVariablesResolve1
+java.lang.StackOverflowError
+	at sun.reflect.generics.repository.GenericDeclRepository.getTypeParameters(GenericDeclRepository.java:83)
+	at java.lang.Class.getTypeParameters(Class.java:715)
+	at com.google.gson.internal.$Gson$Types.resolveTypeVariable($Gson$Types.java:420)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:343)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_6 ==================
+
+source code:
+private static Type resolve(Type context, Class<?> contextRawType, Type toResolve,
+                              Collection<TypeVariable> visitedTypeVariables) {
+    // this implementation is made a little more complicated in an attempt to avoid object-creation
+    while (true) {
+      if (toResolve instanceof TypeVariable) {
+        TypeVariable<?> typeVariable = (TypeVariable<?>) toResolve;
+          // cannot reduce due to infinite recursion
+        toResolve = resolveTypeVariable(context, contextRawType, typeVariable);
+        if (toResolve == typeVariable) {
+          return toResolve;
+        }
+
+      } else if (toResolve instanceof Class && ((Class<?>) toResolve).isArray()) {
+        Class<?> original = (Class<?>) toResolve;
+        Type componentType = original.getComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof GenericArrayType) {
+        GenericArrayType original = (GenericArrayType) toResolve;
+        Type componentType = original.getGenericComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof ParameterizedType) {
+        ParameterizedType original = (ParameterizedType) toResolve;
+        Type ownerType = original.getOwnerType();
+        Type newOwnerType = resolve(context, contextRawType, ownerType, visitedTypeVariables);
+        boolean changed = newOwnerType != ownerType;
+
+        Type[] args = original.getActualTypeArguments();
+        for (int t = 0, length = args.length; t < length; t++) {
+          Type resolvedTypeArgument = resolve(context, contextRawType, args[t], visitedTypeVariables);
+          if (resolvedTypeArgument != args[t]) {
+            if (!changed) {
+              args = args.clone();
+              changed = true;
+            }
+            args[t] = resolvedTypeArgument;
+          }
+        }
+
+        return changed
+            ? newParameterizedTypeWithOwner(newOwnerType, original.getRawType(), args)
+            : original;
+
+      } else if (toResolve instanceof WildcardType) {
+        WildcardType original = (WildcardType) toResolve;
+        Type[] originalLowerBound = original.getLowerBounds();
+        Type[] originalUpperBound = original.getUpperBounds();
+
+        if (originalLowerBound.length == 1) {
+          Type lowerBound = resolve(context, contextRawType, originalLowerBound[0], visitedTypeVariables);
+          if (lowerBound != originalLowerBound[0]) {
+            return supertypeOf(lowerBound);
+          }
+        } else if (originalUpperBound.length == 1) {
+          Type upperBound = resolve(context, contextRawType, originalUpperBound[0], visitedTypeVariables);
+          if (upperBound != originalUpperBound[0]) {
+            return subtypeOf(upperBound);
+          }
+        }
+        return original;
+
+      } else {
+        return toResolve;
+      }
+    }
+  }
+
+stack trace:
+com.google.gson.internal.bind.RecursiveTypesResolveTest::testRecursiveTypeVariablesResolve12
+java.lang.StackOverflowError
+	at java.lang.String.lastIndexOf(String.java:1611)
+	at sun.reflect.misc.ReflectUtil.isNonPublicProxyClass(ReflectUtil.java:287)
+	at sun.reflect.misc.ReflectUtil.checkPackageAccess(ReflectUtil.java:165)
+	at sun.reflect.generics.reflectiveObjects.TypeVariableImpl.getGenericDeclaration(TypeVariableImpl.java:164)
+	at com.google.gson.internal.$Gson$Types.declaringClassOf($Gson$Types.java:441)
+	at com.google.gson.internal.$Gson$Types.resolveTypeVariable($Gson$Types.java:411)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:343)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+com.google.gson.internal.bind.RecursiveTypesResolveTest::testRecursiveTypeVariablesResolve1
+java.lang.StackOverflowError
+	at sun.reflect.generics.repository.GenericDeclRepository.getTypeParameters(GenericDeclRepository.java:83)
+	at java.lang.Class.getTypeParameters(Class.java:715)
+	at com.google.gson.internal.$Gson$Types.resolveTypeVariable($Gson$Types.java:420)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:343)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+	at com.google.gson.internal.$Gson$Types.resolve($Gson$Types.java:392)
+
+
+failure assertion code:
+public void testRecursiveTypeVariablesResolve12() throws Exception {
+    TypeAdapter<TestType2> adapter = new Gson().getAdapter(TestType2.class);
+    assertNotNull(adapter);
+  }
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_1 ==================
+
+private static Type resolve(Type context, Class<?> contextRawType, Type toResolve,
+                              Collection<TypeVariable> visitedTypeVariables) {
+    // this implementation is made a little more complicated in an attempt to avoid object-creation
+    while (true) {
+      if (toResolve instanceof TypeVariable) {
+        TypeVariable<?> typeVariable = (TypeVariable<?>) toResolve;
+          // cannot reduce due to infinite recursion
+        toResolve = resolveTypeVariable(context, contextRawType, typeVariable);
+        if (toResolve == typeVariable) {
+          return toResolve;
+        }
+
+      } else if (toResolve instanceof Class && ((Class<?>) toResolve).isArray()) {
+        Class<?> original = (Class<?>) toResolve;
+        Type componentType = original.getComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof GenericArrayType) {
+        GenericArrayType original = (GenericArrayType) toResolve;
+        Type componentType = original.getGenericComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof ParameterizedType) {
+        ParameterizedType original = (ParameterizedType) toResolve;
+        Type ownerType = original.getOwnerType();
+        Type newOwnerType = resolve(context, contextRawType, ownerType, visitedTypeVariables);
+        boolean changed = newOwnerType != ownerType;
+
+        Type[] args = original.getActualTypeArguments();
+        for (int t = 0, length = args.length; t < length; t++) {
+          Type resolvedTypeArgument = resolve(context, contextRawType, args[t], visitedTypeVariables);
+          if (resolvedTypeArgument != args[t]) {
+            if (!changed) {
+              args = args.clone();
+              changed = true;
+            }
+            args[t] = resolvedTypeArgument;
+          }
+        }
+
+        return changed
+            ? newParameterizedTypeWithOwner(newOwnerType, original.getRawType(), args)
+            : original;
+
+      } else if (toResolve instanceof WildcardType) {
+        WildcardType original = (WildcardType) toResolve;
+        Type[] originalLowerBound = original.getLowerBounds();
+        Type[] originalUpperBound = original.getUpperBounds();
+
+        if (originalLowerBound.length == 1) {
+          Type lowerBound = resolve(context, contextRawType, originalLowerBound[0], visitedTypeVariables);
+          if (lowerBound != originalLowerBound[0]) {
+            return supertypeOf(lowerBound);
+          }
+        } else if (originalUpperBound.length == 1) {
+          Type upperBound = resolve(context, contextRawType, originalUpperBound[0], visitedTypeVariables);
+          if (upperBound != originalUpperBound[0]) {
+            return subtypeOf(upperBound);
+          }
+        }
+        return original;
+
+      } else {
+        return toResolve;
+      }
+    }
+  }
+
+There is a bug in line [7, 12] of the code, please help me fix it.
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_2 ==================
+
+private static Type resolve(Type context, Class<?> contextRawType, Type toResolve,
+                              Collection<TypeVariable> visitedTypeVariables) {
+    // this implementation is made a little more complicated in an attempt to avoid object-creation
+    while (true) {
+      if (toResolve instanceof TypeVariable) {
+        TypeVariable<?> typeVariable = (TypeVariable<?>) toResolve;
+          // cannot reduce due to infinite recursion
+        toResolve = resolveTypeVariable(context, contextRawType, typeVariable);
+        if (toResolve == typeVariable) {
+          return toResolve;
+        }
+
+      } else if (toResolve instanceof Class && ((Class<?>) toResolve).isArray()) {
+        Class<?> original = (Class<?>) toResolve;
+        Type componentType = original.getComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof GenericArrayType) {
+        GenericArrayType original = (GenericArrayType) toResolve;
+        Type componentType = original.getGenericComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof ParameterizedType) {
+        ParameterizedType original = (ParameterizedType) toResolve;
+        Type ownerType = original.getOwnerType();
+        Type newOwnerType = resolve(context, contextRawType, ownerType, visitedTypeVariables);
+        boolean changed = newOwnerType != ownerType;
+
+        Type[] args = original.getActualTypeArguments();
+        for (int t = 0, length = args.length; t < length; t++) {
+          Type resolvedTypeArgument = resolve(context, contextRawType, args[t], visitedTypeVariables);
+          if (resolvedTypeArgument != args[t]) {
+            if (!changed) {
+              args = args.clone();
+              changed = true;
+            }
+            args[t] = resolvedTypeArgument;
+          }
+        }
+
+        return changed
+            ? newParameterizedTypeWithOwner(newOwnerType, original.getRawType(), args)
+            : original;
+
+      } else if (toResolve instanceof WildcardType) {
+        WildcardType original = (WildcardType) toResolve;
+        Type[] originalLowerBound = original.getLowerBounds();
+        Type[] originalUpperBound = original.getUpperBounds();
+
+        if (originalLowerBound.length == 1) {
+          Type lowerBound = resolve(context, contextRawType, originalLowerBound[0], visitedTypeVariables);
+          if (lowerBound != originalLowerBound[0]) {
+            return supertypeOf(lowerBound);
+          }
+        } else if (originalUpperBound.length == 1) {
+          Type upperBound = resolve(context, contextRawType, originalUpperBound[0], visitedTypeVariables);
+          if (upperBound != originalUpperBound[0]) {
+            return subtypeOf(upperBound);
+          }
+        }
+        return original;
+
+      } else {
+        return toResolve;
+      }
+    }
+  }
+
+There is a bug in ['          // cannot reduce due to infinite recursion', ''] , please help me fix it. 
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_3 ==================
+
+private static Type resolve(Type context, Class<?> contextRawType, Type toResolve,
+                              Collection<TypeVariable> visitedTypeVariables) {
+    // this implementation is made a little more complicated in an attempt to avoid object-creation
+    while (true) {
+      if (toResolve instanceof TypeVariable) {
+        TypeVariable<?> typeVariable = (TypeVariable<?>) toResolve;
+          // cannot reduce due to infinite recursion
+        toResolve = resolveTypeVariable(context, contextRawType, typeVariable);
+        if (toResolve == typeVariable) {
+          return toResolve;
+        }
+
+
+There is a bug in the last statement, please help me fix it.
+
+Return the code **only from the method declaration to the fixed statement**, without completing or adding additional code. Do not modify anything beyond fixing the bug, and do not complete the `if` statement or other unfinished parts. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_4 ==================
+
+private static Type resolve(Type context, Class<?> contextRawType, Type toResolve,
+                              Collection<TypeVariable> visitedTypeVariables) {
+    // this implementation is made a little more complicated in an attempt to avoid object-creation
+    while (true) {
+      if (toResolve instanceof TypeVariable) {
+        TypeVariable<?> typeVariable = (TypeVariable<?>) toResolve;
+          // cannot reduce due to infinite recursion
+        toResolve = resolveTypeVariable(context, contextRawType, typeVariable);
+        if (toResolve == typeVariable) {
+          return toResolve;
+        }
+
+      } else if (toResolve instanceof Class && ((Class<?>) toResolve).isArray()) {
+        Class<?> original = (Class<?>) toResolve;
+        Type componentType = original.getComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof GenericArrayType) {
+        GenericArrayType original = (GenericArrayType) toResolve;
+        Type componentType = original.getGenericComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof ParameterizedType) {
+        ParameterizedType original = (ParameterizedType) toResolve;
+        Type ownerType = original.getOwnerType();
+        Type newOwnerType = resolve(context, contextRawType, ownerType, visitedTypeVariables);
+        boolean changed = newOwnerType != ownerType;
+
+        Type[] args = original.getActualTypeArguments();
+        for (int t = 0, length = args.length; t < length; t++) {
+          Type resolvedTypeArgument = resolve(context, contextRawType, args[t], visitedTypeVariables);
+          if (resolvedTypeArgument != args[t]) {
+            if (!changed) {
+              args = args.clone();
+              changed = true;
+            }
+            args[t] = resolvedTypeArgument;
+          }
+        }
+
+        return changed
+            ? newParameterizedTypeWithOwner(newOwnerType, original.getRawType(), args)
+            : original;
+
+      } else if (toResolve instanceof WildcardType) {
+        WildcardType original = (WildcardType) toResolve;
+        Type[] originalLowerBound = original.getLowerBounds();
+        Type[] originalUpperBound = original.getUpperBounds();
+
+        if (originalLowerBound.length == 1) {
+          Type lowerBound = resolve(context, contextRawType, originalLowerBound[0], visitedTypeVariables);
+          if (lowerBound != originalLowerBound[0]) {
+            return supertypeOf(lowerBound);
+          }
+        } else if (originalUpperBound.length == 1) {
+          Type upperBound = resolve(context, contextRawType, originalUpperBound[0], visitedTypeVariables);
+          if (upperBound != originalUpperBound[0]) {
+            return subtypeOf(upperBound);
+          }
+        }
+        return original;
+
+      } else {
+        return toResolve;
+      }
+    }
+  }
+
+There is a bug in line [7, 12] of the code, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_5 ==================
+
+private static Type resolve(Type context, Class<?> contextRawType, Type toResolve,
+                              Collection<TypeVariable> visitedTypeVariables) {
+    // this implementation is made a little more complicated in an attempt to avoid object-creation
+    while (true) {
+      if (toResolve instanceof TypeVariable) {
+        TypeVariable<?> typeVariable = (TypeVariable<?>) toResolve;
+          // cannot reduce due to infinite recursion
+        toResolve = resolveTypeVariable(context, contextRawType, typeVariable);
+        if (toResolve == typeVariable) {
+          return toResolve;
+        }
+
+      } else if (toResolve instanceof Class && ((Class<?>) toResolve).isArray()) {
+        Class<?> original = (Class<?>) toResolve;
+        Type componentType = original.getComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof GenericArrayType) {
+        GenericArrayType original = (GenericArrayType) toResolve;
+        Type componentType = original.getGenericComponentType();
+        Type newComponentType = resolve(context, contextRawType, componentType, visitedTypeVariables);
+        return componentType == newComponentType
+            ? original
+            : arrayOf(newComponentType);
+
+      } else if (toResolve instanceof ParameterizedType) {
+        ParameterizedType original = (ParameterizedType) toResolve;
+        Type ownerType = original.getOwnerType();
+        Type newOwnerType = resolve(context, contextRawType, ownerType, visitedTypeVariables);
+        boolean changed = newOwnerType != ownerType;
+
+        Type[] args = original.getActualTypeArguments();
+        for (int t = 0, length = args.length; t < length; t++) {
+          Type resolvedTypeArgument = resolve(context, contextRawType, args[t], visitedTypeVariables);
+          if (resolvedTypeArgument != args[t]) {
+            if (!changed) {
+              args = args.clone();
+              changed = true;
+            }
+            args[t] = resolvedTypeArgument;
+          }
+        }
+
+        return changed
+            ? newParameterizedTypeWithOwner(newOwnerType, original.getRawType(), args)
+            : original;
+
+      } else if (toResolve instanceof WildcardType) {
+        WildcardType original = (WildcardType) toResolve;
+        Type[] originalLowerBound = original.getLowerBounds();
+        Type[] originalUpperBound = original.getUpperBounds();
+
+        if (originalLowerBound.length == 1) {
+          Type lowerBound = resolve(context, contextRawType, originalLowerBound[0], visitedTypeVariables);
+          if (lowerBound != originalLowerBound[0]) {
+            return supertypeOf(lowerBound);
+          }
+        } else if (originalUpperBound.length == 1) {
+          Type upperBound = resolve(context, contextRawType, originalUpperBound[0], visitedTypeVariables);
+          if (upperBound != originalUpperBound[0]) {
+            return subtypeOf(upperBound);
+          }
+        }
+        return original;
+
+      } else {
+        return toResolve;
+      }
+    }
+  }
+
+There is a bug in ['          // cannot reduce due to infinite recursion', ''] , please help me fix it. 
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_6 ==================
+
+private static Type resolve(Type context, Class<?> contextRawType, Type toResolve,
+                              Collection<TypeVariable> visitedTypeVariables) {
+    // this implementation is made a little more complicated in an attempt to avoid object-creation
+    while (true) {
+      if (toResolve instanceof TypeVariable) {
+        TypeVariable<?> typeVariable = (TypeVariable<?>) toResolve;
+          // cannot reduce due to infinite recursion
+        toResolve = resolveTypeVariable(context, contextRawType, typeVariable);
+        if (toResolve == typeVariable) {
+          return toResolve;
+        }
+
+
+There is a bug in the last statement, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.

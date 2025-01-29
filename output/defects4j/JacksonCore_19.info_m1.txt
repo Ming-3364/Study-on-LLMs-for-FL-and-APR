@@ -1,0 +1,162 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/core/json/UTF8StreamJsonParser.java
+================== buggy_method ==================
+{'method_name': '_parseFloat', 'method_body': 'private final JsonToken _parseFloat(char[] outBuf, int outPtr, int c,\n            boolean negative, int integerPartLength) throws IOException\n    {\n        int fractLen = 0;\n        boolean eof = false;\n\n        // And then see if we get other parts\n        if (c == INT_PERIOD) { // yes, fraction\n            outBuf[outPtr++] = (char) c;\n\n            fract_loop:\n            while (true) {\n                if (_inputPtr >= _inputEnd && !loadMore()) {\n                    eof = true;\n                    break fract_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n                if (c < INT_0 || c > INT_9) {\n                    break fract_loop;\n                }\n                ++fractLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n            }\n            // must be followed by sequence of ints, one minimum\n            if (fractLen == 0) {\n                reportUnexpectedNumberChar(c, "Decimal point not followed by a digit");\n            }\n        }\n\n        int expLen = 0;\n        if (c == INT_e || c == INT_E) { // exponent?\n            if (outPtr >= outBuf.length) {\n                outBuf = _textBuffer.finishCurrentSegment();\n                outPtr = 0;\n            }\n            outBuf[outPtr++] = (char) c;\n            // Not optional, can require that we get one more char\n            if (_inputPtr >= _inputEnd) {\n                loadMoreGuaranteed();\n            }\n            c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            // Sign indicator?\n            if (c == \'-\' || c == \'+\') {\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n                // Likewise, non optional:\n                if (_inputPtr >= _inputEnd) {\n                    loadMoreGuaranteed();\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n\n            exp_loop:\n            while (c <= INT_9 && c >= INT_0) {\n                ++expLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n                if (_inputPtr >= _inputEnd && !loadMore()) {\n                    eof = true;\n                    break exp_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n            // must be followed by sequence of ints, one minimum\n            if (expLen == 0) {\n                reportUnexpectedNumberChar(c, "Exponent indicator not followed by a digit");\n            }\n        }\n\n        // Ok; unless we hit end-of-input, need to push last char read back\n        if (!eof) {\n            --_inputPtr;\n            // As per [core#105], need separating space between root values; check here\n            if (_parsingContext.inRoot()) {\n                _verifyRootSpace(c);\n            }\n        }\n        _textBuffer.setCurrentLength(outPtr);\n\n        // And there we have it!\n        return resetFloat(negative, integerPartLength, fractLen, expLen);\n    }', 'start_line': 1536, 'end_line': 1627, 'buggy_lines': [1547]}
+================== buggy_method_src ==================
+private final JsonToken _parseFloat(char[] outBuf, int outPtr, int c,
+            boolean negative, int integerPartLength) throws IOException
+    {
+        int fractLen = 0;
+        boolean eof = false;
+
+        // And then see if we get other parts
+        if (c == INT_PERIOD) { // yes, fraction
+            outBuf[outPtr++] = (char) c;
+
+            fract_loop:
+            while (true) {
+                if (_inputPtr >= _inputEnd && !loadMore()) {
+                    eof = true;
+                    break fract_loop;
+                }
+                c = (int) _inputBuffer[_inputPtr++] & 0xFF;
+                if (c < INT_0 || c > INT_9) {
+                    break fract_loop;
+                }
+                ++fractLen;
+                if (outPtr >= outBuf.length) {
+                    outBuf = _textBuffer.finishCurrentSegment();
+                    outPtr = 0;
+                }
+                outBuf[outPtr++] = (char) c;
+            }
+            // must be followed by sequence of ints, one minimum
+            if (fractLen == 0) {
+                reportUnexpectedNumberChar(c, "Decimal point not followed by a digit");
+            }
+        }
+
+        int expLen = 0;
+        if (c == INT_e || c == INT_E) { // exponent?
+            if (outPtr >= outBuf.length) {
+                outBuf = _textBuffer.finishCurrentSegment();
+                outPtr = 0;
+            }
+            outBuf[outPtr++] = (char) c;
+            // Not optional, can require that we get one more char
+            if (_inputPtr >= _inputEnd) {
+                loadMoreGuaranteed();
+            }
+            c = (int) _inputBuffer[_inputPtr++] & 0xFF;
+            // Sign indicator?
+            if (c == '-' || c == '+') {
+                if (outPtr >= outBuf.length) {
+                    outBuf = _textBuffer.finishCurrentSegment();
+                    outPtr = 0;
+                }
+                outBuf[outPtr++] = (char) c;
+                // Likewise, non optional:
+                if (_inputPtr >= _inputEnd) {
+                    loadMoreGuaranteed();
+                }
+                c = (int) _inputBuffer[_inputPtr++] & 0xFF;
+            }
+
+            exp_loop:
+            while (c <= INT_9 && c >= INT_0) {
+                ++expLen;
+                if (outPtr >= outBuf.length) {
+                    outBuf = _textBuffer.finishCurrentSegment();
+                    outPtr = 0;
+                }
+                outBuf[outPtr++] = (char) c;
+                if (_inputPtr >= _inputEnd && !loadMore()) {
+                    eof = true;
+                    break exp_loop;
+                }
+                c = (int) _inputBuffer[_inputPtr++] & 0xFF;
+            }
+            // must be followed by sequence of ints, one minimum
+            if (expLen == 0) {
+                reportUnexpectedNumberChar(c, "Exponent indicator not followed by a digit");
+            }
+        }
+
+        // Ok; unless we hit end-of-input, need to push last char read back
+        if (!eof) {
+            --_inputPtr;
+            // As per [core#105], need separating space between root values; check here
+            if (_parsingContext.inRoot()) {
+                _verifyRootSpace(c);
+            }
+        }
+        _textBuffer.setCurrentLength(outPtr);
+
+        // And there we have it!
+        return resetFloat(negative, integerPartLength, fractLen, expLen);
+    }
+================== test_stack ==================
+com.fasterxml.jackson.core.json.TestNumericValues::testLongerFloatingPoint
+java.lang.ArrayIndexOutOfBoundsException: 200
+	at com.fasterxml.jackson.core.json.ReaderBasedJsonParser._parseNumber2(ReaderBasedJsonParser.java:1418)
+	at com.fasterxml.jackson.core.json.ReaderBasedJsonParser._parseFloat(ReaderBasedJsonParser.java:1266)
+	at com.fasterxml.jackson.core.json.ReaderBasedJsonParser._parsePosNumber(ReaderBasedJsonParser.java:1241)
+	at com.fasterxml.jackson.core.json.ReaderBasedJsonParser.nextToken(ReaderBasedJsonParser.java:705)
+	at com.fasterxml.jackson.core.json.TestNumericValues._testLongerFloat(TestNumericValues.java:580)
+	at com.fasterxml.jackson.core.json.TestNumericValues.testLongerFloatingPoint(TestNumericValues.java:570)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+_testLongerFloat(p, DOC);
+
+================== buggy_lines_in_method ==================
+[12]
+================== buggy_statements ==================
+['            while (true) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+private final JsonToken _parseFloat(char[] outBuf, int outPtr, int c,
+            boolean negative, int integerPartLength) throws IOException
+    {
+        int fractLen = 0;
+        boolean eof = false;
+
+        // And then see if we get other parts
+        if (c == INT_PERIOD) { // yes, fraction
+            outBuf[outPtr++] = (char) c;
+
+            fract_loop:
+            while (true) {

@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "ernie-3.5-128k": "**11**",
+            "qwen-turbo": "4",
+            "deepseek-chat": "6",
+            "gpt-4o-mini": "18",
+            "doubao-pro-4k": "13"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "11",
+            "qwen-turbo": "5",
+            "deepseek-chat": "6",
+            "gpt-4o-mini": "12",
+            "ernie-3.5-128k": "**14**"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "14",
+            "qwen-turbo": "8",
+            "deepseek-chat": "5",
+            "gpt-4o-mini": "19",
+            "ernie-3.5-128k": "**30**"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "body().appendChild(new TextNode(\" \", \"\"));",
+            "ernie-3.5-128k": "body().appendChild(node);",
+            "doubao-pro-4k": "body().appendChild(new TextNode(\" \", \"\"));",
+            "deepseek-chat": "body().appendChild(new TextNode(\" \", \"\"));",
+            "gpt-4o-mini": "body().appendChild(new TextNode(\" \", \"\"));"
+        },
+        "prompt_fl_5": {
+            "doubao-pro-4k": "element.removeChild(node);",
+            "qwen-turbo": "element.removeChild(node);\nbody().appendChild(new TextNode(\" \", \"\"));\nbody().appendChild(node);",
+            "ernie-3.5-128k": "element.removeChild(node);",
+            "deepseek-chat": "body().appendChild(new TextNode(\" \", \"\"));",
+            "gpt-4o-mini": "body().appendChild(new TextNode(\" \", \"\"));"
+        },
+        "prompt_fl_6": {
+            "doubao-pro-4k": "element.removeChild(node);",
+            "ernie-3.5-128k": "element.removeChild(node);",
+            "qwen-turbo": "element.removeChild(node);\nbody().appendChild(new TextNode(\" \", \"\"));\nbody().appendChild(node);",
+            "deepseek-chat": "body().appendChild(new TextNode(\" \", \"\"));",
+            "gpt-4o-mini": "body().appendChild(new TextNode(\" \", \"\"));"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "Certainly! The issue in your code is that you are appending a space and then immediately appending another node right after it, which might not be the intended behavior. Instead, you should append the space only once before appending all the non-blank text nodes. Here's the corrected version of your method:\n\n```java\nprivate void normalise(Element element) {\n    List<Node> toMove = new ArrayList<>();\n    for (Node node : element.childNodes) {\n        if (node instanceof TextNode) {\n            TextNode tn = (TextNode) node;\n            if (!tn.isBlank()) {\n                toMove.add(tn);\n            }\n        }\n    }\n\n    for (int i = 0; i < toMove.size(); i++) {\n        Node node = toMove.get(i);\n        if (i > 0) {\n            // Append a space before all nodes except the first one\n            element.appendChild(new TextNode(\" \", \"\"));\n        }\n        element.appendChild(node);\n    }\n}\n```\n\nIn this corrected version, I've moved the logic for appending the space inside the loop but only after the first node is appended. This ensures that a space is inserted between each pair of text nodes being moved.",
+            "gpt-4o-mini": "private void normalise(Element element) {\n    List<Node> toMove = new ArrayList<Node>();\n    for (Node node: element.childNodes) {\n        if (node instanceof TextNode) {\n            TextNode tn = (TextNode) node;\n            if (!tn.isBlank())\n                toMove.add(tn);\n        }\n    }\n\n    for (Node node: toMove) {\n        element.removeChild(node);\n        element.appendChild(new TextNode(\" \", \"\"));\n        element.appendChild(node);\n    }\n}",
+            "doubao-pro-4k": "private void normalise(Element element) {\n        List<Node> toMove = new ArrayList<Node>();\n        for (Node node: element.childNodes) {\n            if (node instanceof TextNode) {\n                TextNode tn = (TextNode) node;\n                if (!tn.isBlank())\n                    toMove.add(tn);\n            }\n        }\n\n        for (Node node: toMove) {\n            element.appendChild(new TextNode(\" \", \"\"));\n            element.appendChild(node);\n        }\n    }",
+            "deepseek-chat": "private void normalise(Element element) {\n    List<Node> toMove = new ArrayList<Node>();\n    for (Node node: element.childNodes) {\n        if (node instanceof TextNode) {\n            TextNode tn = (TextNode) node;\n            if (!tn.isBlank())\n                toMove.add(tn);\n        }\n    }\n\n    for (Node node: toMove) {\n        element.removeChild(node);\n        body().appendChild(node);\n        body().appendChild(new TextNode(\" \", \"\"));\n    }\n}\n\nThe bug in the original code was that the order of appending the `TextNode` and the `node` was incorrect. The corrected code first appends the `node` and then appends a new `TextNode` with a space. This ensures that the nodes are moved correctly and a space is added after each moved node.",
+            "ernie-3.5-128k": "private void normalise(Element element) {\n        List<Node> toMove = new ArrayList<Node>();\n        for (Node node: element.childNodes) {\n            if (node instanceof TextNode) {\n                TextNode tn = (TextNode) node;\n                if (!tn.isBlank())\n                    toMove.add(tn);\n            }\n        }\n\n        for (Node node: toMove) {\n            element.removeChild(node);\n            element.getParentElement().body().appendChild(new TextNode(\" \", \"\"));\n            element.getParentElement().body().appendChild(node);\n        }\n\n        // Optionally, normalize spaces within the body if needed\n        // (Note: This might not be necessary depending on the exact requirements)\n        // element.getParentElement().body().normalizeWhitespace();\n    }\n\n**Note**: The correction assumes that `body()` method in your context refers to getting the body of the document that contains the `element`. However, it is more logical to append the new text node and the moved node directly to the `element`'s parent (if that is the intended behavior) rather than to the body of the document, unless `body()` has a different specific meaning in your context that we are not aware of. The above code assumes `element.getParentElement().body()` is a valid way to get to the body where these nodes should be appended. If `body()` should refer to a different part of the DOM, you will need to adjust the code accordingly."
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\nprivate void normalise(Element element) {\n    List<Node> toMove = new ArrayList<Node>();\n    for (Node node: element.childNodes) {\n        if (node instanceof TextNode) {\n            TextNode tn = (TextNode) node;\n            if (!tn.isBlank())\n                toMove.add(tn);\n        }\n    }\n\n    for (Node node: toMove) {\n        element.removeChild(node);\n        Element parent = element.parent();\n        if (parent != null) {\n            parent.appendChild(new TextNode(\" \", \"\"));\n            parent.appendChild(node);\n        } else {\n            element.appendChild(new TextNode(\" \", \"\"));\n            element.appendChild(node);\n        }\n    }\n}\n```",
+            "deepseek-chat": "private void normalise(Element element) {\n    List<Node> toMove = new ArrayList<Node>();\n    for (Node node: element.childNodes) {\n        if (node instanceof TextNode) {\n            TextNode tn = (TextNode) node;\n            if (!tn.isBlank())\n                toMove.add(tn);\n        }\n    }\n\n    for (Node node: toMove) {\n        element.removeChild(node);\n        element.appendChild(new TextNode(\" \", \"\"));\n        element.appendChild(node);\n    }\n}",
+            "doubao-pro-4k": "private void normalise(Element element) {\n        List<Node> toMove = new ArrayList<Node>();\n        for (Node node: element.childNodes) {\n            if (node instanceof TextNode) {\n                TextNode tn = (TextNode) node;\n                if (!tn.isBlank())\n                    toMove.add(tn);\n            }\n        }\n\n        for (Node node: toMove) {\n            element.removeChild(node);\n            element.appendChild(new TextNode(\" \", \"\"));\n            element.appendChild(node);\n        }\n    }",
+            "gpt-4o-mini": "private void normalise(Element element) {\n    List<Node> toMove = new ArrayList<Node>();\n    for (Node node: element.childNodes) {\n        if (node instanceof TextNode) {\n            TextNode tn = (TextNode) node;\n            if (!tn.isBlank())\n                toMove.add(tn);\n        }\n    }\n\n    for (Node node: toMove) {\n        element.removeChild(node);\n        body().appendChild(new TextNode(\" \")); // Fix: Create a TextNode with only one space character\n        body().appendChild(node);\n    }\n}",
+            "ernie-3.5-128k": "Sure, I can help you fix the bug in your method. The issue seems to be that you are appending nodes to the `body()`, which is not defined in the method and might not be the correct parent to append the nodes to. Instead, you should append the nodes back to the original `element` after creating a space `TextNode`. Here's the corrected method:\n\nprivate void normalise(Element element) {\n    List<Node> toMove = new ArrayList<Node>();\n    for (Node node : element.childNodes) {\n        if (node instanceof TextNode) {\n            TextNode tn = (TextNode) node;\n            if (!tn.isBlank())\n                toMove.add(tn);\n        }\n    }\n\n    for (Node node : toMove) {\n        element.removeChild(node);\n        TextNode spaceNode = new TextNode(\" \", \"\");\n        element.appendChild(spaceNode);\n        element.appendChild(node);\n    }\n}\n\nThis ensures that the space node and the original text node are appended back to the `element` itself, maintaining the correct DOM structure."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\nprivate void normalise(Element element) {\n    List<Node> toMove = new ArrayList<Node>();\n    for (Node node: element.childNodes) {\n        if (node instanceof TextNode) {\n            TextNode tn = (TextNode) node;\n            if (!tn.isBlank())\n                toMove.add(tn);\n        }\n    }\n\n    for (Node node: toMove) {\n        element.removeChild(node);\n        element.appendChild(new TextNode(\" \", \"\"));\n        element.appendChild(node);\n```",
+            "deepseek-chat": "private void normalise(Element element) {\n        List<Node> toMove = new ArrayList<Node>();\n        for (Node node: element.childNodes) {\n            if (node instanceof TextNode) {\n                TextNode tn = (TextNode) node;\n                if (!tn.isBlank())\n                    toMove.add(tn);\n            }\n        }\n\n        for (Node node: toMove) {\n            element.removeChild(node);\n            body().appendChild(new TextNode(\" \", \"\"));\n            body().appendChild(node);\n        }",
+            "ernie-3.5-128k": "private void normalise(Element element) {\n        List<Node> toMove = new ArrayList<Node>();\n        for (Node node: element.childNodes) {\n            if (node instanceof TextNode) {\n                TextNode tn = (TextNode) node;\n                if (!tn.isBlank())\n                    toMove.add(tn);\n            }\n        }\n\n        for (Node node: toMove) {\n            element.removeChild(node);\n            body().appendChild(new TextNode(\" \", \"\"));\n            element.appendChild(node);\n}",
+            "doubao-pro-4k": "private void normalise(Element element) {\n    List<Node> toMove = new ArrayList<Node>();\n    for (Node node: element.childNodes) {\n        if (node instanceof TextNode) {\n            TextNode tn = (TextNode) node;\n            if (!tn.isBlank())\n                toMove.add(tn);\n        }\n    }\n\n    for (Node node: toMove) {\n        element.removeChild(node);\n        element.appendChild(new TextNode(\" \", \"\"));\n        element.appendChild(node);\n    }\n}",
+            "gpt-4o-mini": "private void normalise(Element element) {\n    List<Node> toMove = new ArrayList<Node>();\n    for (Node node: element.childNodes) {\n        if (node instanceof TextNode) {\n            TextNode tn = (TextNode) node;\n            if (!tn.isBlank())\n                toMove.add(tn);\n        }\n    }\n\n    for (Node node: toMove) {\n        element.removeChild(node);\n        body().appendChild(new TextNode(\" \", \"\"));\n        body().appendChild((TextNode) node);"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"element.appendChild(new TextNode(\\\" \\\", \\\"\\\"));\"\n    },\n    {\n        \"line_number\": 14,\n        \"fixed_statement\": \"element.appendChild(node);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"element.appendChild(new TextNode(\\\" \\\", \\\"\\\")); element.appendChild(node);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"body().appendChild(new TextNode(\\\" \\\", \\\"\\\"));\"\n    },\n    {\n        \"line_number\": 14,\n        \"fixed_statement\": \"body().appendChild(node);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"body().appendChild(new TextNode(\\\" \\\", \\\"\\\"));\"\n    },\n    {\n        \"line_number\": 14,\n        \"fixed_statement\": \"body().appendChild(node.deepCopy());\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"body().appendChild(new TextNode(' ', \\\"\\\"));\"\n    },\n    {\n        \"line_number\": 14,\n        \"fixed_statement\": \"body().appendChild(node);\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"element.appendChild(new TextNode(\\\" \\\", \\\"\\\"));\"\n    },\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"element.appendChild(node);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"element.appendChild(new TextNode(\\\" \\\", \\\"\\\"));element.appendChild(node);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 11,\n        \"fixed_statement\": \"element.appendChild(new TextNode(\\\" \\\", \\\"\\\"));\"\n    },\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"element.appendChild(node);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"element.appendChild(new TextNode(\\\" \\\", \\\"\\\"));\"\n    },\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"element.appendChild(node);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"element.appendChild(new TextNode(' ', ''));\"\n    },\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"element.appendChild(node);\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"element.appendChild(node);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"element.appendChild(node);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 16,\n        \"fixed_statement\": \"element.appendChild(new TextNode(\\\" \\\", \\\"\\\")); element.appendChild(node);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"            body().appendChild(new TextNode(\\\" \\\", \\\"\\\"));\"\n    },\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"            body().appendChild(node);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 14,\n        \"fixed_statement\": \"body().appendChild(new TextNode(\\\" \\\"));\"\n    },\n    {\n        \"line_number\": 15,\n        \"fixed_statement\": \"body().appendChild(node);\"\n    }\n]"
+        }
+    }
+]

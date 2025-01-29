@@ -1,0 +1,111 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/deser/std/StringCollectionDeserializer.java
+================== buggy_method ==================
+{'method_name': 'createContextual', 'method_body': '@Override\n    public JsonDeserializer<?> createContextual(DeserializationContext ctxt,\n            BeanProperty property) throws JsonMappingException\n    {\n        // May need to resolve types for delegate-based creators:\n        JsonDeserializer<Object> delegate = null;\n        if (_valueInstantiator != null) {\n            // [databind#2324]: check both array-delegating and delegating\n            AnnotatedWithParams delegateCreator = _valueInstantiator.getDelegateCreator();\n            if (delegateCreator != null) {\n                JavaType delegateType = _valueInstantiator.getDelegateType(ctxt.getConfig());\n                delegate = findDeserializer(ctxt, delegateType, property);\n            }\n        }\n        JsonDeserializer<?> valueDeser = _valueDeserializer;\n        final JavaType valueType = _containerType.getContentType();\n        if (valueDeser == null) {\n            // [databind#125]: May have a content converter\n            valueDeser = findConvertingContentDeserializer(ctxt, property, valueDeser);\n            if (valueDeser == null) {\n            // And we may also need to get deserializer for String\n                valueDeser = ctxt.findContextualValueDeserializer(valueType, property);\n            }\n        } else { // if directly assigned, probably not yet contextual, so:\n            valueDeser = ctxt.handleSecondaryContextualization(valueDeser, property, valueType);\n        }\n        // 11-Dec-2015, tatu: Should we pass basic `Collection.class`, or more refined? Mostly\n        //   comes down to "List vs Collection" I suppose... for now, pass Collection\n        Boolean unwrapSingle = findFormatFeature(ctxt, property, Collection.class,\n                JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY);\n        NullValueProvider nuller = findContentNullProvider(ctxt, property, valueDeser);\n        if (isDefaultDeserializer(valueDeser)) {\n            valueDeser = null;\n        }\n        return withResolved(delegate, valueDeser, nuller, unwrapSingle);\n    }', 'start_line': 99, 'end_line': 134, 'buggy_lines': [107]}
+================== buggy_method_src ==================
+@Override
+    public JsonDeserializer<?> createContextual(DeserializationContext ctxt,
+            BeanProperty property) throws JsonMappingException
+    {
+        // May need to resolve types for delegate-based creators:
+        JsonDeserializer<Object> delegate = null;
+        if (_valueInstantiator != null) {
+            // [databind#2324]: check both array-delegating and delegating
+            AnnotatedWithParams delegateCreator = _valueInstantiator.getDelegateCreator();
+            if (delegateCreator != null) {
+                JavaType delegateType = _valueInstantiator.getDelegateType(ctxt.getConfig());
+                delegate = findDeserializer(ctxt, delegateType, property);
+            }
+        }
+        JsonDeserializer<?> valueDeser = _valueDeserializer;
+        final JavaType valueType = _containerType.getContentType();
+        if (valueDeser == null) {
+            // [databind#125]: May have a content converter
+            valueDeser = findConvertingContentDeserializer(ctxt, property, valueDeser);
+            if (valueDeser == null) {
+            // And we may also need to get deserializer for String
+                valueDeser = ctxt.findContextualValueDeserializer(valueType, property);
+            }
+        } else { // if directly assigned, probably not yet contextual, so:
+            valueDeser = ctxt.handleSecondaryContextualization(valueDeser, property, valueType);
+        }
+        // 11-Dec-2015, tatu: Should we pass basic `Collection.class`, or more refined? Mostly
+        //   comes down to "List vs Collection" I suppose... for now, pass Collection
+        Boolean unwrapSingle = findFormatFeature(ctxt, property, Collection.class,
+                JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
+        NullValueProvider nuller = findContentNullProvider(ctxt, property, valueDeser);
+        if (isDefaultDeserializer(valueDeser)) {
+            valueDeser = null;
+        }
+        return withResolved(delegate, valueDeser, nuller, unwrapSingle);
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.deser.creators.DelegatingArrayCreator2324Test::testDeserializeBagOfStrings
+com.fasterxml.jackson.databind.exc.MismatchedInputException: Cannot construct instance of `com.fasterxml.jackson.databind.deser.creators.DelegatingArrayCreator2324Test$ImmutableBag` (although at least one Creator exists): no default no-arguments constructor found
+ at [Source: (String)"{"strings": [ "a", "b", "c"]}"; line: 1, column: 13] (through reference chain: com.fasterxml.jackson.databind.deser.creators.DelegatingArrayCreator2324Test$WithBagOfStrings["strings"])
+	at com.fasterxml.jackson.databind.exc.MismatchedInputException.from(MismatchedInputException.java:63)
+	at com.fasterxml.jackson.databind.DeserializationContext.reportInputMismatch(DeserializationContext.java:1343)
+	at com.fasterxml.jackson.databind.DeserializationContext.handleMissingInstantiator(DeserializationContext.java:1032)
+	at com.fasterxml.jackson.databind.deser.ValueInstantiator.createUsingDefault(ValueInstantiator.java:189)
+	at com.fasterxml.jackson.databind.deser.std.StdValueInstantiator.createUsingDefault(StdValueInstantiator.java:267)
+	at com.fasterxml.jackson.databind.deser.std.StringCollectionDeserializer.deserialize(StringCollectionDeserializer.java:169)
+	at com.fasterxml.jackson.databind.deser.std.StringCollectionDeserializer.deserialize(StringCollectionDeserializer.java:21)
+	at com.fasterxml.jackson.databind.deser.impl.MethodProperty.deserializeAndSet(MethodProperty.java:129)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializer.vanillaDeserialize(BeanDeserializer.java:288)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializer.deserialize(BeanDeserializer.java:151)
+	at com.fasterxml.jackson.databind.ObjectReader._bindAndClose(ObjectReader.java:1611)
+	at com.fasterxml.jackson.databind.ObjectReader.readValue(ObjectReader.java:1219)
+	at com.fasterxml.jackson.databind.deser.creators.DelegatingArrayCreator2324Test.testDeserializeBagOfStrings(DelegatingArrayCreator2324Test.java:59)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+WithBagOfStrings result = MAPPER.readerFor(WithBagOfStrings.class)
+
+================== buggy_lines_in_method ==================
+[9]
+================== buggy_statements ==================
+['            AnnotatedWithParams delegateCreator = _valueInstantiator.getDelegateCreator();']
+================== buggy_method_src_endswith_buggy_statement ==================
+@Override
+    public JsonDeserializer<?> createContextual(DeserializationContext ctxt,
+            BeanProperty property) throws JsonMappingException
+    {
+        // May need to resolve types for delegate-based creators:
+        JsonDeserializer<Object> delegate = null;
+        if (_valueInstantiator != null) {
+            // [databind#2324]: check both array-delegating and delegating
+            AnnotatedWithParams delegateCreator = _valueInstantiator.getDelegateCreator();

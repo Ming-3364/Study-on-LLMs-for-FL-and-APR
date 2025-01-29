@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "9",
+            "qwen-turbo": "5",
+            "ernie-3.5-128k": "**7**",
+            "gpt-4o-mini": "9",
+            "deepseek-chat": "6"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "9",
+            "qwen-turbo": "14",
+            "ernie-3.5-128k": "**20**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "18"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "10",
+            "qwen-turbo": "10",
+            "ernie-3.5-128k": "**4**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "42"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "matchingOpts.add(longOpt);",
+            "ernie-3.5-128k": "if (longOpt.startsWith(opt))",
+            "deepseek-chat": "if (longOpt.startsWith(opt))",
+            "gpt-4o-mini": "for (String longOpt : longOpts.keySet())",
+            "doubao-pro-4k": "opt = Util.stripLeadingHyphens(opt);"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "matchingOpts.add(longOpt);",
+            "ernie-3.5-128k": "if (longOpt.startsWith(opt))",
+            "deepseek-chat": "if (longOpt.startsWith(opt))",
+            "gpt-4o-mini": "matchingOpts.add(longOpt);",
+            "doubao-pro-4k": "for (String longOpt : longOpts.keySet())"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "return matchingOpts;",
+            "doubao-pro-4k": "new DefaultParser().parse(getOptions(), new String[]{\"--prefix\"});",
+            "deepseek-chat": "if (longOpt.startsWith(opt))",
+            "ernie-3.5-128k": "List<String> matchingOpts = new ArrayList<String>();",
+            "gpt-4o-mini": "matchingOpts.add(longOpt);"
+        },
+        "prompt_apr_1": {
+            "doubao-pro-4k": "public List<String> getMatchingOptions(String opt)\n    {\n        opt = Util.stripLeadingHyphens(opt);\n\n        List<String> matchingOpts = new ArrayList<String>();\n\n        // for a perfect match return the single option only\n\n        for (String longOpt : longOpts.keySet())\n        {\n            if (longOpt.startsWith(opt))\n            {\n                matchingOpts.add(longOpt);\n            }\n        }\n\n        return matchingOpts;\n    }",
+            "deepseek-chat": "public List<String> getMatchingOptions(String opt)\n{\n    opt = Util.stripLeadingHyphens(opt);\n    \n    List<String> matchingOpts = new ArrayList<String>();\n\n    // for a perfect match return the single option only\n    for (String longOpt : longOpts.keySet())\n    {\n        if (longOpt.equals(opt))\n        {\n            matchingOpts.clear();\n            matchingOpts.add(longOpt);\n            return matchingOpts;\n        }\n        else if (longOpt.startsWith(opt))\n        {\n            matchingOpts.add(longOpt);\n        }\n    }\n    \n    return matchingOpts;\n}",
+            "qwen-turbo": "Certainly! The bug on line 10 is that the condition checks if `longOpt` starts with `opt`, which might add too many options if there are partial matches. To fix this, we should ensure that we only add a match if `opt` exactly matches `longOpt`. If you want to allow partial matches but also want a perfect match to be returned as a single option, you can modify the logic accordingly.\n\nHere's the corrected method:\n\n```java\npublic List<String> getMatchingOptions(String opt) {\n    opt = Util.stripLeadingHyphens(opt);\n\n    List<String> matchingOpts = new ArrayList<String>();\n\n    // Check for a perfect match first\n    if (longOpts.containsKey(opt)) {\n        matchingOpts.add(opt);\n        return matchingOpts; // Return immediately if a perfect match is found\n    }\n\n    // Add partial matches\n    for (String longOpt : longOpts.keySet()) {\n        if (longOpt.startsWith(opt)) {\n            matchingOpts.add(longOpt);\n        }\n    }\n\n    return matchingOpts;\n}\n```\n\nThis code will first check if there is a perfect match and return it immediately if found. Otherwise, it will proceed to find and return all partial matches starting with `opt`.",
+            "gpt-4o-mini": "public List<String> getMatchingOptions(String opt)\n{\n    opt = Util.stripLeadingHyphens(opt);\n    \n    List<String> matchingOpts = new ArrayList<String>();\n\n    // for a perfect match return the single option only\n    if (longOpts.containsKey(opt)) {\n        matchingOpts.add(opt);\n        return matchingOpts;\n    }\n\n    for (String longOpt : longOpts.keySet())\n    {\n        if (longOpt.startsWith(opt))\n        {\n            matchingOpts.add(longOpt);\n        }\n    }\n    \n    return matchingOpts;\n}",
+            "ernie-3.5-128k": "public List<String> getMatchingOptions(String opt)\n    {\n        opt = Util.stripLeadingHyphens(opt);\n        \n        List<String> matchingOpts = new ArrayList<String>();\n\n        // For a perfect match, return only the single option if it exists\n        if (longOpts.containsKey(opt)) {\n            matchingOpts.add(opt);\n        } else {\n            // For partial matches, iterate through the keys\n            for (String longOpt : longOpts.keySet())\n            {\n                if (longOpt.startsWith(opt))\n                {\n                    matchingOpts.add(longOpt);\n                }\n            }\n        }\n        \n        return matchingOpts;\n    }"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "Certainly, here is the complete corrected method:\n\n```java\npublic List<String> getMatchingOptions(String opt) {\n    opt = Util.stripLeadingHyphens(opt);\n\n    List<String> matchingOpts = new ArrayList<>();\n\n    // for a perfect match return the single option only\n\n    for (String longOpt : longOpts.keySet()) {\n        if (longOpt.startsWith(opt)) {\n            matchingOpts.add(longOpt);\n        }\n    }\n\n    return matchingOpts;\n}\n```\n\nIt seems there was no specific `{` causing an issue as initially mentioned. However, I have ensured the code is clean and properly formatted. If there were other issues or specific requirements, please let me know!",
+            "deepseek-chat": "public List<String> getMatchingOptions(String opt)\n{\n    opt = Util.stripLeadingHyphens(opt);\n    \n    List<String> matchingOpts = new ArrayList<String>();\n\n    // for a perfect match return the single option only\n\n    for (String longOpt : longOpts.keySet())\n    {\n        if (longOpt.startsWith(opt))\n        {\n            matchingOpts.add(longOpt);\n        }\n    }\n    \n    return matchingOpts;\n}",
+            "gpt-4o-mini": "public List<String> getMatchingOptions(String opt)\n{\n    opt = Util.stripLeadingHyphens(opt);\n    \n    List<String> matchingOpts = new ArrayList<String>();\n\n    // for a perfect match return the single option only\n    if (longOpts.containsKey(opt)) {\n        matchingOpts.add(opt);\n        return matchingOpts;\n    }\n\n    for (String longOpt : longOpts.keySet())\n    {\n        if (longOpt.startsWith(opt))\n        {\n            matchingOpts.add(longOpt);\n        }\n    }\n\n    return matchingOpts;\n}",
+            "doubao-pro-4k": "public List<String> getMatchingOptions(String opt)\n    {\n        opt = Util.stripLeadingHyphens(opt);\n\n        List<String> matchingOpts = new ArrayList<String>();\n\n        // for a perfect match return the single option only\n\n        for (String longOpt : longOpts.keySet())\n        {\n            if (longOpt.startsWith(opt))\n            {\n                matchingOpts.add(longOpt);\n            }\n        }\n\n        return matchingOpts;\n    }",
+            "ernie-3.5-128k": "Certainly! Based on your description, it seems you want to ensure that if there is a perfect match for `opt` within `longOpts.keySet()`, only that perfect match is returned as a single-element list. If there is no perfect match, it should return all options that start with `opt`. Here's the corrected method:\n\npublic List<String> getMatchingOptions(String opt)\n{\n    opt = Util.stripLeadingHyphens(opt);\n    \n    List<String> matchingOpts = new ArrayList<String>();\n    boolean perfectMatchFound = false;\n\n    // for a perfect match, add only the single option and set a flag\n    for (String longOpt : longOpts.keySet())\n    {\n        if (longOpt.equals(opt))\n        {\n            matchingOpts.add(longOpt);\n            perfectMatchFound = true;\n            break; // No need to continue the loop if a perfect match is found\n        }\n    }\n\n    // if no perfect match, add all options that start with the given prefix\n    if (!perfectMatchFound)\n    {\n        for (String longOpt : longOpts.keySet())\n        {\n            if (longOpt.startsWith(opt))\n            {\n                matchingOpts.add(longOpt);\n            }\n        }\n    }\n    \n    return matchingOpts;\n}"
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\npublic List<String> getMatchingOptions(String opt) {\n    opt = Util.stripLeadingHyphens(opt);\n\n    List<String> matchingOpts = new ArrayList<String>();\n\n    for (String longOpt : longOpts.keySet()) {\n```",
+            "ernie-3.5-128k": "public List<String> getMatchingOptions(String opt)\n    {\n        opt = Util.stripLeadingHyphens(opt);\n        \n        List<String> matchingOpts = new ArrayList<String>();\n\n        // for a perfect match return the single option only\n\n        for (String longOpt : longOpts.keySet().toArray(new String[0]))\n        {",
+            "deepseek-chat": "```java\npublic List<String> getMatchingOptions(String opt)\n    {\n        opt = Util.stripLeadingHyphens(opt);\n        \n        List<String> matchingOpts = new ArrayList<String>();\n\n        // for a perfect match return the single option only\n\n        for (String longOpt : longOpts.keySet())\n        {\n            if (longOpt.equals(opt))\n            {\n                matchingOpts.clear();\n                matchingOpts.add(longOpt);\n                return matchingOpts;\n            }\n```",
+            "doubao-pro-4k": "public List<String> getMatchingOptions(String opt)\n    {\n        opt = Util.stripLeadingHyphens(opt);\n\n        List<String> matchingOpts = new ArrayList<String>();\n\n        // for a perfect match return the single option only\n\n        for (String longOpt : longOpts.keySet()) {\n            if (longOpt.equals(opt)) {\n                matchingOpts.add(longOpt);\n            }\n        }\n    }",
+            "gpt-4o-mini": "public List<String> getMatchingOptions(String opt)\n{\n    opt = Util.stripLeadingHyphens(opt);\n    \n    List<String> matchingOpts = new ArrayList<String>();\n\n    // for a perfect match return the single option only\n\n    for (String longOpt : longOpts.keySet())\n    {\n        if (longOpt.equals(opt)) {\n            matchingOpts.add(longOpt);\n        }\n    }\n}"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"if (opt.equals(longOpt) || longOpt.startsWith(opt))\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"if (longOpt.contains(opt)) {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"if (longOpt.equals(opt))\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"if (longOpt.equals(opt) || longOpt.startsWith(opt + \\\"-\\\")) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"if (longOpt.equals(opt))\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"for (String longOpt : longOpts.keySet())\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"opt = Util.stripLeadingHyphens(opt);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"        for (String longOpt : longOpts.keySet())\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"opt = Util.stripLeadingHyphens(opt);\"\n    },\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"for (String longOpt : longOpts.keySet())\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"            if (opt.equals(longOpt)) {\"\n    },\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"            } else if (longOpt.startsWith(opt)) {\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"for (String longOpt : longOpts.keySet()) {\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"for (String longOpt : longOpts.keySet()) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"for (String longOpt : longOpts.keySet()) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"for (String longOpt : longOpts.keySet().toArray(new String[0]))\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 11,\n        \"fixed_statement\": \"for (String longOpt : longOpts.keySet()) {\"\n    },\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"    if (longOpt.equals(opt)) {\"\n    }\n]"
+        }
+    }
+]

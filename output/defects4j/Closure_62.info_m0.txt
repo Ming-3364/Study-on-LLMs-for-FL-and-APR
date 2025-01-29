@@ -1,0 +1,185 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/LightweightMessageFormatter.java
+================== buggy_method ==================
+{'method_name': 'format', 'method_body': 'private String format(JSError error, boolean warning) {\n    // extract source excerpt\n    SourceExcerptProvider source = getSource();\n    String sourceExcerpt = source == null ? null :\n        excerpt.get(\n            source, error.sourceName, error.lineNumber, excerptFormatter);\n\n    // formatting the message\n    StringBuilder b = new StringBuilder();\n    if (error.sourceName != null) {\n      b.append(error.sourceName);\n      if (error.lineNumber > 0) {\n        b.append(\':\');\n        b.append(error.lineNumber);\n      }\n      b.append(": ");\n    }\n\n    b.append(getLevelName(warning ? CheckLevel.WARNING : CheckLevel.ERROR));\n    b.append(" - ");\n\n    b.append(error.description);\n    b.append(\'\\n\');\n    if (sourceExcerpt != null) {\n      b.append(sourceExcerpt);\n      b.append(\'\\n\');\n      int charno = error.getCharno();\n\n      // padding equal to the excerpt and arrow at the end\n      // charno == sourceExpert.length() means something is missing\n      // at the end of the line\n      if (excerpt.equals(LINE)\n          && 0 <= charno && charno < sourceExcerpt.length()) {\n        for (int i = 0; i < charno; i++) {\n          char c = sourceExcerpt.charAt(i);\n          if (Character.isWhitespace(c)) {\n            b.append(c);\n          } else {\n            b.append(\' \');\n          }\n        }\n        b.append("^\\n");\n      }\n    }\n    return b.toString();\n  }', 'start_line': 66, 'end_line': 111, 'buggy_lines': [98]}
+================== buggy_method_src ==================
+private String format(JSError error, boolean warning) {
+    // extract source excerpt
+    SourceExcerptProvider source = getSource();
+    String sourceExcerpt = source == null ? null :
+        excerpt.get(
+            source, error.sourceName, error.lineNumber, excerptFormatter);
+
+    // formatting the message
+    StringBuilder b = new StringBuilder();
+    if (error.sourceName != null) {
+      b.append(error.sourceName);
+      if (error.lineNumber > 0) {
+        b.append(':');
+        b.append(error.lineNumber);
+      }
+      b.append(": ");
+    }
+
+    b.append(getLevelName(warning ? CheckLevel.WARNING : CheckLevel.ERROR));
+    b.append(" - ");
+
+    b.append(error.description);
+    b.append('\n');
+    if (sourceExcerpt != null) {
+      b.append(sourceExcerpt);
+      b.append('\n');
+      int charno = error.getCharno();
+
+      // padding equal to the excerpt and arrow at the end
+      // charno == sourceExpert.length() means something is missing
+      // at the end of the line
+      if (excerpt.equals(LINE)
+          && 0 <= charno && charno < sourceExcerpt.length()) {
+        for (int i = 0; i < charno; i++) {
+          char c = sourceExcerpt.charAt(i);
+          if (Character.isWhitespace(c)) {
+            b.append(c);
+          } else {
+            b.append(' ');
+          }
+        }
+        b.append("^\n");
+      }
+    }
+    return b.toString();
+  }
+================== test_stack ==================
+com.google.javascript.jscomp.LightweightMessageFormatterTest::testFormatErrorSpaceEndOfLine1
+junit.framework.ComparisonFailure: expected:<...ion here
+assert (1;
+[          ^
+]> but was:<...ion here
+assert (1;
+[]>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.Assert.assertEquals(Assert.java:107)
+	at junit.framework.TestCase.assertEquals(TestCase.java:269)
+	at com.google.javascript.jscomp.LightweightMessageFormatterTest.testFormatErrorSpaceEndOfLine1(LightweightMessageFormatterTest.java:91)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.LightweightMessageFormatterTest::testFormatErrorSpaceEndOfLine2
+junit.framework.ComparisonFailure: expected:<...iption here
+if (foo
+[       ^
+]> but was:<...iption here
+if (foo
+[]>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.Assert.assertEquals(Assert.java:107)
+	at junit.framework.TestCase.assertEquals(TestCase.java:269)
+	at com.google.javascript.jscomp.LightweightMessageFormatterTest.testFormatErrorSpaceEndOfLine2(LightweightMessageFormatterTest.java:100)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals("javascript/complex.js:1: ERROR - error description here\n" +
+
+================== buggy_lines_in_method ==================
+[33]
+================== buggy_statements ==================
+['          && 0 <= charno && charno < sourceExcerpt.length()) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+private String format(JSError error, boolean warning) {
+    // extract source excerpt
+    SourceExcerptProvider source = getSource();
+    String sourceExcerpt = source == null ? null :
+        excerpt.get(
+            source, error.sourceName, error.lineNumber, excerptFormatter);
+
+    // formatting the message
+    StringBuilder b = new StringBuilder();
+    if (error.sourceName != null) {
+      b.append(error.sourceName);
+      if (error.lineNumber > 0) {
+        b.append(':');
+        b.append(error.lineNumber);
+      }
+      b.append(": ");
+    }
+
+    b.append(getLevelName(warning ? CheckLevel.WARNING : CheckLevel.ERROR));
+    b.append(" - ");
+
+    b.append(error.description);
+    b.append('\n');
+    if (sourceExcerpt != null) {
+      b.append(sourceExcerpt);
+      b.append('\n');
+      int charno = error.getCharno();
+
+      // padding equal to the excerpt and arrow at the end
+      // charno == sourceExpert.length() means something is missing
+      // at the end of the line
+      if (excerpt.equals(LINE)
+          && 0 <= charno && charno < sourceExcerpt.length()) {

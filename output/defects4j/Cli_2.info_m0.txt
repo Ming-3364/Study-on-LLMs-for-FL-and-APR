@@ -1,0 +1,115 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/cli/PosixParser.java
+================== buggy_method ==================
+{'method_name': 'burstToken', 'method_body': 'protected void burstToken(String token, boolean stopAtNonOption)\n    {\n        int tokenLength = token.length();\n\n        for (int i = 1; i < tokenLength; i++)\n        {\n            String ch = String.valueOf(token.charAt(i));\n            boolean hasOption = options.hasOption(ch);\n\n            if (hasOption)\n            {\n                tokens.add("-" + ch);\n                currentOption = options.getOption(ch);\n\n                if (currentOption.hasArg() && (token.length() != (i + 1)))\n                {\n                    tokens.add(token.substring(i + 1));\n\n                    break;\n                }\n            }\n            else if (stopAtNonOption)\n            {\n                process(token.substring(i));\n            }\n            else\n            {\n                tokens.add("-" + ch);\n            }\n        }\n    }', 'start_line': 278, 'end_line': 308, 'buggy_lines': [305]}
+================== buggy_method_src ==================
+protected void burstToken(String token, boolean stopAtNonOption)
+    {
+        int tokenLength = token.length();
+
+        for (int i = 1; i < tokenLength; i++)
+        {
+            String ch = String.valueOf(token.charAt(i));
+            boolean hasOption = options.hasOption(ch);
+
+            if (hasOption)
+            {
+                tokens.add("-" + ch);
+                currentOption = options.getOption(ch);
+
+                if (currentOption.hasArg() && (token.length() != (i + 1)))
+                {
+                    tokens.add(token.substring(i + 1));
+
+                    break;
+                }
+            }
+            else if (stopAtNonOption)
+            {
+                process(token.substring(i));
+            }
+            else
+            {
+                tokens.add("-" + ch);
+            }
+        }
+    }
+================== test_stack ==================
+org.apache.commons.cli.bug.BugCLI51Test::test
+org.apache.commons.cli.UnrecognizedOptionException: Unrecognized option: -o
+	at org.apache.commons.cli.Parser.processOption(Parser.java:368)
+	at org.apache.commons.cli.Parser.parse(Parser.java:185)
+	at org.apache.commons.cli.Parser.parse(Parser.java:70)
+	at org.apache.commons.cli.bug.BugCLI51Test.test(BugCLI51Test.java:40)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+commandLine = parser.parse( options, args );
+
+================== buggy_lines_in_method ==================
+[28]
+================== buggy_statements ==================
+['                tokens.add("-" + ch);']
+================== buggy_method_src_endswith_buggy_statement ==================
+protected void burstToken(String token, boolean stopAtNonOption)
+    {
+        int tokenLength = token.length();
+
+        for (int i = 1; i < tokenLength; i++)
+        {
+            String ch = String.valueOf(token.charAt(i));
+            boolean hasOption = options.hasOption(ch);
+
+            if (hasOption)
+            {
+                tokens.add("-" + ch);
+                currentOption = options.getOption(ch);
+
+                if (currentOption.hasArg() && (token.length() != (i + 1)))
+                {
+                    tokens.add(token.substring(i + 1));
+
+                    break;
+                }
+            }
+            else if (stopAtNonOption)
+            {
+                process(token.substring(i));
+            }
+            else
+            {
+                tokens.add("-" + ch);

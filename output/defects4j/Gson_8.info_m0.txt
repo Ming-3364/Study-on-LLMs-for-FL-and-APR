@@ -1,0 +1,232 @@
+
+================== buggy_file ==================
+gson/src/main/java/com/google/gson/internal/UnsafeAllocator.java
+================== buggy_method ==================
+{'method_name': 'create', 'method_body': 'public static UnsafeAllocator create() {\n    // try JVM\n    // public class Unsafe {\n    //   public Object allocateInstance(Class<?> type);\n    // }\n    try {\n      Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");\n      Field f = unsafeClass.getDeclaredField("theUnsafe");\n      f.setAccessible(true);\n      final Object unsafe = f.get(null);\n      final Method allocateInstance = unsafeClass.getMethod("allocateInstance", Class.class);\n      return new UnsafeAllocator() {\n        @Override\n        @SuppressWarnings("unchecked")\n        public <T> T newInstance(Class<T> c) throws Exception {\n          return (T) allocateInstance.invoke(unsafe, c);\n        }\n      };\n    } catch (Exception ignored) {\n    }\n\n    // try dalvikvm, post-gingerbread\n    // public class ObjectStreamClass {\n    //   private static native int getConstructorId(Class<?> c);\n    //   private static native Object newInstance(Class<?> instantiationClass, int methodId);\n    // }\n    try {\n      Method getConstructorId = ObjectStreamClass.class\n          .getDeclaredMethod("getConstructorId", Class.class);\n      getConstructorId.setAccessible(true);\n      final int constructorId = (Integer) getConstructorId.invoke(null, Object.class);\n      final Method newInstance = ObjectStreamClass.class\n          .getDeclaredMethod("newInstance", Class.class, int.class);\n      newInstance.setAccessible(true);\n      return new UnsafeAllocator() {\n        @Override\n        @SuppressWarnings("unchecked")\n        public <T> T newInstance(Class<T> c) throws Exception {\n          return (T) newInstance.invoke(null, c, constructorId);\n        }\n      };\n    } catch (Exception ignored) {\n    }\n\n    // try dalvikvm, pre-gingerbread\n    // public class ObjectInputStream {\n    //   private static native Object newInstance(\n    //     Class<?> instantiationClass, Class<?> constructorClass);\n    // }\n    try {\n      final Method newInstance = ObjectInputStream.class\n          .getDeclaredMethod("newInstance", Class.class, Class.class);\n      newInstance.setAccessible(true);\n      return new UnsafeAllocator() {\n        @Override\n        @SuppressWarnings("unchecked")\n        public <T> T newInstance(Class<T> c) throws Exception {\n          return (T) newInstance.invoke(null, c, Object.class);\n        }\n      };\n    } catch (Exception ignored) {\n    }\n\n    // give up\n    return new UnsafeAllocator() {\n      @Override\n      public <T> T newInstance(Class<T> c) {\n        throw new UnsupportedOperationException("Cannot allocate " + c);\n      }\n    };\n  }', 'start_line': 33, 'end_line': 103, 'buggy_lines': [49, 73, 93]}
+================== buggy_method_src ==================
+public static UnsafeAllocator create() {
+    // try JVM
+    // public class Unsafe {
+    //   public Object allocateInstance(Class<?> type);
+    // }
+    try {
+      Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
+      Field f = unsafeClass.getDeclaredField("theUnsafe");
+      f.setAccessible(true);
+      final Object unsafe = f.get(null);
+      final Method allocateInstance = unsafeClass.getMethod("allocateInstance", Class.class);
+      return new UnsafeAllocator() {
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T newInstance(Class<T> c) throws Exception {
+          return (T) allocateInstance.invoke(unsafe, c);
+        }
+      };
+    } catch (Exception ignored) {
+    }
+
+    // try dalvikvm, post-gingerbread
+    // public class ObjectStreamClass {
+    //   private static native int getConstructorId(Class<?> c);
+    //   private static native Object newInstance(Class<?> instantiationClass, int methodId);
+    // }
+    try {
+      Method getConstructorId = ObjectStreamClass.class
+          .getDeclaredMethod("getConstructorId", Class.class);
+      getConstructorId.setAccessible(true);
+      final int constructorId = (Integer) getConstructorId.invoke(null, Object.class);
+      final Method newInstance = ObjectStreamClass.class
+          .getDeclaredMethod("newInstance", Class.class, int.class);
+      newInstance.setAccessible(true);
+      return new UnsafeAllocator() {
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T newInstance(Class<T> c) throws Exception {
+          return (T) newInstance.invoke(null, c, constructorId);
+        }
+      };
+    } catch (Exception ignored) {
+    }
+
+    // try dalvikvm, pre-gingerbread
+    // public class ObjectInputStream {
+    //   private static native Object newInstance(
+    //     Class<?> instantiationClass, Class<?> constructorClass);
+    // }
+    try {
+      final Method newInstance = ObjectInputStream.class
+          .getDeclaredMethod("newInstance", Class.class, Class.class);
+      newInstance.setAccessible(true);
+      return new UnsafeAllocator() {
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T newInstance(Class<T> c) throws Exception {
+          return (T) newInstance.invoke(null, c, Object.class);
+        }
+      };
+    } catch (Exception ignored) {
+    }
+
+    // give up
+    return new UnsafeAllocator() {
+      @Override
+      public <T> T newInstance(Class<T> c) {
+        throw new UnsupportedOperationException("Cannot allocate " + c);
+      }
+    };
+  }
+================== test_stack ==================
+com.google.gson.internal.UnsafeAllocatorInstantiationTest::testInterfaceInstantiation
+junit.framework.AssertionFailedError: expected:<class java.lang.reflect.InvocationTargetException> but was:<class java.lang.UnsupportedOperationException>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:86)
+	at junit.framework.TestCase.assertEquals(TestCase.java:253)
+	at com.google.gson.internal.UnsafeAllocatorInstantiationTest.testInterfaceInstantiation(UnsafeAllocatorInstantiationTest.java:45)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.gson.internal.UnsafeAllocatorInstantiationTest::testAbstractClassInstantiation
+junit.framework.AssertionFailedError: expected:<class java.lang.reflect.InvocationTargetException> but was:<class java.lang.UnsupportedOperationException>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:86)
+	at junit.framework.TestCase.assertEquals(TestCase.java:253)
+	at com.google.gson.internal.UnsafeAllocatorInstantiationTest.testAbstractClassInstantiation(UnsafeAllocatorInstantiationTest.java:59)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals(e.getClass(), UnsupportedOperationException.class);
+
+================== buggy_lines_in_method ==================
+[17, 41, 61]
+================== buggy_statements ==================
+['        }', '      };', '    } catch (Exception ignored) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+public static UnsafeAllocator create() {
+    // try JVM
+    // public class Unsafe {
+    //   public Object allocateInstance(Class<?> type);
+    // }
+    try {
+      Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
+      Field f = unsafeClass.getDeclaredField("theUnsafe");
+      f.setAccessible(true);
+      final Object unsafe = f.get(null);
+      final Method allocateInstance = unsafeClass.getMethod("allocateInstance", Class.class);
+      return new UnsafeAllocator() {
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T newInstance(Class<T> c) throws Exception {
+          return (T) allocateInstance.invoke(unsafe, c);
+        }
+      };
+    } catch (Exception ignored) {
+    }
+
+    // try dalvikvm, post-gingerbread
+    // public class ObjectStreamClass {
+    //   private static native int getConstructorId(Class<?> c);
+    //   private static native Object newInstance(Class<?> instantiationClass, int methodId);
+    // }
+    try {
+      Method getConstructorId = ObjectStreamClass.class
+          .getDeclaredMethod("getConstructorId", Class.class);
+      getConstructorId.setAccessible(true);
+      final int constructorId = (Integer) getConstructorId.invoke(null, Object.class);
+      final Method newInstance = ObjectStreamClass.class
+          .getDeclaredMethod("newInstance", Class.class, int.class);
+      newInstance.setAccessible(true);
+      return new UnsafeAllocator() {
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T newInstance(Class<T> c) throws Exception {
+          return (T) newInstance.invoke(null, c, constructorId);
+        }
+      };
+    } catch (Exception ignored) {
+    }
+
+    // try dalvikvm, pre-gingerbread
+    // public class ObjectInputStream {
+    //   private static native Object newInstance(
+    //     Class<?> instantiationClass, Class<?> constructorClass);
+    // }
+    try {
+      final Method newInstance = ObjectInputStream.class
+          .getDeclaredMethod("newInstance", Class.class, Class.class);
+      newInstance.setAccessible(true);
+      return new UnsafeAllocator() {
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T newInstance(Class<T> c) throws Exception {
+          return (T) newInstance.invoke(null, c, Object.class);
+        }
+      };
+    } catch (Exception ignored) {

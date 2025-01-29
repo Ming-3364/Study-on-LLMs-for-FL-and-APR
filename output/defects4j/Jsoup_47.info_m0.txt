@@ -1,0 +1,182 @@
+
+================== buggy_file ==================
+src/main/java/org/jsoup/nodes/Entities.java
+================== buggy_method ==================
+{'method_name': 'escape', 'method_body': 'static void escape(StringBuilder accum, String string, Document.OutputSettings out,\n                       boolean inAttribute, boolean normaliseWhite, boolean stripLeadingWhite) {\n\n        boolean lastWasWhite = false;\n        boolean reachedNonWhite = false;\n        final EscapeMode escapeMode = out.escapeMode();\n        final CharsetEncoder encoder = out.encoder();\n        final CoreCharset coreCharset = CoreCharset.byName(encoder.charset().name());\n        final Map<Character, String> map = escapeMode.getMap();\n        final int length = string.length();\n\n        int codePoint;\n        for (int offset = 0; offset < length; offset += Character.charCount(codePoint)) {\n            codePoint = string.codePointAt(offset);\n\n            if (normaliseWhite) {\n                if (StringUtil.isWhitespace(codePoint)) {\n                    if ((stripLeadingWhite && !reachedNonWhite) || lastWasWhite)\n                        continue;\n                    accum.append(\' \');\n                    lastWasWhite = true;\n                    continue;\n                } else {\n                    lastWasWhite = false;\n                    reachedNonWhite = true;\n                }\n            }\n            // surrogate pairs, split implementation for efficiency on single char common case (saves creating strings, char[]):\n            if (codePoint < Character.MIN_SUPPLEMENTARY_CODE_POINT) {\n                final char c = (char) codePoint;\n                // html specific and required escapes:\n                switch (c) {\n                    case \'&\':\n                        accum.append("&amp;");\n                        break;\n                    case 0xA0:\n                        if (escapeMode != EscapeMode.xhtml)\n                            accum.append("&nbsp;");\n                        else\n                            accum.append("&#xa0;");\n                        break;\n                    case \'<\':\n                        // escape when in character data or when in a xml attribue val; not needed in html attr val\n                        if (!inAttribute)\n                            accum.append("&lt;");\n                        else\n                            accum.append(c);\n                        break;\n                    case \'>\':\n                        if (!inAttribute)\n                            accum.append("&gt;");\n                        else\n                            accum.append(c);\n                        break;\n                    case \'"\':\n                        if (inAttribute)\n                            accum.append("&quot;");\n                        else\n                            accum.append(c);\n                        break;\n                    default:\n                        if (canEncode(coreCharset, c, encoder))\n                            accum.append(c);\n                        else if (map.containsKey(c))\n                            accum.append(\'&\').append(map.get(c)).append(\';\');\n                        else\n                            accum.append("&#x").append(Integer.toHexString(codePoint)).append(\';\');\n                }\n            } else {\n                final String c = new String(Character.toChars(codePoint));\n                if (encoder.canEncode(c)) // uses fallback encoder for simplicity\n                    accum.append(c);\n                else\n                    accum.append("&#x").append(Integer.toHexString(codePoint)).append(\';\');\n            }\n        }\n    }', 'start_line': 79, 'end_line': 155, 'buggy_lines': [122]}
+================== buggy_method_src ==================
+static void escape(StringBuilder accum, String string, Document.OutputSettings out,
+                       boolean inAttribute, boolean normaliseWhite, boolean stripLeadingWhite) {
+
+        boolean lastWasWhite = false;
+        boolean reachedNonWhite = false;
+        final EscapeMode escapeMode = out.escapeMode();
+        final CharsetEncoder encoder = out.encoder();
+        final CoreCharset coreCharset = CoreCharset.byName(encoder.charset().name());
+        final Map<Character, String> map = escapeMode.getMap();
+        final int length = string.length();
+
+        int codePoint;
+        for (int offset = 0; offset < length; offset += Character.charCount(codePoint)) {
+            codePoint = string.codePointAt(offset);
+
+            if (normaliseWhite) {
+                if (StringUtil.isWhitespace(codePoint)) {
+                    if ((stripLeadingWhite && !reachedNonWhite) || lastWasWhite)
+                        continue;
+                    accum.append(' ');
+                    lastWasWhite = true;
+                    continue;
+                } else {
+                    lastWasWhite = false;
+                    reachedNonWhite = true;
+                }
+            }
+            // surrogate pairs, split implementation for efficiency on single char common case (saves creating strings, char[]):
+            if (codePoint < Character.MIN_SUPPLEMENTARY_CODE_POINT) {
+                final char c = (char) codePoint;
+                // html specific and required escapes:
+                switch (c) {
+                    case '&':
+                        accum.append("&amp;");
+                        break;
+                    case 0xA0:
+                        if (escapeMode != EscapeMode.xhtml)
+                            accum.append("&nbsp;");
+                        else
+                            accum.append("&#xa0;");
+                        break;
+                    case '<':
+                        // escape when in character data or when in a xml attribue val; not needed in html attr val
+                        if (!inAttribute)
+                            accum.append("&lt;");
+                        else
+                            accum.append(c);
+                        break;
+                    case '>':
+                        if (!inAttribute)
+                            accum.append("&gt;");
+                        else
+                            accum.append(c);
+                        break;
+                    case '"':
+                        if (inAttribute)
+                            accum.append("&quot;");
+                        else
+                            accum.append(c);
+                        break;
+                    default:
+                        if (canEncode(coreCharset, c, encoder))
+                            accum.append(c);
+                        else if (map.containsKey(c))
+                            accum.append('&').append(map.get(c)).append(';');
+                        else
+                            accum.append("&#x").append(Integer.toHexString(codePoint)).append(';');
+                }
+            } else {
+                final String c = new String(Character.toChars(codePoint));
+                if (encoder.canEncode(c)) // uses fallback encoder for simplicity
+                    accum.append(c);
+                else
+                    accum.append("&#x").append(Integer.toHexString(codePoint)).append(';');
+            }
+        }
+    }
+================== test_stack ==================
+org.jsoup.nodes.EntitiesTest::escapesGtInXmlAttributesButNotInHtml
+junit.framework.AssertionFailedError: expected:<<a title="[&lt;p>One&lt;]/p>">One</a>> but was:<<a title="[<p>One<]/p>">One</a>>
+	at org.junit.Assert.assertEquals(Assert.java:115)
+	at org.junit.Assert.assertEquals(Assert.java:144)
+	at org.jsoup.nodes.EntitiesTest.escapesGtInXmlAttributesButNotInHtml(EntitiesTest.java:102)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals("<a title=\"&lt;p>One&lt;/p>\">One</a>", element.outerHtml());
+
+================== buggy_lines_in_method ==================
+[44]
+================== buggy_statements ==================
+['                        if (!inAttribute)']
+================== buggy_method_src_endswith_buggy_statement ==================
+static void escape(StringBuilder accum, String string, Document.OutputSettings out,
+                       boolean inAttribute, boolean normaliseWhite, boolean stripLeadingWhite) {
+
+        boolean lastWasWhite = false;
+        boolean reachedNonWhite = false;
+        final EscapeMode escapeMode = out.escapeMode();
+        final CharsetEncoder encoder = out.encoder();
+        final CoreCharset coreCharset = CoreCharset.byName(encoder.charset().name());
+        final Map<Character, String> map = escapeMode.getMap();
+        final int length = string.length();
+
+        int codePoint;
+        for (int offset = 0; offset < length; offset += Character.charCount(codePoint)) {
+            codePoint = string.codePointAt(offset);
+
+            if (normaliseWhite) {
+                if (StringUtil.isWhitespace(codePoint)) {
+                    if ((stripLeadingWhite && !reachedNonWhite) || lastWasWhite)
+                        continue;
+                    accum.append(' ');
+                    lastWasWhite = true;
+                    continue;
+                } else {
+                    lastWasWhite = false;
+                    reachedNonWhite = true;
+                }
+            }
+            // surrogate pairs, split implementation for efficiency on single char common case (saves creating strings, char[]):
+            if (codePoint < Character.MIN_SUPPLEMENTARY_CODE_POINT) {
+                final char c = (char) codePoint;
+                // html specific and required escapes:
+                switch (c) {
+                    case '&':
+                        accum.append("&amp;");
+                        break;
+                    case 0xA0:
+                        if (escapeMode != EscapeMode.xhtml)
+                            accum.append("&nbsp;");
+                        else
+                            accum.append("&#xa0;");
+                        break;
+                    case '<':
+                        // escape when in character data or when in a xml attribue val; not needed in html attr val
+                        if (!inAttribute)

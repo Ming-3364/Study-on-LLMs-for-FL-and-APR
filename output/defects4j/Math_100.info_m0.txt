@@ -1,0 +1,94 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/math/estimation/AbstractEstimator.java
+================== buggy_method ==================
+{'method_name': 'getCovariances', 'method_body': 'public double[][] getCovariances(EstimationProblem problem)\n      throws EstimationException {\n \n        // set up the jacobian\n        updateJacobian();\n\n        // compute transpose(J).J, avoiding building big intermediate matrices\n        final int rows = problem.getMeasurements().length;\n        final int cols = problem.getAllParameters().length;\n        final int max  = cols * rows;\n        double[][] jTj = new double[cols][cols];\n        for (int i = 0; i < cols; ++i) {\n            for (int j = i; j < cols; ++j) {\n                double sum = 0;\n                for (int k = 0; k < max; k += cols) {\n                    sum += jacobian[k + i] * jacobian[k + j];\n                }\n                jTj[i][j] = sum;\n                jTj[j][i] = sum;\n            }\n        }\n\n        try {\n            // compute the covariances matrix\n            return new RealMatrixImpl(jTj).inverse().getData();\n        } catch (InvalidMatrixException ime) {\n            throw new EstimationException("unable to compute covariances: singular problem",\n                                          new Object[0]);\n        }\n\n    }', 'start_line': 158, 'end_line': 188, 'buggy_lines': [166]}
+================== buggy_method_src ==================
+public double[][] getCovariances(EstimationProblem problem)
+      throws EstimationException {
+ 
+        // set up the jacobian
+        updateJacobian();
+
+        // compute transpose(J).J, avoiding building big intermediate matrices
+        final int rows = problem.getMeasurements().length;
+        final int cols = problem.getAllParameters().length;
+        final int max  = cols * rows;
+        double[][] jTj = new double[cols][cols];
+        for (int i = 0; i < cols; ++i) {
+            for (int j = i; j < cols; ++j) {
+                double sum = 0;
+                for (int k = 0; k < max; k += cols) {
+                    sum += jacobian[k + i] * jacobian[k + j];
+                }
+                jTj[i][j] = sum;
+                jTj[j][i] = sum;
+            }
+        }
+
+        try {
+            // compute the covariances matrix
+            return new RealMatrixImpl(jTj).inverse().getData();
+        } catch (InvalidMatrixException ime) {
+            throw new EstimationException("unable to compute covariances: singular problem",
+                                          new Object[0]);
+        }
+
+    }
+================== test_stack ==================
+org.apache.commons.math.estimation.GaussNewtonEstimatorTest::testBoundParameters
+java.lang.ArrayIndexOutOfBoundsException: 6
+	at org.apache.commons.math.estimation.AbstractEstimator.getCovariances(AbstractEstimator.java:173)
+	at org.apache.commons.math.estimation.GaussNewtonEstimatorTest.testBoundParameters(GaussNewtonEstimatorTest.java:472)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+double[][] covariances = estimator.getCovariances(problem);
+
+================== buggy_lines_in_method ==================
+[9]
+================== buggy_statements ==================
+['        final int cols = problem.getAllParameters().length;']
+================== buggy_method_src_endswith_buggy_statement ==================
+public double[][] getCovariances(EstimationProblem problem)
+      throws EstimationException {
+ 
+        // set up the jacobian
+        updateJacobian();
+
+        // compute transpose(J).J, avoiding building big intermediate matrices
+        final int rows = problem.getMeasurements().length;
+        final int cols = problem.getAllParameters().length;

@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "7",
+            "qwen-turbo": "14",
+            "ernie-3.5-128k": "**13**",
+            "gpt-4o-mini": "18",
+            "deepseek-chat": "10"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "17",
+            "ernie-3.5-128k": "**30**",
+            "deepseek-chat": "51",
+            "qwen-turbo": "51",
+            "gpt-4o-mini": "22"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "51",
+            "qwen-turbo": "5",
+            "ernie-3.5-128k": "**14**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "32"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "if (l > Integer.MAX_VALUE)",
+            "ernie-3.5-128k": "if (c > '9' || c < '0') {",
+            "deepseek-chat": "if (len == 10) {\n    long l = NumberInput.parseLong(str);\n    if (l > Integer.MAX_VALUE) {\n        return -1;\n    }\n}",
+            "doubao-pro-4k": "if (len == 10) {\n            long l = NumberInput.parseLong(str);\n            if (l > Integer.MAX_VALUE) {\n                return -1;\n            }\n        }",
+            "gpt-4o-mini": "long l = NumberInput.parseLong(str);"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "return NumberInput.parseInt(str);",
+            "doubao-pro-4k": "return 0;",
+            "ernie-3.5-128k": "if (c > '9' || c < '0') {",
+            "deepseek-chat": "if (len == 0 || len > 10) {\n    return -1;\n}",
+            "gpt-4o-mini": "return NumberInput.parseInt(str);"
+        },
+        "prompt_fl_6": {
+            "doubao-pro-4k": "return 0;",
+            "qwen-turbo": "assertEquals(-1, ptr.getMatchingIndex());",
+            "ernie-3.5-128k": "if (c > '9' || c < '0') {",
+            "deepseek-chat": "if (len == 0 || len > 10) {\n    return -1;\n}",
+            "gpt-4o-mini": "return NumberInput.parseInt(str);"
+        },
+        "prompt_apr_1": {
+            "deepseek-chat": "private final static int _parseIndex(String str) {\n    final int len = str.length();\n    // [core#133]: beware of super long indexes; assume we never\n    // have arrays over 2 billion entries so ints are fine.\n    if (len == 0 || len > 10) {\n        return -1;\n    }\n    // [core#176]: no leading zeroes allowed\n    if (len > 1 && str.charAt(0) == '0') {\n        return -1;\n    }\n    for (int i = 0; i < len; ++i) {\n        char c = str.charAt(i);\n        if (c > '9' || c < '0') {\n            return -1;\n        }\n    }\n    if (len == 10) {\n        long l = NumberInput.parseLong(str);\n        if (l > Integer.MAX_VALUE) {\n            return -1;\n        }\n    }\n    return NumberInput.parseInt(str);\n}",
+            "gpt-4o-mini": "private final static int _parseIndex(String str) {\n    final int len = str.length();\n    // [core#133]: beware of super long indexes; assume we never\n    // have arrays over 2 billion entries so ints are fine.\n    if (len == 0 || len > 10) {\n        return -1;\n    }\n    // [core#176]: no leading zeroes allowed\n    for (int i = 0; i < len; ++i) {\n        char c = str.charAt(i);\n        if (c > '9' || c < '0') {\n            return -1;\n        }\n    }\n    if (len == 10) {\n        long l = NumberInput.parseLong(str);\n        if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) {\n            return -1;\n        }\n    }\n    return NumberInput.parseInt(str);\n}",
+            "qwen-turbo": "Certainly! The issue on lines 9 and 10 is that they do not handle the case where the string length is exactly 10 characters properly. Specifically, the check for leading zeros should be done before converting the string to a long and checking its value against `Integer.MAX_VALUE`. Here is the corrected version of the method:\n\n```java\nprivate final static int _parseIndex(String str) {\n    final int len = str.length();\n    // [core#133]: beware of super long indexes; assume we never\n    // have arrays over 2 billion entries so ints are fine.\n    if (len == 0 || len > 10) {\n        return -1;\n    }\n    // [core#176]: no leading zeroes allowed\n    if (str.startsWith(\"0\")) {\n        return -1;\n    }\n    for (int i = 0; i < len; ++i) {\n        char c = str.charAt(i);\n        if (c > '9' || c < '0') {\n            return -1;\n        }\n    }\n    if (len == 10) {\n        long l = NumberInput.parseLong(str);\n        if (l > Integer.MAX_VALUE) {\n            return -1;\n        }\n    }\n    return NumberInput.parseInt(str);\n}\n```\n\nIn this corrected version, the check for leading zeros (`if (str.startsWith(\"0\"))`) is performed right after checking the length of the string. This ensures that strings with leading zeros are caught early, preventing unnecessary checks later in the method.",
+            "ernie-3.5-128k": "private final static int _parseIndex(String str) {\n        final int len = str.length();\n        // [core#133]: beware of super long indexes; assume we never\n        // have arrays over 2 billion entries so ints are fine.\n        if (len == 0 || len > 10) {\n            return -1;\n        }\n        // [core#176]: no leading zeroes allowed\n        for (int i = 0; i < len; ++i) {\n            char c = str.charAt(i);\n            if (c > '9' || c < '0') {\n                return -1;\n            }\n            // Check for leading zeroes except when the string length is 1 (single digit)\n            if (i == 0 && c == '0' && len > 1) {\n                return -1;\n            }\n        }\n        if (len == 10) {\n            long l = Long.parseLong(str);\n            if (l > Integer.MAX_VALUE) {\n                return -1;\n            }\n        }\n        return Integer.parseInt(str);\n    }",
+            "doubao-pro-4k": "private final static int _parseIndex(String str) {\n        final int len = str.length();\n        // [core#133]: beware of super long indexes; assume we never\n        // have arrays over 2 billion entries so ints are fine.\n        if (len == 0 || len > 10) {\n            return -1;\n        }\n        // [core#176]: no leading zeroes allowed\n        for (int i = 0; i < len; ++i) {\n            char c = str.charAt(i);\n            if (c > '9' || c < '0') {\n                return -1;\n            }\n        }\n        if (len == 10) {\n            try {\n                long l = Long.parseLong(str);\n                if (l > Integer.MAX_VALUE) {\n                    return -1;\n                }\n            } catch (NumberFormatException e) {\n                return -1;\n            }\n        }\n        return Integer.parseInt(str);\n    }"
+        },
+        "prompt_apr_2": {
+            "deepseek-chat": "private final static int _parseIndex(String str) {\n    final int len = str.length();\n    // [core#133]: beware of super long indexes; assume we never\n    // have arrays over 2 billion entries so ints are fine.\n    if (len == 0 || len > 10) {\n        return -1;\n    }\n    // [core#176]: no leading zeroes allowed\n    if (len > 1 && str.charAt(0) == '0') {\n        return -1;\n    }\n    for (int i = 0; i < len; ++i) {\n        char c = str.charAt(i);\n        if (c > '9' || c < '0') {\n            return -1;\n        }\n    }\n    if (len == 10) {\n        long l = NumberInput.parseLong(str);\n        if (l > Integer.MAX_VALUE) {\n            return -1;\n        }\n    }\n    return NumberInput.parseInt(str);\n}",
+            "qwen-turbo": "```java\nprivate final static int _parseIndex(String str) {\n    final int len = str.length();\n    // [core#133]: beware of super long indexes; assume we never\n    // have arrays over 2 billion entries so ints are fine.\n    if (len == 0 || len > 10) {\n        return -1;\n    }\n    // [core#176]: no leading zeroes allowed\n    for (int i = 0; i < len; ++i) {\n        char c = str.charAt(i);\n        if (c > '9' || c < '0') {\n            return -1;\n        }\n    }\n    if (len == 10) {\n        long l = NumberInput.parseLong(str);\n        if (l > Integer.MAX_VALUE) {\n            return -1;\n        }\n    }\n    return NumberInput.parseInt(str);\n}\n```\n\nThe provided code does not contain a bug in the specified lines. The loop correctly iterates through each character of the string to check if they are digits. If you have encountered an issue elsewhere, please provide more details about the problem you are facing.",
+            "gpt-4o-mini": "private final static int _parseIndex(String str) {\n    final int len = str.length();\n    // [core#133]: beware of super long indexes; assume we never\n    // have arrays over 2 billion entries so ints are fine.\n    if (len == 0 || len > 10) {\n        return -1;\n    }\n    // [core#176]: no leading zeroes allowed\n    for (int i = 0; i < len; ++i) {\n        char c = str.charAt(i);\n        if (c < '0' || c > '9') {\n            return -1;\n        }\n    }\n    if (len == 10) {\n        long l = NumberInput.parseLong(str);\n        if (l > Integer.MAX_VALUE) {\n            return -1;\n        }\n    }\n    return NumberInput.parseInt(str);\n}",
+            "doubao-pro-4k": "private final static int _parseIndex(String str) {\n    final int len = str.length();\n    // [core#133]: beware of super long indexes; assume we never\n    // have arrays over 2 billion entries so ints are fine.\n    if (len == 0 || len > 10) {\n        return -1;\n    }\n    // [core#176]: no leading zeroes allowed\n    for (int i = 0; i < len; ++i) {\n        char c = str.charAt(i);\n        if (c < '0' || c > '9') {\n            return -1;\n        }\n    }\n    if (len == 10) {\n        long l = NumberInput.parseLong(str);\n        if (l > Integer.MAX_VALUE) {\n            return -1;\n        }\n    }\n    return NumberInput.parseInt(str);\n}",
+            "ernie-3.5-128k": "private final static int _parseIndex(String str) {\n    final int len = str.length();\n    // [core#133]: beware of super long indexes; assume we never\n    // have arrays over 2 billion entries so ints are fine.\n    if (len == 0 || len > 10) {\n        return -1;\n    }\n    // [core#176]: no leading zeroes allowed\n    for (int i = 0; i < len; ++i) {\n        char c = str.charAt(i);\n        if (c == '0' && i == 0) {\n            // Allow a single '0' at the beginning, but not multiple leading zeros\n            continue;\n        }\n        if (c > '9' || c < '0') {\n            return -1;\n        }\n    }\n    if (len == 10) {\n        long l = NumberInput.parseLong(str);\n        if (l > Integer.MAX_VALUE) {\n            return -1;\n        }\n    }\n    return NumberInput.parseInt(str);\n}"
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\nprivate final static int _parseIndex(String str) {\n    final int len = str.length();\n    // [core#133]: beware of super long indexes; assume we never\n    // have arrays over 2 billion entries so ints are fine.\n    if (len == 0 || len > 10) {\n        return -1;\n    }\n    // [core#176]: no leading zeroes allowed\n    if (str.charAt(0) == '0') {\n        return -1;\n    }\n```",
+            "deepseek-chat": "private final static int _parseIndex(String str) {\n        final int len = str.length();\n        // [core#133]: beware of super long indexes; assume we never\n        // have arrays over 2 billion entries so ints are fine.\n        if (len == 0 || len > 10) {\n            return -1;\n        }\n        // [core#176]: no leading zeroes allowed\n        for (int i = 0; i < len; ++i) {\n            char c = str.charAt(i);\n            if (i == 0 && c == '0' && len > 1) {\n                return -1;\n            }",
+            "gpt-4o-mini": "private final static int _parseIndex(String str) {\n        final int len = str.length();\n        // [core#133]: beware of super long indexes; assume we never\n        // have arrays over 2 billion entries so ints are fine.\n        if (len == 0 || len > 10) {\n            return -1;\n        }\n        // [core#176]: no leading zeroes allowed\n        for (int i = 0; i < len; ++i) {\n            char c = str.charAt(i);\n            if (i == 0 && c == '0') {\n                return -1;\n            }\n        }",
+            "doubao-pro-4k": "private final static int _parseIndex(String str) {\n        final int len = str.length();\n        // [core#133]: beware of super long indexes; assume we never\n        // have arrays over 2 billion entries so ints are fine.\n        if (len == 0 || len > 10) {\n            return -1;\n        }\n        // [core#176]: no leading zeroes allowed\n        for (int i = 0; i < len; ++i) {\n            if (str.charAt(i) < '0' || str.charAt(i) > '9') {\n                return -1;\n            }\n        }\n}",
+            "ernie-3.5-128k": "private final static int _parseIndex(String str) {\n        final int len = str.length();\n        // [core#133]: beware of super long indexes; assume we never\n        // have arrays over 2 billion entries so ints are fine.\n        if (len == 0 || len > 10) {\n            return -1;\n        }\n        // [core#176]: no leading zeroes allowed\n        for (int i = 0; i < len; ++i) {\n            char c = str.charAt(i);\n            if (c == '0' && i == 0) {\n                // Handle leading zero case, but do not change the loop iteration\n                break; // or add appropriate handling logic here if needed\n            }"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"if (len < 0 || len > 10) {\"\n    },\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"return -1;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"if (c < '0' || c > '9') {\"\n    },\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"    return -1;\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) {\"\n    },\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"    return -1;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"for (int i = 0; i < str.length(); ++i) {\"\n    },\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"char c = str.charAt(i);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) {\"\n    },\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"    return -1;\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"            char c = str.charAt(i);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"for (int i = 0; i < str.length(); ++i) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"for (int i = 0; i < len; ++i) {\"\n    },\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"            char c = str.charAt(i);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"            if (c < '0' || c > '9') {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"if (c < '0' || c > '9') {\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"            char c = str.charAt(i); if (c < '0' || c > '9') { return -1; }\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"for (int i = 0; i < len && str.charAt(i)!= '0'; ++i) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"            if (i == 0 && c == '0' && len > 1) {\"\n    },\n    {\n        \"line_number\": 11,\n        \"fixed_statement\": \"                return -1;\"\n    },\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"            }\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"if (c < '0' || c > '9') {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"if (len == 0 || (len > 10 && !Character.isDigit(c))) {\"\n    },\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"            }\"\n    }\n]"
+        }
+    }
+]

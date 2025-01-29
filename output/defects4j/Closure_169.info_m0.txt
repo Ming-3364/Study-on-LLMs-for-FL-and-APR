@@ -1,0 +1,139 @@
+
+================== buggy_file ==================
+src/com/google/javascript/rhino/jstype/ArrowType.java
+================== buggy_method ==================
+{'method_name': 'hasEqualParameters', 'method_body': 'boolean hasEqualParameters(ArrowType that, boolean tolerateUnknowns) {\n    Node thisParam = parameters.getFirstChild();\n    Node otherParam = that.parameters.getFirstChild();\n    while (thisParam != null && otherParam != null) {\n      JSType thisParamType = thisParam.getJSType();\n      JSType otherParamType = otherParam.getJSType();\n      if (thisParamType != null) {\n        // Both parameter lists give a type for this param, it should be equal\n        if (otherParamType != null &&\n            !thisParamType.checkEquivalenceHelper(\n                otherParamType, tolerateUnknowns)) {\n          return false;\n        }\n      } else {\n        if (otherParamType != null) {\n          return false;\n        }\n      }\n      thisParam = thisParam.getNext();\n      otherParam = otherParam.getNext();\n    }\n    // One of the parameters is null, so the types are only equal if both\n    // parameter lists are null (they are equal).\n    return thisParam == otherParam;\n  }', 'start_line': 177, 'end_line': 201, 'buggy_lines': [177, 187]}
+================== buggy_method_src ==================
+boolean hasEqualParameters(ArrowType that, boolean tolerateUnknowns) {
+    Node thisParam = parameters.getFirstChild();
+    Node otherParam = that.parameters.getFirstChild();
+    while (thisParam != null && otherParam != null) {
+      JSType thisParamType = thisParam.getJSType();
+      JSType otherParamType = otherParam.getJSType();
+      if (thisParamType != null) {
+        // Both parameter lists give a type for this param, it should be equal
+        if (otherParamType != null &&
+            !thisParamType.checkEquivalenceHelper(
+                otherParamType, tolerateUnknowns)) {
+          return false;
+        }
+      } else {
+        if (otherParamType != null) {
+          return false;
+        }
+      }
+      thisParam = thisParam.getNext();
+      otherParam = otherParam.getNext();
+    }
+    // One of the parameters is null, so the types are only equal if both
+    // parameter lists are null (they are equal).
+    return thisParam == otherParam;
+  }
+================== test_stack ==================
+com.google.javascript.jscomp.TypeCheckTest::testIssue791
+junit.framework.AssertionFailedError: unexpected warnings(s):
+JSC_TYPE_MISMATCH. actual parameter 1 of test1 does not match formal parameter
+found   : {func: function (): undefined}
+required: {func: function (): ?} at [testcode] line 1 : 114
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.TestCase.fail(TestCase.java:227)
+	at com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:10782)
+	at com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:10756)
+	at com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:10694)
+	at com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:10690)
+	at com.google.javascript.jscomp.TypeCheckTest.testIssue791(TypeCheckTest.java:6423)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.rhino.jstype.RecordTypeTest::testSubtypeWithUnknowns2
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at com.google.javascript.rhino.jstype.RecordTypeTest.testSubtypeWithUnknowns2(RecordTypeTest.java:139)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+testTypes(
+
+================== buggy_lines_in_method ==================
+[1, 11]
+================== buggy_statements ==================
+['boolean hasEqualParameters(ArrowType that, boolean tolerateUnknowns) {', '                otherParamType, tolerateUnknowns)) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+boolean hasEqualParameters(ArrowType that, boolean tolerateUnknowns) {
+    Node thisParam = parameters.getFirstChild();
+    Node otherParam = that.parameters.getFirstChild();
+    while (thisParam != null && otherParam != null) {
+      JSType thisParamType = thisParam.getJSType();
+      JSType otherParamType = otherParam.getJSType();
+      if (thisParamType != null) {
+        // Both parameter lists give a type for this param, it should be equal
+        if (otherParamType != null &&
+            !thisParamType.checkEquivalenceHelper(
+                otherParamType, tolerateUnknowns)) {

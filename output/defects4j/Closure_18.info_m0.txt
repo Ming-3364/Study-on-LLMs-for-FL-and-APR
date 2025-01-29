@@ -1,0 +1,304 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/Compiler.java
+================== buggy_method ==================
+{'method_name': 'parseInputs', 'method_body': 'Node parseInputs() {\n    boolean devMode = options.devMode != DevMode.OFF;\n\n    // If old roots exist (we are parsing a second time), detach each of the\n    // individual file parse trees.\n    if (externsRoot != null) {\n      externsRoot.detachChildren();\n    }\n    if (jsRoot != null) {\n      jsRoot.detachChildren();\n    }\n\n    // Parse main JS sources.\n    jsRoot = IR.block();\n    jsRoot.setIsSyntheticBlock(true);\n\n    externsRoot = IR.block();\n    externsRoot.setIsSyntheticBlock(true);\n\n    externAndJsRoot = IR.block(externsRoot, jsRoot);\n    externAndJsRoot.setIsSyntheticBlock(true);\n\n    if (options.tracer.isOn()) {\n      tracker = new PerformanceTracker(jsRoot, options.tracer);\n      addChangeHandler(tracker.getCodeChangeHandler());\n    }\n\n    Tracer tracer = newTracer("parseInputs");\n\n    try {\n      // Parse externs sources.\n      for (CompilerInput input : externs) {\n        Node n = input.getAstRoot(this);\n        if (hasErrors()) {\n          return null;\n        }\n        externsRoot.addChildToBack(n);\n      }\n\n      // Modules inferred in ProcessCommonJS pass.\n      if (options.transformAMDToCJSModules || options.processCommonJSModules) {\n        processAMDAndCommonJSModules();\n      }\n\n      hoistExterns(externsRoot);\n\n      // Check if the sources need to be re-ordered.\n      boolean staleInputs = false;\n      if (options.dependencyOptions.needsManagement() && options.closurePass) {\n        for (CompilerInput input : inputs) {\n          // Forward-declare all the provided types, so that they\n          // are not flagged even if they are dropped from the process.\n          for (String provide : input.getProvides()) {\n            getTypeRegistry().forwardDeclareType(provide);\n          }\n        }\n\n        try {\n          inputs =\n              (moduleGraph == null ? new JSModuleGraph(modules) : moduleGraph)\n              .manageDependencies(options.dependencyOptions, inputs);\n          staleInputs = true;\n        } catch (CircularDependencyException e) {\n          report(JSError.make(\n              JSModule.CIRCULAR_DEPENDENCY_ERROR, e.getMessage()));\n\n          // If in IDE mode, we ignore the error and keep going.\n          if (hasErrors()) {\n            return null;\n          }\n        } catch (MissingProvideException e) {\n          report(JSError.make(\n              MISSING_ENTRY_ERROR, e.getMessage()));\n\n          // If in IDE mode, we ignore the error and keep going.\n          if (hasErrors()) {\n            return null;\n          }\n        }\n      }\n\n      hoistNoCompileFiles();\n\n      if (staleInputs) {\n        repartitionInputs();\n      }\n\n      // Build the AST.\n      for (CompilerInput input : inputs) {\n        Node n = input.getAstRoot(this);\n        if (n == null) {\n          continue;\n        }\n\n        if (devMode) {\n          runSanityCheck();\n          if (hasErrors()) {\n            return null;\n          }\n        }\n\n        if (options.sourceMapOutputPath != null ||\n            options.nameReferenceReportPath != null) {\n\n          // Annotate the nodes in the tree with information from the\n          // input file. This information is used to construct the SourceMap.\n          SourceInformationAnnotator sia =\n              new SourceInformationAnnotator(\n                  input.getName(), options.devMode != DevMode.OFF);\n          NodeTraversal.traverse(this, n, sia);\n        }\n\n        jsRoot.addChildToBack(n);\n      }\n\n      if (hasErrors()) {\n        return null;\n      }\n      return externAndJsRoot;\n    } finally {\n      stopTracer(tracer, "parseInputs");\n    }\n  }', 'start_line': 1240, 'end_line': 1362, 'buggy_lines': [1288]}
+================== buggy_method_src ==================
+Node parseInputs() {
+    boolean devMode = options.devMode != DevMode.OFF;
+
+    // If old roots exist (we are parsing a second time), detach each of the
+    // individual file parse trees.
+    if (externsRoot != null) {
+      externsRoot.detachChildren();
+    }
+    if (jsRoot != null) {
+      jsRoot.detachChildren();
+    }
+
+    // Parse main JS sources.
+    jsRoot = IR.block();
+    jsRoot.setIsSyntheticBlock(true);
+
+    externsRoot = IR.block();
+    externsRoot.setIsSyntheticBlock(true);
+
+    externAndJsRoot = IR.block(externsRoot, jsRoot);
+    externAndJsRoot.setIsSyntheticBlock(true);
+
+    if (options.tracer.isOn()) {
+      tracker = new PerformanceTracker(jsRoot, options.tracer);
+      addChangeHandler(tracker.getCodeChangeHandler());
+    }
+
+    Tracer tracer = newTracer("parseInputs");
+
+    try {
+      // Parse externs sources.
+      for (CompilerInput input : externs) {
+        Node n = input.getAstRoot(this);
+        if (hasErrors()) {
+          return null;
+        }
+        externsRoot.addChildToBack(n);
+      }
+
+      // Modules inferred in ProcessCommonJS pass.
+      if (options.transformAMDToCJSModules || options.processCommonJSModules) {
+        processAMDAndCommonJSModules();
+      }
+
+      hoistExterns(externsRoot);
+
+      // Check if the sources need to be re-ordered.
+      boolean staleInputs = false;
+      if (options.dependencyOptions.needsManagement() && options.closurePass) {
+        for (CompilerInput input : inputs) {
+          // Forward-declare all the provided types, so that they
+          // are not flagged even if they are dropped from the process.
+          for (String provide : input.getProvides()) {
+            getTypeRegistry().forwardDeclareType(provide);
+          }
+        }
+
+        try {
+          inputs =
+              (moduleGraph == null ? new JSModuleGraph(modules) : moduleGraph)
+              .manageDependencies(options.dependencyOptions, inputs);
+          staleInputs = true;
+        } catch (CircularDependencyException e) {
+          report(JSError.make(
+              JSModule.CIRCULAR_DEPENDENCY_ERROR, e.getMessage()));
+
+          // If in IDE mode, we ignore the error and keep going.
+          if (hasErrors()) {
+            return null;
+          }
+        } catch (MissingProvideException e) {
+          report(JSError.make(
+              MISSING_ENTRY_ERROR, e.getMessage()));
+
+          // If in IDE mode, we ignore the error and keep going.
+          if (hasErrors()) {
+            return null;
+          }
+        }
+      }
+
+      hoistNoCompileFiles();
+
+      if (staleInputs) {
+        repartitionInputs();
+      }
+
+      // Build the AST.
+      for (CompilerInput input : inputs) {
+        Node n = input.getAstRoot(this);
+        if (n == null) {
+          continue;
+        }
+
+        if (devMode) {
+          runSanityCheck();
+          if (hasErrors()) {
+            return null;
+          }
+        }
+
+        if (options.sourceMapOutputPath != null ||
+            options.nameReferenceReportPath != null) {
+
+          // Annotate the nodes in the tree with information from the
+          // input file. This information is used to construct the SourceMap.
+          SourceInformationAnnotator sia =
+              new SourceInformationAnnotator(
+                  input.getName(), options.devMode != DevMode.OFF);
+          NodeTraversal.traverse(this, n, sia);
+        }
+
+        jsRoot.addChildToBack(n);
+      }
+
+      if (hasErrors()) {
+        return null;
+      }
+      return externAndJsRoot;
+    } finally {
+      stopTracer(tracer, "parseInputs");
+    }
+  }
+================== test_stack ==================
+com.google.javascript.jscomp.IntegrationTest::testDependencySorting
+junit.framework.AssertionFailedError:
+Expected: goog.provide("x");goog.require("x")
+Result: goog.require("x");goog.provide("x")
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: input0] [input_id: InputId: input0]
+        EXPR_RESULT 1 [source_file: input0]
+            CALL 1 [source_file: input0]
+                GETPROP 1 [source_file: input0]
+                    NAME goog 1 [source_file: input0]
+                    STRING provide 1 [source_file: input0]
+                STRING x 1 [source_file: input0]
+    SCRIPT 1 [synthetic: 1] [source_file: input1] [input_id: InputId: input1]
+        EXPR_RESULT 1 [source_file: input1]
+            CALL 1 [source_file: input1]
+                GETPROP 1 [source_file: input1]
+                    NAME goog 1 [source_file: input1]
+                    STRING require 1 [source_file: input1]
+                STRING x 1 [source_file: input1]
+    SCRIPT 1 [synthetic: 1] [source_file: input2] [input_id: InputId: input2]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: i0] [input_id: InputId: i0]
+        EXPR_RESULT 1 [source_file: i0]
+            CALL 1 [source_file: i0]
+                GETPROP 1 [source_file: i0]
+                    NAME goog 1 [source_file: i0]
+                    STRING require 1 [source_file: i0]
+                STRING x 1 [source_file: i0]
+    SCRIPT 1 [synthetic: 1] [source_file: i1] [input_id: InputId: i1]
+        EXPR_RESULT 1 [source_file: i1]
+            CALL 1 [source_file: i1]
+                GETPROP 1 [source_file: i1]
+                    NAME goog 1 [source_file: i1]
+                    STRING provide 1 [source_file: i1]
+                STRING x 1 [source_file: i1]
+
+
+Subtree1: BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: input0] [input_id: InputId: input0]
+        EXPR_RESULT 1 [source_file: input0]
+            CALL 1 [source_file: input0]
+                GETPROP 1 [source_file: input0]
+                    NAME goog 1 [source_file: input0]
+                    STRING provide 1 [source_file: input0]
+                STRING x 1 [source_file: input0]
+    SCRIPT 1 [synthetic: 1] [source_file: input1] [input_id: InputId: input1]
+        EXPR_RESULT 1 [source_file: input1]
+            CALL 1 [source_file: input1]
+                GETPROP 1 [source_file: input1]
+                    NAME goog 1 [source_file: input1]
+                    STRING require 1 [source_file: input1]
+                STRING x 1 [source_file: input1]
+    SCRIPT 1 [synthetic: 1] [source_file: input2] [input_id: InputId: input2]
+
+
+Subtree2: BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: i0] [input_id: InputId: i0]
+        EXPR_RESULT 1 [source_file: i0]
+            CALL 1 [source_file: i0]
+                GETPROP 1 [source_file: i0]
+                    NAME goog 1 [source_file: i0]
+                    STRING require 1 [source_file: i0]
+                STRING x 1 [source_file: i0]
+    SCRIPT 1 [synthetic: 1] [source_file: i1] [input_id: InputId: i1]
+        EXPR_RESULT 1 [source_file: i1]
+            CALL 1 [source_file: i1]
+                GETPROP 1 [source_file: i1]
+                    NAME goog 1 [source_file: i1]
+                    STRING provide 1 [source_file: i1]
+                STRING x 1 [source_file: i1]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.IntegrationTestCase.test(IntegrationTestCase.java:94)
+	at com.google.javascript.jscomp.IntegrationTest.testDependencySorting(IntegrationTest.java:2107)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+test(
+
+================== buggy_lines_in_method ==================
+[49]
+================== buggy_statements ==================
+['      if (options.dependencyOptions.needsManagement() && options.closurePass) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+Node parseInputs() {
+    boolean devMode = options.devMode != DevMode.OFF;
+
+    // If old roots exist (we are parsing a second time), detach each of the
+    // individual file parse trees.
+    if (externsRoot != null) {
+      externsRoot.detachChildren();
+    }
+    if (jsRoot != null) {
+      jsRoot.detachChildren();
+    }
+
+    // Parse main JS sources.
+    jsRoot = IR.block();
+    jsRoot.setIsSyntheticBlock(true);
+
+    externsRoot = IR.block();
+    externsRoot.setIsSyntheticBlock(true);
+
+    externAndJsRoot = IR.block(externsRoot, jsRoot);
+    externAndJsRoot.setIsSyntheticBlock(true);
+
+    if (options.tracer.isOn()) {
+      tracker = new PerformanceTracker(jsRoot, options.tracer);
+      addChangeHandler(tracker.getCodeChangeHandler());
+    }
+
+    Tracer tracer = newTracer("parseInputs");
+
+    try {
+      // Parse externs sources.
+      for (CompilerInput input : externs) {
+        Node n = input.getAstRoot(this);
+        if (hasErrors()) {
+          return null;
+        }
+        externsRoot.addChildToBack(n);
+      }
+
+      // Modules inferred in ProcessCommonJS pass.
+      if (options.transformAMDToCJSModules || options.processCommonJSModules) {
+        processAMDAndCommonJSModules();
+      }
+
+      hoistExterns(externsRoot);
+
+      // Check if the sources need to be re-ordered.
+      boolean staleInputs = false;
+      if (options.dependencyOptions.needsManagement() && options.closurePass) {

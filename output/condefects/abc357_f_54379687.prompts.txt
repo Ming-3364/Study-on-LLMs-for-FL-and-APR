@@ -1,0 +1,626 @@
+
+================== prompt_fl_1 ==================
+
+source code:
+public static void main(String[] args) throws Exception {
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		String[] sa = br.readLine().split(" ");
+		int n = Integer.parseInt(sa[0]);
+		int q = Integer.parseInt(sa[1]);
+		Obj[] arr = new Obj[n];
+		sa = br.readLine().split(" ");
+		for (int i = 0; i < n; i++) {
+			Obj o = new Obj();
+			o.a = Integer.parseInt(sa[i]);
+			o.size = 1;
+			arr[i] = o;
+		}
+		sa = br.readLine().split(" ");
+		for (int i = 0; i < n; i++) {
+			Obj o = arr[i];
+			o.b = Integer.parseInt(sa[i]);
+			o.v = o.a * o.b;
+		}
+
+		int mod = 998244353;
+		LazySegTree<Obj, Obj> st = new LazySegTree<>(
+				arr,
+				new Obj(),
+				(s1, s2) -> {
+					Obj ret = new Obj();
+					ret.a = (s1.a + s2.a) % mod;
+					ret.b = (s1.b + s2.b) % mod;
+					ret.v = (s1.v + s2.v) % mod;
+					ret.size = s1.size + s2.size;
+					return ret;
+				},
+				(f, s) -> {
+					Obj ret = new Obj();
+					ret.a = (s.a + f.a * s.size) % mod;
+					ret.b = (s.b + f.b * s.size) % mod;
+					ret.v = (s.v + s.a * f.b % mod + s.b * f.a % mod
+							+ f.a * f.b % mod * s.size % mod * s.size % mod) % mod;
+					ret.size = s.size;
+					return ret;
+				},
+				(f1, f2) -> {
+					Obj ret = new Obj();
+					ret.a = (f1.a + f2.a) % mod;
+					ret.b = (f1.b + f2.b) % mod;
+					return ret;
+				},
+				new Obj());
+
+		PrintWriter pw = new PrintWriter(System.out);
+		for (int i = 0; i < q; i++) {
+			sa = br.readLine().split(" ");
+			int t = Integer.parseInt(sa[0]);
+			int l = Integer.parseInt(sa[1]) - 1;
+			int r = Integer.parseInt(sa[2]);
+			if (t == 1) {
+				Obj f = new Obj();
+				f.a = Integer.parseInt(sa[3]);
+				st.apply(l, r, f);
+
+			} else if (t == 2) {
+				Obj f = new Obj();
+				f.b = Integer.parseInt(sa[3]);
+				st.apply(l, r, f);
+
+			} else {
+				Obj o = st.prod(l, r);
+				pw.println(o.v);
+			}
+		}
+		pw.flush();
+		br.close();
+	}
+
+There is a bug in the above code, please help me locate it.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_4 ==================
+
+source code:
+public static void main(String[] args) throws Exception {
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		String[] sa = br.readLine().split(" ");
+		int n = Integer.parseInt(sa[0]);
+		int q = Integer.parseInt(sa[1]);
+		Obj[] arr = new Obj[n];
+		sa = br.readLine().split(" ");
+		for (int i = 0; i < n; i++) {
+			Obj o = new Obj();
+			o.a = Integer.parseInt(sa[i]);
+			o.size = 1;
+			arr[i] = o;
+		}
+		sa = br.readLine().split(" ");
+		for (int i = 0; i < n; i++) {
+			Obj o = arr[i];
+			o.b = Integer.parseInt(sa[i]);
+			o.v = o.a * o.b;
+		}
+
+		int mod = 998244353;
+		LazySegTree<Obj, Obj> st = new LazySegTree<>(
+				arr,
+				new Obj(),
+				(s1, s2) -> {
+					Obj ret = new Obj();
+					ret.a = (s1.a + s2.a) % mod;
+					ret.b = (s1.b + s2.b) % mod;
+					ret.v = (s1.v + s2.v) % mod;
+					ret.size = s1.size + s2.size;
+					return ret;
+				},
+				(f, s) -> {
+					Obj ret = new Obj();
+					ret.a = (s.a + f.a * s.size) % mod;
+					ret.b = (s.b + f.b * s.size) % mod;
+					ret.v = (s.v + s.a * f.b % mod + s.b * f.a % mod
+							+ f.a * f.b % mod * s.size % mod * s.size % mod) % mod;
+					ret.size = s.size;
+					return ret;
+				},
+				(f1, f2) -> {
+					Obj ret = new Obj();
+					ret.a = (f1.a + f2.a) % mod;
+					ret.b = (f1.b + f2.b) % mod;
+					return ret;
+				},
+				new Obj());
+
+		PrintWriter pw = new PrintWriter(System.out);
+		for (int i = 0; i < q; i++) {
+			sa = br.readLine().split(" ");
+			int t = Integer.parseInt(sa[0]);
+			int l = Integer.parseInt(sa[1]) - 1;
+			int r = Integer.parseInt(sa[2]);
+			if (t == 1) {
+				Obj f = new Obj();
+				f.a = Integer.parseInt(sa[3]);
+				st.apply(l, r, f);
+
+			} else if (t == 2) {
+				Obj f = new Obj();
+				f.b = Integer.parseInt(sa[3]);
+				st.apply(l, r, f);
+
+			} else {
+				Obj o = st.prod(l, r);
+				pw.println(o.v);
+			}
+		}
+		pw.flush();
+		br.close();
+	}
+
+There is a bug in the above code, please help me locate it.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_1 ==================
+
+public static void main(String[] args) throws Exception {
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		String[] sa = br.readLine().split(" ");
+		int n = Integer.parseInt(sa[0]);
+		int q = Integer.parseInt(sa[1]);
+		Obj[] arr = new Obj[n];
+		sa = br.readLine().split(" ");
+		for (int i = 0; i < n; i++) {
+			Obj o = new Obj();
+			o.a = Integer.parseInt(sa[i]);
+			o.size = 1;
+			arr[i] = o;
+		}
+		sa = br.readLine().split(" ");
+		for (int i = 0; i < n; i++) {
+			Obj o = arr[i];
+			o.b = Integer.parseInt(sa[i]);
+			o.v = o.a * o.b;
+		}
+
+		int mod = 998244353;
+		LazySegTree<Obj, Obj> st = new LazySegTree<>(
+				arr,
+				new Obj(),
+				(s1, s2) -> {
+					Obj ret = new Obj();
+					ret.a = (s1.a + s2.a) % mod;
+					ret.b = (s1.b + s2.b) % mod;
+					ret.v = (s1.v + s2.v) % mod;
+					ret.size = s1.size + s2.size;
+					return ret;
+				},
+				(f, s) -> {
+					Obj ret = new Obj();
+					ret.a = (s.a + f.a * s.size) % mod;
+					ret.b = (s.b + f.b * s.size) % mod;
+					ret.v = (s.v + s.a * f.b % mod + s.b * f.a % mod
+							+ f.a * f.b % mod * s.size % mod * s.size % mod) % mod;
+					ret.size = s.size;
+					return ret;
+				},
+				(f1, f2) -> {
+					Obj ret = new Obj();
+					ret.a = (f1.a + f2.a) % mod;
+					ret.b = (f1.b + f2.b) % mod;
+					return ret;
+				},
+				new Obj());
+
+		PrintWriter pw = new PrintWriter(System.out);
+		for (int i = 0; i < q; i++) {
+			sa = br.readLine().split(" ");
+			int t = Integer.parseInt(sa[0]);
+			int l = Integer.parseInt(sa[1]) - 1;
+			int r = Integer.parseInt(sa[2]);
+			if (t == 1) {
+				Obj f = new Obj();
+				f.a = Integer.parseInt(sa[3]);
+				st.apply(l, r, f);
+
+			} else if (t == 2) {
+				Obj f = new Obj();
+				f.b = Integer.parseInt(sa[3]);
+				st.apply(l, r, f);
+
+			} else {
+				Obj o = st.prod(l, r);
+				pw.println(o.v);
+			}
+		}
+		pw.flush();
+		br.close();
+	}
+
+There is a bug in line [38] of the code, please help me fix it.
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_2 ==================
+
+public static void main(String[] args) throws Exception {
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		String[] sa = br.readLine().split(" ");
+		int n = Integer.parseInt(sa[0]);
+		int q = Integer.parseInt(sa[1]);
+		Obj[] arr = new Obj[n];
+		sa = br.readLine().split(" ");
+		for (int i = 0; i < n; i++) {
+			Obj o = new Obj();
+			o.a = Integer.parseInt(sa[i]);
+			o.size = 1;
+			arr[i] = o;
+		}
+		sa = br.readLine().split(" ");
+		for (int i = 0; i < n; i++) {
+			Obj o = arr[i];
+			o.b = Integer.parseInt(sa[i]);
+			o.v = o.a * o.b;
+		}
+
+		int mod = 998244353;
+		LazySegTree<Obj, Obj> st = new LazySegTree<>(
+				arr,
+				new Obj(),
+				(s1, s2) -> {
+					Obj ret = new Obj();
+					ret.a = (s1.a + s2.a) % mod;
+					ret.b = (s1.b + s2.b) % mod;
+					ret.v = (s1.v + s2.v) % mod;
+					ret.size = s1.size + s2.size;
+					return ret;
+				},
+				(f, s) -> {
+					Obj ret = new Obj();
+					ret.a = (s.a + f.a * s.size) % mod;
+					ret.b = (s.b + f.b * s.size) % mod;
+					ret.v = (s.v + s.a * f.b % mod + s.b * f.a % mod
+							+ f.a * f.b % mod * s.size % mod * s.size % mod) % mod;
+					ret.size = s.size;
+					return ret;
+				},
+				(f1, f2) -> {
+					Obj ret = new Obj();
+					ret.a = (f1.a + f2.a) % mod;
+					ret.b = (f1.b + f2.b) % mod;
+					return ret;
+				},
+				new Obj());
+
+		PrintWriter pw = new PrintWriter(System.out);
+		for (int i = 0; i < q; i++) {
+			sa = br.readLine().split(" ");
+			int t = Integer.parseInt(sa[0]);
+			int l = Integer.parseInt(sa[1]) - 1;
+			int r = Integer.parseInt(sa[2]);
+			if (t == 1) {
+				Obj f = new Obj();
+				f.a = Integer.parseInt(sa[3]);
+				st.apply(l, r, f);
+
+			} else if (t == 2) {
+				Obj f = new Obj();
+				f.b = Integer.parseInt(sa[3]);
+				st.apply(l, r, f);
+
+			} else {
+				Obj o = st.prod(l, r);
+				pw.println(o.v);
+			}
+		}
+		pw.flush();
+		br.close();
+	}
+
+There is a bug in ['\t\t\t\t\t\t\t+ f.a * f.b % mod * s.size % mod * s.size % mod) % mod;'] , please help me fix it. 
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_3 ==================
+
+public static void main(String[] args) throws Exception {
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		String[] sa = br.readLine().split(" ");
+		int n = Integer.parseInt(sa[0]);
+		int q = Integer.parseInt(sa[1]);
+		Obj[] arr = new Obj[n];
+		sa = br.readLine().split(" ");
+		for (int i = 0; i < n; i++) {
+			Obj o = new Obj();
+			o.a = Integer.parseInt(sa[i]);
+			o.size = 1;
+			arr[i] = o;
+		}
+		sa = br.readLine().split(" ");
+		for (int i = 0; i < n; i++) {
+			Obj o = arr[i];
+			o.b = Integer.parseInt(sa[i]);
+			o.v = o.a * o.b;
+		}
+
+		int mod = 998244353;
+		LazySegTree<Obj, Obj> st = new LazySegTree<>(
+				arr,
+				new Obj(),
+				(s1, s2) -> {
+					Obj ret = new Obj();
+					ret.a = (s1.a + s2.a) % mod;
+					ret.b = (s1.b + s2.b) % mod;
+					ret.v = (s1.v + s2.v) % mod;
+					ret.size = s1.size + s2.size;
+					return ret;
+				},
+				(f, s) -> {
+					Obj ret = new Obj();
+					ret.a = (s.a + f.a * s.size) % mod;
+					ret.b = (s.b + f.b * s.size) % mod;
+					ret.v = (s.v + s.a * f.b % mod + s.b * f.a % mod
+							+ f.a * f.b % mod * s.size % mod * s.size % mod) % mod;
+
+There is a bug in the last statement, please help me fix it.
+
+Return the code **only from the method declaration to the fixed statement**, without completing or adding additional code. Do not modify anything beyond fixing the bug, and do not complete the `if` statement or other unfinished parts. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_4 ==================
+
+public static void main(String[] args) throws Exception {
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		String[] sa = br.readLine().split(" ");
+		int n = Integer.parseInt(sa[0]);
+		int q = Integer.parseInt(sa[1]);
+		Obj[] arr = new Obj[n];
+		sa = br.readLine().split(" ");
+		for (int i = 0; i < n; i++) {
+			Obj o = new Obj();
+			o.a = Integer.parseInt(sa[i]);
+			o.size = 1;
+			arr[i] = o;
+		}
+		sa = br.readLine().split(" ");
+		for (int i = 0; i < n; i++) {
+			Obj o = arr[i];
+			o.b = Integer.parseInt(sa[i]);
+			o.v = o.a * o.b;
+		}
+
+		int mod = 998244353;
+		LazySegTree<Obj, Obj> st = new LazySegTree<>(
+				arr,
+				new Obj(),
+				(s1, s2) -> {
+					Obj ret = new Obj();
+					ret.a = (s1.a + s2.a) % mod;
+					ret.b = (s1.b + s2.b) % mod;
+					ret.v = (s1.v + s2.v) % mod;
+					ret.size = s1.size + s2.size;
+					return ret;
+				},
+				(f, s) -> {
+					Obj ret = new Obj();
+					ret.a = (s.a + f.a * s.size) % mod;
+					ret.b = (s.b + f.b * s.size) % mod;
+					ret.v = (s.v + s.a * f.b % mod + s.b * f.a % mod
+							+ f.a * f.b % mod * s.size % mod * s.size % mod) % mod;
+					ret.size = s.size;
+					return ret;
+				},
+				(f1, f2) -> {
+					Obj ret = new Obj();
+					ret.a = (f1.a + f2.a) % mod;
+					ret.b = (f1.b + f2.b) % mod;
+					return ret;
+				},
+				new Obj());
+
+		PrintWriter pw = new PrintWriter(System.out);
+		for (int i = 0; i < q; i++) {
+			sa = br.readLine().split(" ");
+			int t = Integer.parseInt(sa[0]);
+			int l = Integer.parseInt(sa[1]) - 1;
+			int r = Integer.parseInt(sa[2]);
+			if (t == 1) {
+				Obj f = new Obj();
+				f.a = Integer.parseInt(sa[3]);
+				st.apply(l, r, f);
+
+			} else if (t == 2) {
+				Obj f = new Obj();
+				f.b = Integer.parseInt(sa[3]);
+				st.apply(l, r, f);
+
+			} else {
+				Obj o = st.prod(l, r);
+				pw.println(o.v);
+			}
+		}
+		pw.flush();
+		br.close();
+	}
+
+There is a bug in line [38] of the code, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_5 ==================
+
+public static void main(String[] args) throws Exception {
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		String[] sa = br.readLine().split(" ");
+		int n = Integer.parseInt(sa[0]);
+		int q = Integer.parseInt(sa[1]);
+		Obj[] arr = new Obj[n];
+		sa = br.readLine().split(" ");
+		for (int i = 0; i < n; i++) {
+			Obj o = new Obj();
+			o.a = Integer.parseInt(sa[i]);
+			o.size = 1;
+			arr[i] = o;
+		}
+		sa = br.readLine().split(" ");
+		for (int i = 0; i < n; i++) {
+			Obj o = arr[i];
+			o.b = Integer.parseInt(sa[i]);
+			o.v = o.a * o.b;
+		}
+
+		int mod = 998244353;
+		LazySegTree<Obj, Obj> st = new LazySegTree<>(
+				arr,
+				new Obj(),
+				(s1, s2) -> {
+					Obj ret = new Obj();
+					ret.a = (s1.a + s2.a) % mod;
+					ret.b = (s1.b + s2.b) % mod;
+					ret.v = (s1.v + s2.v) % mod;
+					ret.size = s1.size + s2.size;
+					return ret;
+				},
+				(f, s) -> {
+					Obj ret = new Obj();
+					ret.a = (s.a + f.a * s.size) % mod;
+					ret.b = (s.b + f.b * s.size) % mod;
+					ret.v = (s.v + s.a * f.b % mod + s.b * f.a % mod
+							+ f.a * f.b % mod * s.size % mod * s.size % mod) % mod;
+					ret.size = s.size;
+					return ret;
+				},
+				(f1, f2) -> {
+					Obj ret = new Obj();
+					ret.a = (f1.a + f2.a) % mod;
+					ret.b = (f1.b + f2.b) % mod;
+					return ret;
+				},
+				new Obj());
+
+		PrintWriter pw = new PrintWriter(System.out);
+		for (int i = 0; i < q; i++) {
+			sa = br.readLine().split(" ");
+			int t = Integer.parseInt(sa[0]);
+			int l = Integer.parseInt(sa[1]) - 1;
+			int r = Integer.parseInt(sa[2]);
+			if (t == 1) {
+				Obj f = new Obj();
+				f.a = Integer.parseInt(sa[3]);
+				st.apply(l, r, f);
+
+			} else if (t == 2) {
+				Obj f = new Obj();
+				f.b = Integer.parseInt(sa[3]);
+				st.apply(l, r, f);
+
+			} else {
+				Obj o = st.prod(l, r);
+				pw.println(o.v);
+			}
+		}
+		pw.flush();
+		br.close();
+	}
+
+There is a bug in ['\t\t\t\t\t\t\t+ f.a * f.b % mod * s.size % mod * s.size % mod) % mod;'] , please help me fix it. 
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_6 ==================
+
+public static void main(String[] args) throws Exception {
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		String[] sa = br.readLine().split(" ");
+		int n = Integer.parseInt(sa[0]);
+		int q = Integer.parseInt(sa[1]);
+		Obj[] arr = new Obj[n];
+		sa = br.readLine().split(" ");
+		for (int i = 0; i < n; i++) {
+			Obj o = new Obj();
+			o.a = Integer.parseInt(sa[i]);
+			o.size = 1;
+			arr[i] = o;
+		}
+		sa = br.readLine().split(" ");
+		for (int i = 0; i < n; i++) {
+			Obj o = arr[i];
+			o.b = Integer.parseInt(sa[i]);
+			o.v = o.a * o.b;
+		}
+
+		int mod = 998244353;
+		LazySegTree<Obj, Obj> st = new LazySegTree<>(
+				arr,
+				new Obj(),
+				(s1, s2) -> {
+					Obj ret = new Obj();
+					ret.a = (s1.a + s2.a) % mod;
+					ret.b = (s1.b + s2.b) % mod;
+					ret.v = (s1.v + s2.v) % mod;
+					ret.size = s1.size + s2.size;
+					return ret;
+				},
+				(f, s) -> {
+					Obj ret = new Obj();
+					ret.a = (s.a + f.a * s.size) % mod;
+					ret.b = (s.b + f.b * s.size) % mod;
+					ret.v = (s.v + s.a * f.b % mod + s.b * f.a % mod
+							+ f.a * f.b % mod * s.size % mod * s.size % mod) % mod;
+
+There is a bug in the last statement, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.

@@ -1,0 +1,395 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/CheckGlobalThis.java
+================== buggy_method ==================
+{'method_name': 'shouldTraverse', 'method_body': 'public boolean shouldTraverse(NodeTraversal t, Node n, Node parent) {\n\n    if (n.getType() == Token.FUNCTION) {\n      // Don\'t traverse functions that are constructors or have the @this\n      // or @override annotation.\n      JSDocInfo jsDoc = getFunctionJsDocInfo(n);\n      if (jsDoc != null &&\n          (jsDoc.isConstructor() ||\n           jsDoc.isInterface() ||\n           jsDoc.hasThisType() ||\n           jsDoc.isOverride())) {\n        return false;\n      }\n\n      // Don\'t traverse functions unless they would normally\n      // be able to have a @this annotation associated with them. e.g.,\n      // var a = function() { }; // or\n      // function a() {} // or\n      // a.x = function() {}; // or\n      // var a = {x: function() {}};\n      int pType = parent.getType();\n      if (!(pType == Token.BLOCK ||\n            pType == Token.SCRIPT ||\n            pType == Token.NAME ||\n            pType == Token.ASSIGN)) {\n        return false;\n      }\n    }\n\n    if (parent != null && parent.getType() == Token.ASSIGN) {\n      Node lhs = parent.getFirstChild();\n      Node rhs = lhs.getNext();\n\n      if (n == lhs) {\n        // Always traverse the left side of the assignment. To handle\n        // nested assignments properly (e.g., (a = this).property = c;),\n        // assignLhsChild should not be overridden.\n        if (assignLhsChild == null) {\n          assignLhsChild = lhs;\n        }\n      } else {\n        // Only traverse the right side if it\'s not an assignment to a prototype\n        // property or subproperty.\n        if (NodeUtil.isGet(lhs)) {\n          if (lhs.getType() == Token.GETPROP &&\n              lhs.getLastChild().getString().equals("prototype")) {\n            return false;\n          }\n          Node llhs = lhs.getFirstChild();\n          if (llhs.getType() == Token.GETPROP &&\n              llhs.getLastChild().getString().equals("prototype")) {\n            return false;\n          }\n        }\n      }\n    }\n\n    return true;\n  }', 'start_line': 84, 'end_line': 142, 'buggy_lines': [108]}
+================== buggy_method_src ==================
+public boolean shouldTraverse(NodeTraversal t, Node n, Node parent) {
+
+    if (n.getType() == Token.FUNCTION) {
+      // Don't traverse functions that are constructors or have the @this
+      // or @override annotation.
+      JSDocInfo jsDoc = getFunctionJsDocInfo(n);
+      if (jsDoc != null &&
+          (jsDoc.isConstructor() ||
+           jsDoc.isInterface() ||
+           jsDoc.hasThisType() ||
+           jsDoc.isOverride())) {
+        return false;
+      }
+
+      // Don't traverse functions unless they would normally
+      // be able to have a @this annotation associated with them. e.g.,
+      // var a = function() { }; // or
+      // function a() {} // or
+      // a.x = function() {}; // or
+      // var a = {x: function() {}};
+      int pType = parent.getType();
+      if (!(pType == Token.BLOCK ||
+            pType == Token.SCRIPT ||
+            pType == Token.NAME ||
+            pType == Token.ASSIGN)) {
+        return false;
+      }
+    }
+
+    if (parent != null && parent.getType() == Token.ASSIGN) {
+      Node lhs = parent.getFirstChild();
+      Node rhs = lhs.getNext();
+
+      if (n == lhs) {
+        // Always traverse the left side of the assignment. To handle
+        // nested assignments properly (e.g., (a = this).property = c;),
+        // assignLhsChild should not be overridden.
+        if (assignLhsChild == null) {
+          assignLhsChild = lhs;
+        }
+      } else {
+        // Only traverse the right side if it's not an assignment to a prototype
+        // property or subproperty.
+        if (NodeUtil.isGet(lhs)) {
+          if (lhs.getType() == Token.GETPROP &&
+              lhs.getLastChild().getString().equals("prototype")) {
+            return false;
+          }
+          Node llhs = lhs.getFirstChild();
+          if (llhs.getType() == Token.GETPROP &&
+              llhs.getLastChild().getString().equals("prototype")) {
+            return false;
+          }
+        }
+      }
+    }
+
+    return true;
+  }
+================== test_stack ==================
+com.google.javascript.jscomp.CheckGlobalThisTest::testIssue182a
+junit.framework.AssertionFailedError: There should be one error.  expected:<1> but was:<0>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.TestCase.assertEquals(TestCase.java:401)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:832)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:301)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:270)
+	at com.google.javascript.jscomp.CheckGlobalThisTest.testFailure(CheckGlobalThisTest.java:36)
+	at com.google.javascript.jscomp.CheckGlobalThisTest.testIssue182a(CheckGlobalThisTest.java:208)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.CheckGlobalThisTest::testIssue182b
+junit.framework.AssertionFailedError: There should be one error.  expected:<1> but was:<0>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.TestCase.assertEquals(TestCase.java:401)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:832)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:301)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:270)
+	at com.google.javascript.jscomp.CheckGlobalThisTest.testFailure(CheckGlobalThisTest.java:36)
+	at com.google.javascript.jscomp.CheckGlobalThisTest.testIssue182b(CheckGlobalThisTest.java:212)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.RuntimeTypeCheckTest::testValueWithInnerFn
+junit.framework.AssertionFailedError:
+Expected: var jscomp=jscomp||{};jscomp.typecheck=jscomp.typecheck||{};jscomp.typecheck.suspendChecking=false;jscomp.typecheck.log=function(warning$$jscomp_runtimeTypeCheck_0,expr$$jscomp_runtimeTypeCheck_1){};
+jscomp.typecheck.checkType=function(expr$$jscomp_runtimeTypeCheck_2,checkers$$jscomp_runtimeTypeCheck_3){if(jscomp.typecheck.suspendChecking)return expr$$jscomp_runtimeTypeCheck_2;jscomp.typecheck.suspendChecking=true;var i$$jscomp_runtimeTypeCheck_4=0;for(;i$$jscomp_runtimeTypeCheck_4<checkers$$jscomp_runtimeTypeCheck_3.length;i$$jscomp_runtimeTypeCheck_4++){var checker$$jscomp_runtimeTypeCheck_5=checkers$$jscomp_runtimeTypeCheck_3[i$$jscomp_runtimeTypeCheck_4];var ok$$jscomp_runtimeTypeCheck_6=
+checker$$jscomp_runtimeTypeCheck_5.check(expr$$jscomp_runtimeTypeCheck_2);if(ok$$jscomp_runtimeTypeCheck_6){jscomp.typecheck.suspendChecking=false;return expr$$jscomp_runtimeTypeCheck_2}}var warning$$jscomp_runtimeTypeCheck_7=jscomp.typecheck.prettify_(expr$$jscomp_runtimeTypeCheck_2)+" not in "+checkers$$jscomp_runtimeTypeCheck_3.join(" ");jscomp.typecheck.log(warning$$jscomp_runtimeTypeCheck_7,expr$$jscomp_runtimeTypeCheck_2);jscomp.typecheck.suspendChecking=false;return expr$$jscomp_runtimeTypeCheck_2};
+jscomp.typecheck.prettify_=function(expr$$jscomp_runtimeTypeCheck_8){return jscomp.typecheck.getClassName_(expr$$jscomp_runtimeTypeCheck_8)||String(expr$$jscomp_runtimeTypeCheck_8)};
+jscomp.typecheck.getClassName_=function(expr$$jscomp_runtimeTypeCheck_9){var className$$jscomp_runtimeTypeCheck_10=void 0;if(typeof expr$$jscomp_runtimeTypeCheck_9=="object"&&expr$$jscomp_runtimeTypeCheck_9&&expr$$jscomp_runtimeTypeCheck_9.constructor){className$$jscomp_runtimeTypeCheck_10=expr$$jscomp_runtimeTypeCheck_9.constructor.name;if(!className$$jscomp_runtimeTypeCheck_10){var funNameRe$$jscomp_runtimeTypeCheck_11=/function (.{1,})\(/;var m$$jscomp_runtimeTypeCheck_12=funNameRe$$jscomp_runtimeTypeCheck_11.exec(expr$$jscomp_runtimeTypeCheck_9.constructor.toString());
+className$$jscomp_runtimeTypeCheck_10=m$$jscomp_runtimeTypeCheck_12&&m$$jscomp_runtimeTypeCheck_12.length>1?m$$jscomp_runtimeTypeCheck_12[1]:void 0}}return className$$jscomp_runtimeTypeCheck_10};jscomp.typecheck.Checker=function(){};jscomp.typecheck.Checker.prototype.check=function(expr$$jscomp_runtimeTypeCheck_13){};jscomp.typecheck.ValueChecker_=function(type$$jscomp_runtimeTypeCheck_14){this.type_=type$$jscomp_runtimeTypeCheck_14};
+jscomp.typecheck.ValueChecker_.prototype.check=function(expr$$jscomp_runtimeTypeCheck_15){return typeof expr$$jscomp_runtimeTypeCheck_15==this.type_};jscomp.typecheck.ValueChecker_.prototype.toString=function(){return"value("+this.type_+")"};jscomp.typecheck.NullChecker_=function(){};jscomp.typecheck.NullChecker_.prototype.check=function(expr$$jscomp_runtimeTypeCheck_16){return expr$$jscomp_runtimeTypeCheck_16===null};jscomp.typecheck.NullChecker_.prototype.toString=function(){return"value(null)"};
+jscomp.typecheck.ExternClassChecker_=function(className$$jscomp_runtimeTypeCheck_17){this.className_=className$$jscomp_runtimeTypeCheck_17};jscomp.typecheck.ExternClassChecker_.windows=[];jscomp.typecheck.ExternClassChecker_.oldOpenFuns=[];
+jscomp.typecheck.ExternClassChecker_.trackOpenOnWindow=function(win$$jscomp_runtimeTypeCheck_18){if(win$$jscomp_runtimeTypeCheck_18.tracked)return;win$$jscomp_runtimeTypeCheck_18.tracked=true;var key$$jscomp_runtimeTypeCheck_19=jscomp.typecheck.ExternClassChecker_.oldOpenFuns.length;jscomp.typecheck.ExternClassChecker_.oldOpenFuns.push(win$$jscomp_runtimeTypeCheck_18.open);jscomp.typecheck.ExternClassChecker_.windows.push(win$$jscomp_runtimeTypeCheck_18);win$$jscomp_runtimeTypeCheck_18.open=function(){var w$$jscomp_runtimeTypeCheck_20=
+jscomp.typecheck.ExternClassChecker_.oldOpenFuns[key$$jscomp_runtimeTypeCheck_19].apply(this,arguments);jscomp.typecheck.ExternClassChecker_.trackOpenOnWindow(w$$jscomp_runtimeTypeCheck_20);return w$$jscomp_runtimeTypeCheck_20}};jscomp.typecheck.ExternClassChecker_.getGlobalThis_=function(){return function(){return this}.call(null)};
+(function(){var globalThis$$jscomp_runtimeTypeCheck_21=jscomp.typecheck.ExternClassChecker_.getGlobalThis_();jscomp.typecheck.ExternClassChecker_.trackOpenOnWindow(globalThis$$jscomp_runtimeTypeCheck_21);var theTop$$jscomp_runtimeTypeCheck_22=globalThis$$jscomp_runtimeTypeCheck_21["top"];if(theTop$$jscomp_runtimeTypeCheck_22)jscomp.typecheck.ExternClassChecker_.trackOpenOnWindow(theTop$$jscomp_runtimeTypeCheck_22)})();
+jscomp.typecheck.ExternClassChecker_.prototype.check=function(expr$$jscomp_runtimeTypeCheck_23){var classTypeDefined$$jscomp_runtimeTypeCheck_24=[false];var i$$jscomp_runtimeTypeCheck_25=0;for(;i$$jscomp_runtimeTypeCheck_25<jscomp.typecheck.ExternClassChecker_.windows.length;i$$jscomp_runtimeTypeCheck_25++){var w$$jscomp_runtimeTypeCheck_26=jscomp.typecheck.ExternClassChecker_.windows[i$$jscomp_runtimeTypeCheck_25];if(this.checkWindow_(w$$jscomp_runtimeTypeCheck_26,expr$$jscomp_runtimeTypeCheck_23,
+classTypeDefined$$jscomp_runtimeTypeCheck_24))return true}return!classTypeDefined$$jscomp_runtimeTypeCheck_24[0]};jscomp.typecheck.ExternClassChecker_.prototype.toString=function(){return"ext_class("+this.className_+")"};
+jscomp.typecheck.ExternClassChecker_.prototype.checkWindow_=function(w$$jscomp_runtimeTypeCheck_27,expr$$jscomp_runtimeTypeCheck_28,classTypeDefined$$jscomp_runtimeTypeCheck_29){var classType$$jscomp_runtimeTypeCheck_30=w$$jscomp_runtimeTypeCheck_27[this.className_];classTypeDefined$$jscomp_runtimeTypeCheck_29[0]|=!!classType$$jscomp_runtimeTypeCheck_30;if(classType$$jscomp_runtimeTypeCheck_30&&expr$$jscomp_runtimeTypeCheck_28 instanceof classType$$jscomp_runtimeTypeCheck_30)return true;var i$$jscomp_runtimeTypeCheck_31=
+0;for(;i$$jscomp_runtimeTypeCheck_31<w$$jscomp_runtimeTypeCheck_27.length;i$$jscomp_runtimeTypeCheck_31++)if(this.checkWindow_(w$$jscomp_runtimeTypeCheck_27.frames[i$$jscomp_runtimeTypeCheck_31],expr$$jscomp_runtimeTypeCheck_28,classTypeDefined$$jscomp_runtimeTypeCheck_29))return true;return false};jscomp.typecheck.ClassChecker_=function(className$$jscomp_runtimeTypeCheck_32){this.className_=className$$jscomp_runtimeTypeCheck_32};
+jscomp.typecheck.ClassChecker_.prototype.check=function(expr$$jscomp_runtimeTypeCheck_33){return!!(expr$$jscomp_runtimeTypeCheck_33&&expr$$jscomp_runtimeTypeCheck_33["instance_of__"+this.className_])};jscomp.typecheck.ClassChecker_.prototype.toString=function(){return"class("+this.className_+")"};jscomp.typecheck.InterfaceChecker_=function(interfaceName$$jscomp_runtimeTypeCheck_34){this.interfaceName_=interfaceName$$jscomp_runtimeTypeCheck_34};
+jscomp.typecheck.InterfaceChecker_.prototype.check=function(expr$$jscomp_runtimeTypeCheck_35){return!!(expr$$jscomp_runtimeTypeCheck_35&&expr$$jscomp_runtimeTypeCheck_35["implements__"+this.interfaceName_])};jscomp.typecheck.InterfaceChecker_.prototype.toString=function(){return"interface("+this.interfaceName_+")"};jscomp.typecheck.nullChecker=new jscomp.typecheck.NullChecker_;jscomp.typecheck.valueChecker=function(type$$jscomp_runtimeTypeCheck_36){return new jscomp.typecheck.ValueChecker_(type$$jscomp_runtimeTypeCheck_36)};
+jscomp.typecheck.externClassChecker=function(className$$jscomp_runtimeTypeCheck_37){return new jscomp.typecheck.ExternClassChecker_(className$$jscomp_runtimeTypeCheck_37)};jscomp.typecheck.classChecker=function(className$$jscomp_runtimeTypeCheck_38){return new jscomp.typecheck.ClassChecker_(className$$jscomp_runtimeTypeCheck_38)};jscomp.typecheck.interfaceChecker=function(interfaceName$$jscomp_runtimeTypeCheck_39){return new jscomp.typecheck.InterfaceChecker_(interfaceName$$jscomp_runtimeTypeCheck_39)};
+function f(i){function g(){}jscomp.typecheck.checkType(i,[jscomp.typecheck.valueChecker("number")])}
+Result: var jscomp=jscomp||{};jscomp.typecheck=jscomp.typecheck||{};jscomp.typecheck.suspendChecking=false;jscomp.typecheck.log=function(warning$$jscomp_runtimeTypeCheck_0,expr$$jscomp_runtimeTypeCheck_1){};
+jscomp.typecheck.checkType=function(expr$$jscomp_runtimeTypeCheck_2,checkers$$jscomp_runtimeTypeCheck_3){if(jscomp.typecheck.suspendChecking)return expr$$jscomp_runtimeTypeCheck_2;jscomp.typecheck.suspendChecking=true;var i$$jscomp_runtimeTypeCheck_4=0;for(;i$$jscomp_runtimeTypeCheck_4<checkers$$jscomp_runtimeTypeCheck_3.length;i$$jscomp_runtimeTypeCheck_4++){var checker$$jscomp_runtimeTypeCheck_5=checkers$$jscomp_runtimeTypeCheck_3[i$$jscomp_runtimeTypeCheck_4];var ok$$jscomp_runtimeTypeCheck_6=
+checker$$jscomp_runtimeTypeCheck_5.check(expr$$jscomp_runtimeTypeCheck_2);if(ok$$jscomp_runtimeTypeCheck_6){jscomp.typecheck.suspendChecking=false;return expr$$jscomp_runtimeTypeCheck_2}}var warning$$jscomp_runtimeTypeCheck_7=jscomp.typecheck.prettify_(expr$$jscomp_runtimeTypeCheck_2)+" not in "+checkers$$jscomp_runtimeTypeCheck_3.join(" ");jscomp.typecheck.log(warning$$jscomp_runtimeTypeCheck_7,expr$$jscomp_runtimeTypeCheck_2);jscomp.typecheck.suspendChecking=false;return expr$$jscomp_runtimeTypeCheck_2};
+jscomp.typecheck.prettify_=function(expr$$jscomp_runtimeTypeCheck_8){return jscomp.typecheck.getClassName_(expr$$jscomp_runtimeTypeCheck_8)||String(expr$$jscomp_runtimeTypeCheck_8)};
+jscomp.typecheck.getClassName_=function(expr$$jscomp_runtimeTypeCheck_9){var className$$jscomp_runtimeTypeCheck_10=void 0;if(typeof expr$$jscomp_runtimeTypeCheck_9=="object"&&expr$$jscomp_runtimeTypeCheck_9&&expr$$jscomp_runtimeTypeCheck_9.constructor){className$$jscomp_runtimeTypeCheck_10=expr$$jscomp_runtimeTypeCheck_9.constructor.name;if(!className$$jscomp_runtimeTypeCheck_10){var funNameRe$$jscomp_runtimeTypeCheck_11=/function (.{1,})\(/;var m$$jscomp_runtimeTypeCheck_12=funNameRe$$jscomp_runtimeTypeCheck_11.exec(expr$$jscomp_runtimeTypeCheck_9.constructor.toString());
+className$$jscomp_runtimeTypeCheck_10=m$$jscomp_runtimeTypeCheck_12&&m$$jscomp_runtimeTypeCheck_12.length>1?m$$jscomp_runtimeTypeCheck_12[1]:void 0}}return className$$jscomp_runtimeTypeCheck_10};jscomp.typecheck.Checker=function(){};jscomp.typecheck.Checker.prototype.check=function(expr$$jscomp_runtimeTypeCheck_13){};jscomp.typecheck.ValueChecker_=function(type$$jscomp_runtimeTypeCheck_14){this.type_=type$$jscomp_runtimeTypeCheck_14};
+jscomp.typecheck.ValueChecker_.prototype.check=function(expr$$jscomp_runtimeTypeCheck_15){return typeof expr$$jscomp_runtimeTypeCheck_15==this.type_};jscomp.typecheck.ValueChecker_.prototype.toString=function(){return"value("+this.type_+")"};jscomp.typecheck.NullChecker_=function(){};jscomp.typecheck.NullChecker_.prototype.check=function(expr$$jscomp_runtimeTypeCheck_16){return expr$$jscomp_runtimeTypeCheck_16===null};jscomp.typecheck.NullChecker_.prototype.toString=function(){return"value(null)"};
+jscomp.typecheck.ExternClassChecker_=function(className$$jscomp_runtimeTypeCheck_17){this.className_=className$$jscomp_runtimeTypeCheck_17};jscomp.typecheck.ExternClassChecker_.windows=[];jscomp.typecheck.ExternClassChecker_.oldOpenFuns=[];
+jscomp.typecheck.ExternClassChecker_.trackOpenOnWindow=function(win$$jscomp_runtimeTypeCheck_18){if(win$$jscomp_runtimeTypeCheck_18.tracked)return;win$$jscomp_runtimeTypeCheck_18.tracked=true;var key$$jscomp_runtimeTypeCheck_19=jscomp.typecheck.ExternClassChecker_.oldOpenFuns.length;jscomp.typecheck.ExternClassChecker_.oldOpenFuns.push(win$$jscomp_runtimeTypeCheck_18.open);jscomp.typecheck.ExternClassChecker_.windows.push(win$$jscomp_runtimeTypeCheck_18);win$$jscomp_runtimeTypeCheck_18.open=function(){var w$$jscomp_runtimeTypeCheck_20=
+jscomp.typecheck.ExternClassChecker_.oldOpenFuns[key$$jscomp_runtimeTypeCheck_19].apply(this,arguments);jscomp.typecheck.ExternClassChecker_.trackOpenOnWindow(w$$jscomp_runtimeTypeCheck_20);return w$$jscomp_runtimeTypeCheck_20}};jscomp.typecheck.ExternClassChecker_.getGlobalThis_=function(){return function(){return this}.call(null)};
+(function(){var globalThis$$jscomp_runtimeTypeCheck_21=jscomp.typecheck.ExternClassChecker_.getGlobalThis_();jscomp.typecheck.ExternClassChecker_.trackOpenOnWindow(globalThis$$jscomp_runtimeTypeCheck_21);var theTop$$jscomp_runtimeTypeCheck_22=globalThis$$jscomp_runtimeTypeCheck_21["top"];if(theTop$$jscomp_runtimeTypeCheck_22)jscomp.typecheck.ExternClassChecker_.trackOpenOnWindow(theTop$$jscomp_runtimeTypeCheck_22)})();
+jscomp.typecheck.ExternClassChecker_.prototype.check=function(expr$$jscomp_runtimeTypeCheck_23){var classTypeDefined$$jscomp_runtimeTypeCheck_24=[false];var i$$jscomp_runtimeTypeCheck_25=0;for(;i$$jscomp_runtimeTypeCheck_25<jscomp.typecheck.ExternClassChecker_.windows.length;i$$jscomp_runtimeTypeCheck_25++){var w$$jscomp_runtimeTypeCheck_26=jscomp.typecheck.ExternClassChecker_.windows[i$$jscomp_runtimeTypeCheck_25];if(this.checkWindow_(w$$jscomp_runtimeTypeCheck_26,expr$$jscomp_runtimeTypeCheck_23,
+classTypeDefined$$jscomp_runtimeTypeCheck_24))return true}return!classTypeDefined$$jscomp_runtimeTypeCheck_24[0]};jscomp.typecheck.ExternClassChecker_.prototype.toString=function(){return"ext_class("+this.className_+")"};
+jscomp.typecheck.ExternClassChecker_.prototype.checkWindow_=function(w$$jscomp_runtimeTypeCheck_27,expr$$jscomp_runtimeTypeCheck_28,classTypeDefined$$jscomp_runtimeTypeCheck_29){var classType$$jscomp_runtimeTypeCheck_30=w$$jscomp_runtimeTypeCheck_27[this.className_];classTypeDefined$$jscomp_runtimeTypeCheck_29[0]|=!!classType$$jscomp_runtimeTypeCheck_30;if(classType$$jscomp_runtimeTypeCheck_30&&expr$$jscomp_runtimeTypeCheck_28 instanceof classType$$jscomp_runtimeTypeCheck_30)return true;var i$$jscomp_runtimeTypeCheck_31=
+0;for(;i$$jscomp_runtimeTypeCheck_31<w$$jscomp_runtimeTypeCheck_27.length;i$$jscomp_runtimeTypeCheck_31++)if(this.checkWindow_(w$$jscomp_runtimeTypeCheck_27.frames[i$$jscomp_runtimeTypeCheck_31],expr$$jscomp_runtimeTypeCheck_28,classTypeDefined$$jscomp_runtimeTypeCheck_29))return true;return false};jscomp.typecheck.ClassChecker_=function(className$$jscomp_runtimeTypeCheck_32){this.className_=className$$jscomp_runtimeTypeCheck_32};
+jscomp.typecheck.ClassChecker_.prototype.check=function(expr$$jscomp_runtimeTypeCheck_33){return!!(expr$$jscomp_runtimeTypeCheck_33&&expr$$jscomp_runtimeTypeCheck_33["instance_of__"+this.className_])};jscomp.typecheck.ClassChecker_.prototype.toString=function(){return"class("+this.className_+")"};jscomp.typecheck.InterfaceChecker_=function(interfaceName$$jscomp_runtimeTypeCheck_34){this.interfaceName_=interfaceName$$jscomp_runtimeTypeCheck_34};
+jscomp.typecheck.InterfaceChecker_.prototype.check=function(expr$$jscomp_runtimeTypeCheck_35){return!!(expr$$jscomp_runtimeTypeCheck_35&&expr$$jscomp_runtimeTypeCheck_35["implements__"+this.interfaceName_])};jscomp.typecheck.InterfaceChecker_.prototype.toString=function(){return"interface("+this.interfaceName_+")"};jscomp.typecheck.nullChecker=new jscomp.typecheck.NullChecker_;jscomp.typecheck.valueChecker=function(type$$jscomp_runtimeTypeCheck_36){return new jscomp.typecheck.ValueChecker_(type$$jscomp_runtimeTypeCheck_36)};
+jscomp.typecheck.externClassChecker=function(className$$jscomp_runtimeTypeCheck_37){return new jscomp.typecheck.ExternClassChecker_(className$$jscomp_runtimeTypeCheck_37)};jscomp.typecheck.classChecker=function(className$$jscomp_runtimeTypeCheck_38){return new jscomp.typecheck.ClassChecker_(className$$jscomp_runtimeTypeCheck_38)};jscomp.typecheck.interfaceChecker=function(interfaceName$$jscomp_runtimeTypeCheck_39){return new jscomp.typecheck.InterfaceChecker_(interfaceName$$jscomp_runtimeTypeCheck_39)};
+function f(i){jscomp.typecheck.checkType(i,[jscomp.typecheck.valueChecker("number")]);function g(){}}
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [sourcename: expected0] [synthetic: 1] [sourcefile: expected0]
+        VAR 1 [sourcefile: expected0]
+            NAME jscomp 1 [sourcefile: expected0]
+                OR 1 [sourcefile: expected0]
+                    NAME jscomp 1 [sourcefile: expected0]
+                    OBJECTLIT 1 [sourcefile: expected0]
+        EXPR_RESULT 1 [sourcefile: expected0]
+            ASSIGN 1 [sourcefile: expected0]
+                GETPROP 1 [sourcefile: expected0]
+                    NAME jscomp 1 [sourcefile: expected0]
+                    STRING typecheck 1 [sourcefile: expected0]
+                OR 1 [sourcefile: expected0]
+                    GETPROP 1 [sourcefile: expected0]
+                        NAME jscomp 1 [sourcefile: expected0]
+                        STRING typecheck 1 [sourcefile: expected0]
+                    OBJECTLIT 1 [sourcefile: expected0]
+        EXPR_RESULT 1 [sourcefile: expected0]
+            ASSIGN 1 [sourcefile: expected0]
+                GETPROP 1 [sourcefile: expected0]
+                    GETPROP 1 [sourcefile: expected0]
+                        NAME jscomp 1 [sourcefile: expected0]
+                        STRING typecheck 1 [sourcefile: expected0]
+                    STRING suspendChecking 1 [sourcefile: expected0]
+                FALSE 1 [sourcefile: expected0]
+        EXPR_RESULT 1 [sourcefile: expected0]
+            ASSIGN 1 [sourcefile: expected0]
+                GETPROP 1 [sourcefile: expected0]
+                    GETPROP 1 [sourcefile: expected0]
+                        NAME jscomp 1 [sourcefile: expected0]
+                        STRING typecheck 1 [sourcefile: expected0]
+                    STRING log 1 [sourcefile: expected0]
+                FUNCTION  1 [sourcename: expected0] [sourcefile: expected0]
+                    NAME  1 [sourcefile: expected0]
+                    LP 1 [sourcefile: expected0]
+                        NAME warning$$jscomp_runtimeTypeCheck_0 1 [sourcefile: expected0]
+                        NAME expr$$jscomp_runtimeTypeCheck_1 1 [sourcefile: expected0]
+                    BLOCK 1 [sourcefile: expected0]
+        EXPR_RESULT 2 [sourcefile: expected0]
+            ASSIGN 2 [sourcefile: expected0]
+                GETPROP 2 [sourcefile: expected0]
+                    GETPROP 2 [sourcefile: expected0]
+                        NAME jscomp 2 [sourcefile: expected0]
+                        STRING typecheck 2 [sourcefile: expected0]
+                    STRING checkType 2 [sourcefile: expected0]
+                FUNCTION  2 [sourcename: expected0] [sourcefile: expected0]
+                    NAME  2 [sourcefile: expected0]
+                    LP 2 [sourcefile: expected0]
+                        NAME expr$$jscomp_runtimeTypeCheck_2 2 [sourcefile: expected0]
+                        NAME checkers$$jscomp_runtimeTypeCheck_3 2 [sourcefile: expected0]
+                    BLOCK 2 [sourcefile: expected0]
+                        IF 2 [sourcefile: expected0]
+                            GETPROP 2 [sourcefile: expected0]
+                                GETPROP 2 [sourcefile: expected0]
+                                    NAME jscomp 2 [sourcefile: expected0]
+                                    STRING typecheck 2 [sourcefile: expected0]
+                                STRING suspendChecking 2 [sourcefile: expected0]
+                            BLOCK 2 [sourcefile: expected0]
+                                RETURN 2 [sourcefile: expected0]
+                                    NAME expr$$jscomp_runtimeTypeCheck_2 2 [sourcefile: expected0]
+                        EXPR_RESULT 2 [sourcefile: expected0]
+                            ASSIGN 2 [sourcefile: expected0]
+                                GETPROP 2 [sourcefile: expected0]
+                                    GETPROP 2 [sourcefile: expected0]
+                                        NAME jscomp 2 [sourcefile: expected0]
+                                        STRING typecheck 2 [sourcefile: expected0]
+                                    STRING suspendChecking 2 [sourcefile: expected0]
+                                TRUE 2 [sourcefile: expected0]
+                        VAR 2 [sourcefile: expected0]
+                            NAME i$$jscomp_runtimeTypeCheck_4 2 [sourcefile: expected0]
+                                NUMBER 0.0 2 [sourcefile: expected0]
+                        FOR 2 [sourcefile: expected0]
+                            EMPTY 2 [sourcefile: expected0]
+                            LT 2 [sourcefile: expected0]
+                                NAME i$$jscomp_runtimeTypeCheck_4 2 [sourcefile: expected0]
+                                GETPROP 2 [sourcefile: expected0]
+                                    NAME checkers$$jscomp_runtimeTypeCheck_3 2 [sourcefile: expected0]
+                                    STRING length 2 [sourcefile: expected0]
+                            INC 2 [incrdecr: 1] [sourcefile: expected0]
+                                NAME i$$jscomp_runtimeTypeCheck_4 2 [sourcefile: expected0]
+                            BLOCK 2 [sourcefile: expected0]
+                                VAR 2 [sourcefile: expected0]
+                                    NAME checker$$jscomp_runtimeTypeCheck_5 2 [sourcefile: expected0]
+                                        GETELEM 2 [sourcefile: expected0]
+                                            NAME checkers$$jscomp_runtimeTypeCheck_3 2 [sourcefile: expected0]
+                                            NAME i$$jscomp_runtimeTypeCheck_4 2 [sourcefile: expected0]
+                                VAR 2 [sourcefile: expected0]
+                                    NAME ok$$jscomp_runtimeTypeCheck_6 2 [sourcefile: expected0]
+                                        CALL 3 [sourcefile: expected0]
+                                            GETPROP 3 [sourcefile: expected0]
+                                                NAME checker$$jscomp_runtimeTypeCheck_5 3 [sourcefile: expected0]
+                                                STRING check 3 [sourcefile: expected0]
+                                            NAME expr$$jscomp_runtimeTypeCheck_2 3 [sourcefile: expected0]
+                                IF 3 [sourcefile: expected0]
+                                    NAME ok$$jscomp_runtimeTypeCheck_6 3 [sourcefile: expected0]
+                                    BLOCK 3 [sourcefile: expected0]
+                                        EXPR_RESULT 3 [sourcefile: expected0]
+                                            ASSIGN 3 [sourcefile: expected0]
+                                                GETPROP 3 [sourcefile: expected0]
+                                                    GETPROP 3 [sourcefile: expected0]
+                                                        NAME jscomp 3 [sourcefile: expected0]
+                                                        STRING typecheck 3 [sourcefile: expected0]
+                                                    STRING suspendChecking 3 [sourcefile: expected0]
+                                                FALSE 3 [sourcefile: expected0]
+                                        RETURN 3 [sourcefile: expected0]
+                                            NAME expr$$jscomp_runtimeTypeCheck_2 3 [sourcefile: expected0]
+                        VAR 3 [sourcefile: expected0]
+                            NAME warning$$jscomp_runtimeTypeCheck_7 3 [sourcefile: expected0]
+                                ADD 3 [sourcefile: expected0]
+                                    ADD 3 [sourcefile: expected0]
+                                        CALL 3 [sourcefile: expected0]
+                                            GETPROP 3 [sourcefile: expected0]
+                                                GETPROP 3 [sourcefile: expected0]
+                                                    NAME jscomp 3 [sourcefile: expected0]
+                                                    STRING typecheck 3 [sourcefile: expected0]
+                                                STRING prettify_ 3 [sourcefile: expected0]
+                                            NAME expr$$jscomp_runtimeTypeCheck_2 3 [sourcefile: expected0]
+                                        STRING  not in  3 [sourcefile: expected0]
+                                    CALL 3 [sourcefile: expected0]
+                                        GETPROP 3 [sourcefile: expected0]
+                                            NAME checkers$$jscomp_runtimeTypeCheck_3 3 [sourcefile: expected0]
+                                            STRING join 3 [sourcefile: expected0]
+                                        STRING   3 [sourcefile: expected0]
+                        EXPR_RESULT 3 [sourcefile: expected0]
+                            CALL 3 [sourcefile: expected0]
+                                GETPROP 3 [sourcefile: expected0]
+                                    GETPROP 3 [sourcefile: expected0]
+                                        NAME jscomp 3 [sourcefile: expected0]
+                                        STRING typecheck 3 [sourcefile: expected0]
+                                    STRING log 3 [sourcefile: expected0]
+                                NAME warning$$jscomp_runtimeTypeCheck_7 3 [sourcefile: expected0]
+                                NAME expr$$jscomp_runtimeTypeCheck_2 3 [sourcefile: expected0]
+                        EXPR_RESULT 3 [sourcefile: expected0]
+                            ASSIGN 3 [sourcefile: expected0]
+                                GETPROP 3 [sourcefile: expected0]
+                                    GETPROP 3 [sourcefile: expected0]
+                                        NAME jscomp 3 [sourcefile: expected0]
+                                        STRING typecheck 3 [sourcefile: expected0]
+                                    STRING suspendChecking 3 [sourcefile: expected0]
+                                FALSE 3 [sourcefile: expected0]
+                        RETURN 3 [sourcefile: expected0]
+                            NAME expr$$jscomp_runtimeTypeCheck_2 3 [sourcefile: expected0]
+        EXPR_RESULT 4 [sourcefile: expected0]
+            ASSIGN 4 [sourcefile: expected0]
+                GETPROP 4 [sourcefile: expected0]
+                    GETPROP 4 [sourcefile: expected0]
+                        NAME jscomp 4 [sourcefile: expected0]
+                        STRING typecheck 4 [sourcefile: expected0]
+                    STRING prettify_ 4 [sourcefile: expected0]
+                FUNCTION  4 [sourcename: expected0] [sourcefile: expected0]
+                    NAME  4 [sourcefile: expected0]
+                    LP 4 [sourcefile: expected0]
+                        NAME expr$$jscomp_runtimeTypeCheck_8 4 [sourcefile: expected0]
+                    BLOCK 4 [sourcefile: expected0]
+                        RETURN 4 [sourcefile: expected0]
+                            OR 4 [sourcefile: expected0]
+                                CALL 4 [sourcefile: expected0]
+                                    GETPROP 4 [sourcefile: expected0]
+                                        GETPROP 4 [sourcefile: expected0]
+
+================== test_assert ==================
+testFailure("var NS = {read: function() { return this.foo; }};");
+
+================== buggy_lines_in_method ==================
+[25]
+================== buggy_statements ==================
+['            pType == Token.ASSIGN)) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+public boolean shouldTraverse(NodeTraversal t, Node n, Node parent) {
+
+    if (n.getType() == Token.FUNCTION) {
+      // Don't traverse functions that are constructors or have the @this
+      // or @override annotation.
+      JSDocInfo jsDoc = getFunctionJsDocInfo(n);
+      if (jsDoc != null &&
+          (jsDoc.isConstructor() ||
+           jsDoc.isInterface() ||
+           jsDoc.hasThisType() ||
+           jsDoc.isOverride())) {
+        return false;
+      }
+
+      // Don't traverse functions unless they would normally
+      // be able to have a @this annotation associated with them. e.g.,
+      // var a = function() { }; // or
+      // function a() {} // or
+      // a.x = function() {}; // or
+      // var a = {x: function() {}};
+      int pType = parent.getType();
+      if (!(pType == Token.BLOCK ||
+            pType == Token.SCRIPT ||
+            pType == Token.NAME ||
+            pType == Token.ASSIGN)) {

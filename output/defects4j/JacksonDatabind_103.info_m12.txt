@@ -1,0 +1,89 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/deser/SettableBeanProperty.java
+================== buggy_method ==================
+{'method_name': '_throwAsIOE', 'method_body': 'protected void _throwAsIOE(JsonParser p, Exception e, Object value) throws IOException\n    {\n        if (e instanceof IllegalArgumentException) {\n            String actType = ClassUtil.classNameOf(value);\n            StringBuilder msg = new StringBuilder("Problem deserializing property \'")\n                    .append(getName())\n                    .append("\' (expected type: ")\n                    .append(getType())\n                    .append("; actual type: ")\n                    .append(actType).append(")");\n            String origMsg = e.getMessage();\n            if (origMsg != null) {\n                msg.append(", problem: ")\n                    .append(origMsg);\n            } else {\n                msg.append(" (no error message provided)");\n            }\n            throw JsonMappingException.from(p, msg.toString(), e);\n        }\n        _throwAsIOE(p, e);\n    }', 'start_line': 580, 'end_line': 600, 'buggy_lines': [590]}
+================== buggy_method_src ==================
+protected void _throwAsIOE(JsonParser p, Exception e, Object value) throws IOException
+    {
+        if (e instanceof IllegalArgumentException) {
+            String actType = ClassUtil.classNameOf(value);
+            StringBuilder msg = new StringBuilder("Problem deserializing property '")
+                    .append(getName())
+                    .append("' (expected type: ")
+                    .append(getType())
+                    .append("; actual type: ")
+                    .append(actType).append(")");
+            String origMsg = e.getMessage();
+            if (origMsg != null) {
+                msg.append(", problem: ")
+                    .append(origMsg);
+            } else {
+                msg.append(" (no error message provided)");
+            }
+            throw JsonMappingException.from(p, msg.toString(), e);
+        }
+        _throwAsIOE(p, e);
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.exc.BasicExceptionTest::testLocationAddition
+junit.framework.AssertionFailedError: Should only get one 'at [' marker, got 2, source: Cannot deserialize Map key of type `com.fasterxml.jackson.databind.BaseMapTest$ABC` from String "value": not a valid representation, problem: (com.fasterxml.jackson.databind.exc.InvalidFormatException) Cannot deserialize Map key of type `com.fasterxml.jackson.databind.BaseMapTest$ABC` from String "value": not one of values excepted for Enum class: [A, B, C]
+ at [Source: (String)"{"value":"foo"}"; line: 1, column: 2]
+ at [Source: (String)"{"value":"foo"}"; line: 1, column: 2]
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.TestCase.fail(TestCase.java:227)
+	at com.fasterxml.jackson.databind.exc.BasicExceptionTest.testLocationAddition(BasicExceptionTest.java:127)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+fail("Should only get one 'at [' marker, got "+(str.length-1)+", source: "+msg);
+
+================== buggy_lines_in_method ==================
+[11]
+================== buggy_statements ==================
+['            String origMsg = e.getMessage();']
+================== buggy_method_src_endswith_buggy_statement ==================
+protected void _throwAsIOE(JsonParser p, Exception e, Object value) throws IOException
+    {
+        if (e instanceof IllegalArgumentException) {
+            String actType = ClassUtil.classNameOf(value);
+            StringBuilder msg = new StringBuilder("Problem deserializing property '")
+                    .append(getName())
+                    .append("' (expected type: ")
+                    .append(getType())
+                    .append("; actual type: ")
+                    .append(actType).append(")");
+            String origMsg = e.getMessage();

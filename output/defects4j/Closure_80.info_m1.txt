@@ -1,0 +1,210 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/NodeUtil.java
+================== buggy_method ==================
+{'method_name': 'evaluatesToLocalValue', 'method_body': 'static boolean evaluatesToLocalValue(Node value, Predicate<Node> locals) {\n    switch (value.getType()) {\n      case Token.ASSIGN:\n        // A result that is aliased by a non-local name, is the effectively the\n        // same as returning a non-local name, but this doesn\'t matter if the\n        // value is immutable.\n        return NodeUtil.isImmutableValue(value.getLastChild())\n            || (locals.apply(value)\n                && evaluatesToLocalValue(value.getLastChild(), locals));\n      case Token.COMMA:\n        return evaluatesToLocalValue(value.getLastChild(), locals);\n      case Token.AND:\n      case Token.OR:\n        return evaluatesToLocalValue(value.getFirstChild(), locals)\n           && evaluatesToLocalValue(value.getLastChild(), locals);\n      case Token.HOOK:\n        return evaluatesToLocalValue(value.getFirstChild().getNext(), locals)\n           && evaluatesToLocalValue(value.getLastChild(), locals);\n      case Token.INC:\n      case Token.DEC:\n        if (value.getBooleanProp(Node.INCRDECR_PROP)) {\n          return evaluatesToLocalValue(value.getFirstChild(), locals);\n        } else {\n          return true;\n        }\n      case Token.THIS:\n        return locals.apply(value);\n      case Token.NAME:\n        return isImmutableValue(value) || locals.apply(value);\n      case Token.GETELEM:\n      case Token.GETPROP:\n        // There is no information about the locality of object properties.\n        return locals.apply(value);\n      case Token.CALL:\n        return callHasLocalResult(value)\n            || isToStringMethodCall(value)\n            || locals.apply(value);\n      case Token.NEW:\n        return newHasLocalResult(value)\n               || locals.apply(value);\n      case Token.FUNCTION:\n      case Token.REGEXP:\n      case Token.ARRAYLIT:\n      case Token.OBJECTLIT:\n        // Literals objects with non-literal children are allowed.\n        return true;\n      case Token.IN:\n        // TODO(johnlenz): should IN operator be included in #isSimpleOperator?\n        return true;\n      default:\n        // Other op force a local value:\n        //  x = \'\' + g (x is now an local string)\n        //  x -= g (x is now an local number)\n        if (isAssignmentOp(value)\n            || isSimpleOperator(value)\n            || isImmutableValue(value)) {\n          return true;\n        }\n\n        throw new IllegalStateException(\n            "Unexpected expression node" + value +\n            "\\n parent:" + value.getParent());\n    }\n  }', 'start_line': 2864, 'end_line': 2927, 'buggy_lines': [2911]}
+================== buggy_method_src ==================
+static boolean evaluatesToLocalValue(Node value, Predicate<Node> locals) {
+    switch (value.getType()) {
+      case Token.ASSIGN:
+        // A result that is aliased by a non-local name, is the effectively the
+        // same as returning a non-local name, but this doesn't matter if the
+        // value is immutable.
+        return NodeUtil.isImmutableValue(value.getLastChild())
+            || (locals.apply(value)
+                && evaluatesToLocalValue(value.getLastChild(), locals));
+      case Token.COMMA:
+        return evaluatesToLocalValue(value.getLastChild(), locals);
+      case Token.AND:
+      case Token.OR:
+        return evaluatesToLocalValue(value.getFirstChild(), locals)
+           && evaluatesToLocalValue(value.getLastChild(), locals);
+      case Token.HOOK:
+        return evaluatesToLocalValue(value.getFirstChild().getNext(), locals)
+           && evaluatesToLocalValue(value.getLastChild(), locals);
+      case Token.INC:
+      case Token.DEC:
+        if (value.getBooleanProp(Node.INCRDECR_PROP)) {
+          return evaluatesToLocalValue(value.getFirstChild(), locals);
+        } else {
+          return true;
+        }
+      case Token.THIS:
+        return locals.apply(value);
+      case Token.NAME:
+        return isImmutableValue(value) || locals.apply(value);
+      case Token.GETELEM:
+      case Token.GETPROP:
+        // There is no information about the locality of object properties.
+        return locals.apply(value);
+      case Token.CALL:
+        return callHasLocalResult(value)
+            || isToStringMethodCall(value)
+            || locals.apply(value);
+      case Token.NEW:
+        return newHasLocalResult(value)
+               || locals.apply(value);
+      case Token.FUNCTION:
+      case Token.REGEXP:
+      case Token.ARRAYLIT:
+      case Token.OBJECTLIT:
+        // Literals objects with non-literal children are allowed.
+        return true;
+      case Token.IN:
+        // TODO(johnlenz): should IN operator be included in #isSimpleOperator?
+        return true;
+      default:
+        // Other op force a local value:
+        //  x = '' + g (x is now an local string)
+        //  x -= g (x is now an local number)
+        if (isAssignmentOp(value)
+            || isSimpleOperator(value)
+            || isImmutableValue(value)) {
+          return true;
+        }
+
+        throw new IllegalStateException(
+            "Unexpected expression node" + value +
+            "\n parent:" + value.getParent());
+    }
+  }
+================== test_stack ==================
+com.google.javascript.jscomp.NodeUtilTest::testIsBooleanResult
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at com.google.javascript.jscomp.NodeUtilTest.testIsBooleanResult(NodeUtilTest.java:1504)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.NodeUtilTest::testLocalValue1
+java.lang.IllegalStateException: Unexpected expression nodeDELPROP 1 [sourcename:  [testcode] ] [parenthesized: true]
+ parent:NAME a 1 [sourcename:  [testcode] ]
+	at com.google.javascript.jscomp.NodeUtil.evaluatesToLocalValue(NodeUtil.java:2923)
+	at com.google.javascript.jscomp.NodeUtil.evaluatesToLocalValue(NodeUtil.java:2856)
+	at com.google.javascript.jscomp.NodeUtilTest.testLocalValue(NodeUtilTest.java:1281)
+	at com.google.javascript.jscomp.NodeUtilTest.testLocalValue1(NodeUtilTest.java:1169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertTrue(NodeUtil.isBooleanResult(getNode("delete a")));
+
+================== buggy_lines_in_method ==================
+[48]
+================== buggy_statements ==================
+['        // TODO(johnlenz): should IN operator be included in #isSimpleOperator?']
+================== buggy_method_src_endswith_buggy_statement ==================
+static boolean evaluatesToLocalValue(Node value, Predicate<Node> locals) {
+    switch (value.getType()) {
+      case Token.ASSIGN:
+        // A result that is aliased by a non-local name, is the effectively the
+        // same as returning a non-local name, but this doesn't matter if the
+        // value is immutable.
+        return NodeUtil.isImmutableValue(value.getLastChild())
+            || (locals.apply(value)
+                && evaluatesToLocalValue(value.getLastChild(), locals));
+      case Token.COMMA:
+        return evaluatesToLocalValue(value.getLastChild(), locals);
+      case Token.AND:
+      case Token.OR:
+        return evaluatesToLocalValue(value.getFirstChild(), locals)
+           && evaluatesToLocalValue(value.getLastChild(), locals);
+      case Token.HOOK:
+        return evaluatesToLocalValue(value.getFirstChild().getNext(), locals)
+           && evaluatesToLocalValue(value.getLastChild(), locals);
+      case Token.INC:
+      case Token.DEC:
+        if (value.getBooleanProp(Node.INCRDECR_PROP)) {
+          return evaluatesToLocalValue(value.getFirstChild(), locals);
+        } else {
+          return true;
+        }
+      case Token.THIS:
+        return locals.apply(value);
+      case Token.NAME:
+        return isImmutableValue(value) || locals.apply(value);
+      case Token.GETELEM:
+      case Token.GETPROP:
+        // There is no information about the locality of object properties.
+        return locals.apply(value);
+      case Token.CALL:
+        return callHasLocalResult(value)
+            || isToStringMethodCall(value)
+            || locals.apply(value);
+      case Token.NEW:
+        return newHasLocalResult(value)
+               || locals.apply(value);
+      case Token.FUNCTION:
+      case Token.REGEXP:
+      case Token.ARRAYLIT:
+      case Token.OBJECTLIT:
+        // Literals objects with non-literal children are allowed.
+        return true;
+      case Token.IN:
+        // TODO(johnlenz): should IN operator be included in #isSimpleOperator?

@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "4",
+            "ernie-3.5-128k": "6",
+            "qwen-turbo": "4",
+            "deepseek-chat": "4",
+            "gpt-4o-mini": "9"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "7",
+            "qwen-turbo": "5",
+            "ernie-3.5-128k": "**8**",
+            "deepseek-chat": "4",
+            "gpt-4o-mini": "9"
+        },
+        "prompt_fl_3": {
+            "qwen-turbo": "5",
+            "doubao-pro-4k": "1",
+            "ernie-3.5-128k": "10",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "11"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "comment.data.append(r.consumeTo('>'));",
+            "doubao-pro-4k": "comment.data.append(r.consumeTo('>'));",
+            "ernie-3.5-128k": "comment.data.append(r.consumeTo('>'));",
+            "deepseek-chat": "r.unconsume();",
+            "gpt-4o-mini": "comment.data.append(r.consumeTo('>'));"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "r.unconsume();",
+            "doubao-pro-4k": "comment.data.append(r.consumeTo('>'));",
+            "ernie-3.5-128k": "comment.data.append(r.consumeTo('>'));",
+            "deepseek-chat": "comment.data.append(r.consumeTo('>'));",
+            "gpt-4o-mini": "comment.data.append(r.consumeTo('>'));"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "t.emit(comment);",
+            "doubao-pro-4k": "comment.data.append(r.consumeTo('>'));",
+            "ernie-3.5-128k": "comment.data.append(r.consumeTo('>'));",
+            "deepseek-chat": "comment.data.append(r.consumeTo('>'));",
+            "gpt-4o-mini": "comment.data.append(r.consumeTo('>'));"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "```java\nvoid read(Tokeniser t, CharacterReader r) {\n    // todo: handle bogus comment starting from eof. when does that trigger?\n    // rewind to capture character that led us here\n    r.unconsume();\n    Token.Comment comment = new Token.Comment();\n    comment.data.append(r.consumeTo('>'));\n    // todo: replace nullChar with replaceChar\n    if (comment.data.length() > 0) {\n        t.emit(comment);\n    }\n    t.advanceTransition(Data);\n}\n```",
+            "doubao-pro-4k": "void read(Tokeniser t, CharacterReader r) {\n    // todo: handle bogus comment starting from eof. when does that trigger?\n    // rewind to capture character that lead us here\n    r.unconsume();\n    Token.Comment comment = new Token.Comment();\n    comment.data.append(r.consumeTo('>'));\n    // todo: replace nullChar with replaceChar\n    t.emit(comment);\n    t.advanceTransition(Data);\n}",
+            "deepseek-chat": "void read(Tokeniser t, CharacterReader r) {\n    // todo: handle bogus comment starting from eof. when does that trigger?\n    // rewind to capture character that lead us here\n    r.unconsume();\n    Token.Comment comment = new Token.Comment();\n    comment.data.append(r.consumeTo('>').replace('\\0', '\\uFFFD')); // Replace nullChar with replaceChar\n    t.emit(comment);\n    t.advanceTransition(Data);\n}",
+            "gpt-4o-mini": "void read(Tokeniser t, CharacterReader r) {\n    // todo: handle bogus comment starting from eof. when does that trigger?\n    // rewind to capture character that lead us here\n    r.unconsume();\n    Token.Comment comment = new Token.Comment();\n    // Check if there's a '>' character to consume, handle EOF or invalid comment case\n    if (r.hasNext()) {\n        comment.data.append(r.consumeTo('>'));\n    } else {\n        // Handle EOF or invalid comment scenario\n        comment.data.append(r.consumeAll());\n    }\n    // todo: replace nullChar with replaceChar\n    t.emit(comment);\n    t.advanceTransition(Data);\n}",
+            "ernie-3.5-128k": "Here is the complete corrected method with the bug fixed in line 6:\n\nvoid read(Tokeniser t, CharacterReader r) {\n            // todo: handle bogus comment starting from eof. when does that trigger?\n            // rewind to capture character that lead us here\n            r.unconsume();\n            Token.Comment comment = new Token.Comment();\n            // Fix: Ensure we handle the case where '>' is not found, possibly by replacing it with a loop.\n            StringBuilder builder = new StringBuilder();\n            char current;\n            while ((current = r.consume()) != '>' && current != CharacterReader.EOF) {\n                builder.append(current);\n            }\n            // If we exited the loop because of EOF and didn't find '>', we might want to handle that case specifically.\n            // For simplicity, just append the last character if it's not '>' (in a real scenario, more sophisticated error handling might be needed).\n            if (current != '>') {\n                // Handle the case where '>' was not found, possibly by emitting an error token or similar.\n                // For now, just log it (or handle it as needed).\n                System.err.println(\"Warning: End of file reached without finding closing '>' for comment.\");\n                // Optionally, you might want to append the last consumed character (EOF in this case, but it's usually not meaningful).\n                // builder.append(current); // Uncomment if you decide to include EOF character (not recommended).\n            } else {\n                // Append any character that was consumed after the loop (shouldn't be any in normal case with '>' termination).\n                // In this example, it's just for safety, as 'current' will be '>' if loop exited normally.\n                builder.append(current); // This line is actually redundant as '>' is not a meaningful part of the comment data.\n                // Remove the last '>' added above, as it's not part of the comment text.\n                builder.setLength(builder.length() - 1);\n            }\n            comment.data.append(builder);\n            // todo: replace nullChar with replaceChar\n            t.emit(comment);\n            t.advanceTransition(Data);\n        }"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "Certainly! The issue with the line `comment.data.append(r.consumeTo('>'));` is that `comment.data` might not be initialized. To fix this, you should initialize `comment.data` before appending characters to it.\n\nHere is the complete corrected method:\n\n```java\nvoid read(Tokeniser t, CharacterReader r) {\n    // todo: handle bogus comment starting from eof. when does that trigger?\n    // rewind to capture character that lead us here\n    r.unconsume();\n    Token.Comment comment = new Token.Comment();\n    comment.data = new StringBuilder();  // Initialize comment.data here\n    comment.data.append(r.consumeTo('>'));\n    // todo: replace nullChar with replaceChar\n    t.emit(comment);\n    t.advanceTransition(Data);\n}\n```\n\nThis ensures that `comment.data` is properly initialized as a `StringBuilder` before attempting to append characters to it.",
+            "doubao-pro-4k": "void read(Tokeniser t, CharacterReader r) {\n    // todo: handle bogus comment starting from eof. when does that trigger?\n    // rewind to capture character that lead us here\n    r.unconsume();\n    Token.Comment comment = new Token.Comment();\n    comment.data.append(r.consumeTo('>'));\n    // todo: replace nullChar with replaceChar\n    t.emit(comment);\n    t.advanceTransition(Data);\n}",
+            "deepseek-chat": "void read(Tokeniser t, CharacterReader r) {\n    // todo: handle bogus comment starting from eof. when does that trigger?\n    // rewind to capture character that lead us here\n    r.unconsume();\n    Token.Comment comment = new Token.Comment();\n    String data = r.consumeTo('>');\n    if (data != null) {\n        comment.data.append(data);\n    } else {\n        // Handle the case where '>' is not found, e.g., EOF or other conditions\n        comment.data.append(r.consumeToEnd());\n    }\n    // todo: replace nullChar with replaceChar\n    t.emit(comment);\n    t.advanceTransition(Data);\n}",
+            "gpt-4o-mini": "void read(Tokeniser t, CharacterReader r) {\n    // todo: handle bogus comment starting from eof. when does that trigger?\n    // rewind to capture character that lead us here\n    r.unconsume();\n    Token.Comment comment = new Token.Comment();\n    \n    // Fixed the bug here by ensuring the consumeTo method handles end-of-file correctly\n    String consumedData = r.consumeTo('>');\n    \n    // Check if the consumed data contains the '>' character, otherwise handle EOF case\n    if (consumedData == null || consumedData.indexOf('>') == -1) {\n        // Handle the case where '>' is not found (possibly at EOF or malformed comment)\n        // Assuming this part should handle incorrect comment or EOF\n        comment.data.append(consumedData != null ? consumedData : \"\");\n        // Optionally, add some logic for EOF or erroneous comment handling\n        // For example, log an error or append a specific EOF marker\n    } else {\n        comment.data.append(consumedData);\n    }\n    \n    // todo: replace nullChar with replaceChar\n    t.emit(comment);\n    t.advanceTransition(Data);\n}",
+            "ernie-3.5-128k": "Here is the complete corrected method. The issue with the `consumeTo` method is that it will consume characters until it encounters the specified character (in this case, '>'), but it does not include handling for cases where the '>' might not be present, which could lead to an infinite loop or incorrect behavior. To fix this, we should use a more robust approach to consume characters until we find '>' or reach the end of the input.\n\nHere's the corrected method:\n\nvoid read(Tokeniser t, CharacterReader r) {\n    // todo: handle bogus comment starting from eof. when does that trigger?\n    // rewind to capture character that lead us here\n    r.unconsume();\n    Token.Comment comment = new Token.Comment();\n    StringBuilder data = new StringBuilder();\n    int ch;\n    while ((ch = r.consume()) != CharacterReader.EOF) {\n        if (ch == '>') {\n            break;\n        }\n        data.append((char) ch);\n    }\n    // If we exited the loop without finding '>', we might want to handle the error\n    // depending on the specific requirements of your parser.\n    // For now, we'll just append what we have and emit the comment.\n    comment.data.append(data);\n    // todo: replace nullChar with replaceChar\n    t.emit(comment);\n    t.advanceTransition(Data);\n}\n\nIn this corrected version:\n\n1. We use a `StringBuilder` to accumulate the characters of the comment.\n2. We consume characters one by one using `r.consume()` and check if the character is '>'.\n3. If it is '>', we break out of the loop.\n4. If it is not '>', we append the character to the `StringBuilder`.\n5. We handle the case where we might reach the end of the input (`CharacterReader.EOF`) without encountering '>'. Depending on your specific requirements, you might want to add additional error handling here.\n6. Finally, we append the accumulated data to the comment and emit the comment token, transitioning to the `Data` state."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\nvoid read(Tokeniser t, CharacterReader r) {\n    // todo: handle bogus comment starting from eof. when does that trigger?\n    // rewind to capture character that lead us here\n    r.unconsume();\n    Token.Comment comment = new Token.Comment();\n    comment.data.append(r.consumeTo(new char[]{'>'}, false));\n```",
+            "ernie-3.5-128k": "void read(Tokeniser t, CharacterReader r) {\n            // todo: handle bogus comment starting from eof. when does that trigger?\n            // rewind to capture character that lead us here\n            r.unconsume();\n            Token.Comment comment = new Token.Comment();\n            comment.data.append(r.consumeTo(\">\", false));",
+            "deepseek-chat": "```java\nvoid read(Tokeniser t, CharacterReader r) {\n    // todo: handle bogus comment starting from eof. when does that trigger?\n    // rewind to capture character that lead us here\n    r.unconsume();\n    Token.Comment comment = new Token.Comment();\n    comment.data.append(r.consumeTo('>'));\n```",
+            "doubao-pro-4k": "void read(Tokeniser t, CharacterReader r) {\n    // todo: handle bogus comment starting from eof. when does that trigger?\n    // rewind to capture character that lead us here\n    r.unconsume();\n    Token.Comment comment = new Token.Comment();\n    comment.data.append(r.consumeTo('>'));\n}",
+            "gpt-4o-mini": "void read(Tokeniser t, CharacterReader r) {\n            // todo: handle bogus comment starting from eof. when does that trigger?\n            // rewind to capture character that lead us here\n            r.unconsume();\n            Token.Comment comment = new Token.Comment();\n            comment.data.append(r.consumeUntil('>'));"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"t.emit(comment);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"comment.data.append(r.consumeTo('>', ' '));\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"comment.data.append(r.consumeTo('>').replace('\\u0000', '\\uFFFD'));\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"comment.data.append(r.consumeTo('>').replace('\\\\0', replaceChar));\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"comment.data.append(r.consumeTo('>')).replaceAll(\\\"\\\\0\\\", \\\"\\\");\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"comment.data.append(r.consumeTo('>', true));\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"comment.data.append(r.consumeTo('>'));\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"comment.data.append(r.consumeTo('>', true));\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"comment.data.append(r.consumeTo('>').replace('\\u0000', '\\uFFFD'));\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"comment.data.append(r.consumeTo('>')).replaceAll(\\\"\\\\0\\\", \\\"<replaceChar>\\\");\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"comment.data.append(r.consumeTo('>') + '>');\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"comment.data.append(r.consumeTo('>'));\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"comment.data.append(r.consumeToOrEOF('>'));\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"comment.data.append(r.consumeTo('>'));\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"comment.data.append(r.consumeTo('>')).toString();\"\n    }\n]"
+        }
+    }
+]

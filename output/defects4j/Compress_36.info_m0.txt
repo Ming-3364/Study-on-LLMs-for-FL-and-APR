@@ -1,0 +1,83 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/compress/archivers/sevenz/SevenZFile.java
+================== buggy_method ==================
+{'method_name': 'getCurrentStream', 'method_body': 'private InputStream getCurrentStream() throws IOException {\n        if (deferredBlockStreams.isEmpty()) {\n            throw new IllegalStateException("No current 7z entry (call getNextEntry() first).");\n        }\n        \n        while (deferredBlockStreams.size() > 1) {\n            // In solid compression mode we need to decompress all leading folder\'\n            // streams to get access to an entry. We defer this until really needed\n            // so that entire blocks can be skipped without wasting time for decompression.\n            final InputStream stream = deferredBlockStreams.remove(0);\n            IOUtils.skip(stream, Long.MAX_VALUE);\n            stream.close();\n        }\n\n        return deferredBlockStreams.get(0);\n    }', 'start_line': 901, 'end_line': 916, 'buggy_lines': [904]}
+================== buggy_method_src ==================
+private InputStream getCurrentStream() throws IOException {
+        if (deferredBlockStreams.isEmpty()) {
+            throw new IllegalStateException("No current 7z entry (call getNextEntry() first).");
+        }
+        
+        while (deferredBlockStreams.size() > 1) {
+            // In solid compression mode we need to decompress all leading folder'
+            // streams to get access to an entry. We defer this until really needed
+            // so that entire blocks can be skipped without wasting time for decompression.
+            final InputStream stream = deferredBlockStreams.remove(0);
+            IOUtils.skip(stream, Long.MAX_VALUE);
+            stream.close();
+        }
+
+        return deferredBlockStreams.get(0);
+    }
+================== test_stack ==================
+org.apache.commons.compress.archivers.sevenz.SevenZFileTest::readEntriesOfSize0
+java.lang.IllegalStateException: No current 7z entry (call getNextEntry() first).
+	at org.apache.commons.compress.archivers.sevenz.SevenZFile.getCurrentStream(SevenZFile.java:903)
+	at org.apache.commons.compress.archivers.sevenz.SevenZFile.read(SevenZFile.java:898)
+	at org.apache.commons.compress.archivers.sevenz.SevenZFileTest.readEntriesOfSize0(SevenZFileTest.java:274)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+int b = sevenZFile.read();
+
+================== buggy_lines_in_method ==================
+[4]
+================== buggy_statements ==================
+['        }']
+================== buggy_method_src_endswith_buggy_statement ==================
+private InputStream getCurrentStream() throws IOException {
+        if (deferredBlockStreams.isEmpty()) {
+            throw new IllegalStateException("No current 7z entry (call getNextEntry() first).");
+        }

@@ -1,0 +1,174 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "4",
+            "ernie-3.5-128k": "**5**",
+            "qwen-turbo": "3",
+            "deepseek-chat": "3",
+            "gpt-4o-mini": "5"
+        },
+        "prompt_fl_2": {
+            "qwen-turbo": "224",
+            "doubao-pro-4k": "224",
+            "ernie-3.5-128k": "**224**",
+            "deepseek-chat": "224",
+            "gpt-4o-mini": "224"
+        },
+        "prompt_fl_3": {
+            "qwen-turbo": "224",
+            "doubao-pro-4k": "224",
+            "ernie-3.5-128k": "224",
+            "deepseek-chat": "224",
+            "gpt-4o-mini": "224"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "Node catchBody = block().copyInformationFrom(tryBody);",
+            "ernie-3.5-128k": "Preconditions.checkState(tryBody.isLabelName());",
+            "doubao-pro-4k": "Preconditions.checkState(tryBody.isLabelName());",
+            "deepseek-chat": "Node catchBody = block().copyInformationFrom(tryBody);",
+            "gpt-4o-mini": "Node catchBody = block().copyInformationFrom(tryBody);"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "Node catchBody = block().copyInformationFrom(tryBody);",
+            "doubao-pro-4k": "Preconditions.checkState(tryBody.isLabelName());",
+            "ernie-3.5-128k": "Preconditions.checkState(tryBody.isLabelName());",
+            "deepseek-chat": "Preconditions.checkState(tryBody.isLabelName());\nPreconditions.checkState(finallyBody.isLabelName());",
+            "gpt-4o-mini": "Preconditions.checkState(tryBody.isLabelName());"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "Node catchBody = block().copyInformationFrom(tryBody);",
+            "deepseek-chat": "Preconditions.checkState(tryBody.isLabelName());",
+            "ernie-3.5-128k": "Preconditions.checkState(tryBody.isLabelName());",
+            "doubao-pro-4k": "Preconditions.checkState(tryBody.isLabelName());\nPreconditions.checkState(finallyBody.isLabelName());",
+            "gpt-4o-mini": "Preconditions.checkState(tryBody.isLabelName());"
+        },
+        "prompt_apr_1": {
+            "doubao-pro-4k": "public static Node tryFinally(Node tryBody, Node finallyBody) {\n    Preconditions.checkNotNull(tryBody);\n    Preconditions.checkNotNull(finallyBody);\n    Node catchBody = block().copyInformationFrom(tryBody);\n    return new Node(Token.TRY, tryBody, catchBody, finallyBody);\n}",
+            "deepseek-chat": "public static Node tryFinally(Node tryBody, Node finallyBody) {\n    Preconditions.checkState(tryBody != null, \"tryBody should not be null\");\n    Preconditions.checkState(finallyBody != null, \"finallyBody should not be null\");\n    Node catchBody = block().copyInformationFrom(tryBody);\n    return new Node(Token.TRY, tryBody, catchBody, finallyBody);\n}",
+            "qwen-turbo": "Certainly, it seems that the intention is to create a `TRY` node with `tryBody`, `catchBody`, and `finallyBody`. However, there is no `catchBody` logic provided, and the `catchBody` node is created but not used properly. We should add a `catchBody` parameter and ensure it is correctly handled. Here's the corrected version of your method:\n\n```java\npublic static Node tryFinally(Node tryBody, Node catchBody, Node finallyBody) {\n    Preconditions.checkState(tryBody.isLabelName());\n    Preconditions.checkState(catchBody.isLabelName());\n    Preconditions.checkState(finallyBody.isLabelName());\n    Node finalCatchBody = block().copyInformationFrom(tryBody);\n    return new Node(Token.TRY, tryBody, catchBody, finallyBody);\n}\n```\n\nIn this corrected version, I've added the `catchBody` parameter and ensured that it is checked and copied similarly to `tryBody` and `finallyBody`. The `finalCatchBody` was unnecessary and has been removed. This should resolve the issues you were encountering.",
+            "gpt-4o-mini": "public static Node tryFinally(Node tryBody, Node finallyBody) {\n    Preconditions.checkState(tryBody != null && tryBody.isLabelName());\n    Preconditions.checkState(finallyBody != null && finallyBody.isLabelName());\n    Node catchBody = block().copyInformationFrom(tryBody);\n    return new Node(Token.TRY, tryBody, catchBody, finallyBody);\n}",
+            "ernie-3.5-128k": "public static Node tryFinally(Node tryBody, Node finallyBody) {\n    Preconditions.checkState(tryBody instanceof Label || tryBody.isLabelName(), \"tryBody must be a label or have a label name\");\n    Preconditions.checkState(finallyBody instanceof Label || finallyBody.isLabelName(), \"finallyBody must be a label or have a label name\");\n    Node emptyCatchBody = new Node(Token.BLOCK);\n    emptyCatchBody.copyInformationFrom(tryBody);\n    return new Node(Token.TRY, tryBody, emptyCatchBody, finallyBody);\n}"
+        },
+        "prompt_apr_2": {
+            "doubao-pro-4k": "public static Node tryFinally(Node tryBody, Node finallyBody) {\n    if (!tryBody.isLabelName()) {\n        throw new IllegalArgumentException(\"tryBody must be a label name\");\n    }\n    if (!finallyBody.isLabelName()) {\n        throw new IllegalArgumentException(\"finallyBody must be a label name\");\n    }\n    Node catchBody = block().copyInformationFrom(tryBody);\n    return new Node(Token.TRY, tryBody, catchBody, finallyBody);\n}",
+            "gpt-4o-mini": "public static Node tryFinally(Node tryBody, Node finallyBody) {\n    Preconditions.checkArgument(tryBody.isBlock(), \"tryBody must be a block\");\n    Preconditions.checkArgument(finallyBody.isBlock(), \"finallyBody must be a block\");\n    Node catchBody = block().copyInformationFrom(tryBody);\n    return new Node(Token.TRY, tryBody, catchBody, finallyBody);\n}",
+            "qwen-turbo": "Certainly, based on your description, it seems that the `isLabelName` check might not be appropriate if `tryBody` and `finallyBody` are not expected to be label names but rather blocks of code. If they should be blocks instead, you would want to validate that they are blocks rather than label names. Assuming `Node` has a method `isBlock()` to check if the node represents a block, here is the corrected method:\n\n```java\npublic static Node tryFinally(Node tryBody, Node finallyBody) {\n    Preconditions.checkState(tryBody.isBlock(), \"tryBody must be a block\");\n    Preconditions.checkState(finallyBody.isBlock(), \"finallyBody must be a block\");\n    Node catchBody = block().copyInformationFrom(tryBody);\n    return new Node(Token.TRY, tryBody, catchBody, finallyBody);\n}\n```\n\nIf `Node` does not have an `isBlock()` method and you need to implement your own logic to determine if a node represents a block, you will need to adjust the condition accordingly. However, the above code assumes `isBlock()` exists and correctly identifies block nodes.",
+            "deepseek-chat": "public static Node tryFinally(Node tryBody, Node finallyBody) {\n    Preconditions.checkState(tryBody != null, \"tryBody cannot be null\");\n    Preconditions.checkState(finallyBody != null, \"finallyBody cannot be null\");\n    Node catchBody = block().copyInformationFrom(tryBody);\n    return new Node(Token.TRY, tryBody, catchBody, finallyBody);\n}",
+            "ernie-3.5-128k": "Certainly! The issue with the provided code is that it incorrectly assumes that both `tryBody` and `finallyBody` are label names, which is usually not the case for try-finally constructs in typical programming scenarios. Instead, `tryBody` and `finallyBody` are likely to be blocks of code (or statements).\n\nHere is the corrected method:\n\npublic static Node tryFinally(Node tryBody, Node finallyBody) {\n    Preconditions.checkState(tryBody.isBlock() || tryBody.isStatement());\n    Preconditions.checkState(finallyBody.isBlock() || finallyBody.isStatement());\n    Node emptyCatchBody = new Node(Token.BLOCK, new NodeList());\n    return new Node(Token.TRY, tryBody, emptyCatchBody, finallyBody);\n}\n\nThis assumes the use of a `NodeList` class for collecting nodes and `Preconditions` for assertions. The `emptyCatchBody` is created as an empty block because in a `try-finally` construct, the catch part is optional."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\npublic static Node tryFinally(Node tryBody, Node finallyBody) {\n    Preconditions.checkState(tryBody.isLabelName());\n    Preconditions.checkState(finallyBody.isLabelName());\n```",
+            "deepseek-chat": "```java\npublic static Node tryFinally(Node tryBody, Node finallyBody) {\n    Preconditions.checkState(tryBody.isLabelName());\n    Preconditions.checkState(finallyBody.isLabelName());\n```",
+            "doubao-pro-4k": "public static Node tryFinally(Node tryBody, Node finallyBody) {\n    Preconditions.checkState(tryBody.isLabelName());\n    Preconditions.checkState(finallyBody.isLabelName() || finallyBody!= null);\n}",
+            "ernie-3.5-128k": "public static Node tryFinally(Node tryBody, Node finallyBody) {\n    Preconditions.checkState(tryBody.isLabelName());\n    Preconditions.checkState(finallyBody instanceof Node && finallyBody.isLabelName());",
+            "gpt-4o-mini": "public static Node tryFinally(Node tryBody, Node finallyBody) {\n    Preconditions.checkState(tryBody.isLabelName());\n    Preconditions.checkState(finallyBody.isLabelName() || finallyBody.isName());"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"Preconditions.checkArgument(tryBody.isLabelName());\"\n    },\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Preconditions.checkArgument(finallyBody.isLabelName());\"\n    }\n]",
+            "doubao-pro-4k": "[\n{\n\"line_number\": 2,\n\"fixed_statement\": \"Preconditions.checkNotNull(tryBody); Preconditions.checkNotNull(finallyBody);\"\n},\n{\n\"line_number\": 3,\n\"fixed_statement\": \"\"\n}\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"    Preconditions.checkState(tryBody.isBlock());\"\n    },\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"    Preconditions.checkState(finallyBody.isBlock());\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"Preconditions.checkState(tryBody instanceof Label || tryBody.isLabelName());\"\n    },\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Preconditions.checkState(finallyBody instanceof Label || finallyBody.isLabelName());\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"Preconditions.checkState(tryBody != null && tryBody.isLabelName());\"\n    },\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Preconditions.checkState(finallyBody != null && finallyBody.isLabelName());\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"    Preconditions.checkState(tryBody.isTryBlock());\"\n    },\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"    Preconditions.checkState(finallyBody.isFinallyBlock());\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"    Preconditions.checkState(tryBody.isBlock());\"\n    },\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"    Preconditions.checkState(finallyBody.isBlock());\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"Preconditions.checkState(tryBody.isBlock());\"\n    },\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Preconditions.checkState(finallyBody.isBlock());\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"Preconditions.checkState(tryBody.isBlock());\"\n    },\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Preconditions.checkState(finallyBody.isBlock());\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"Preconditions.checkState(tryBody!= null && tryBody.isLabelName());\"\n    },\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"Preconditions.checkState(finallyBody!= null && finallyBody.isLabelName());\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Preconditions.checkState(finallyBody.isLabelName(), \\\"finallyBody should be a label name\\\");\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Preconditions.checkState(tryBody.isLabelName() || finallyBody.isLabelName());\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"Preconditions.checkState(tryBody != null && tryBody.isLabelName());\"\n    },\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Preconditions.checkState(finallyBody != null && finallyBody.isLabelName());\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Preconditions.checkState(tryBody != null && tryBody.isLabelName());\"\n    },\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Preconditions.checkState(finallyBody != null && finallyBody.isLabelName());\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Preconditions.checkState(tryBody instanceof LabelNode);\"\n    },\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Preconditions.checkState(finallyBody instanceof LabelNode);\"\n    }\n]"
+        }
+    },
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "5",
+            "qwen-turbo": "3",
+            "ernie-3.5-128k": "**5**",
+            "deepseek-chat": "3",
+            "gpt-4o-mini": "7"
+        },
+        "prompt_fl_2": {
+            "qwen-turbo": "224",
+            "doubao-pro-4k": "224",
+            "ernie-3.5-128k": "**233**",
+            "deepseek-chat": "233",
+            "gpt-4o-mini": "224"
+        },
+        "prompt_fl_3": {
+            "qwen-turbo": "224",
+            "doubao-pro-4k": "224",
+            "ernie-3.5-128k": "**233**",
+            "gpt-4o-mini": "97",
+            "deepseek-chat": "233"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "Node catchBody = block(catchNode).copyInformationFrom(catchNode);",
+            "doubao-pro-4k": "Node catchBody = block(catchNode).copyInformationFrom(catchNode);",
+            "ernie-3.5-128k": "Node catchBody = block(catchNode).copyInformationFrom(catchNode);",
+            "deepseek-chat": "Node catchBody = block(catchNode).copyInformationFrom(catchNode);",
+            "gpt-4o-mini": "Node catchBody = block(catchNode).copyInformationFrom(catchNode);"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "Node catchBody = block(catchNode).copyInformationFrom(catchNode);",
+            "ernie-3.5-128k": "Preconditions.checkState(tryBody.isBlock());",
+            "doubao-pro-4k": "Preconditions.checkState(tryBody.isBlock());\nPreconditions.checkState(catchNode.isCatch());",
+            "deepseek-chat": "Node catchBody = block(catchNode).copyInformationFrom(catchNode);",
+            "gpt-4o-mini": "Preconditions.checkState(tryBody.isBlock());"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "Node catchBody = block(catchNode).copyInformationFrom(catchNode);",
+            "deepseek-chat": "Node catchBody = block(catchNode).copyInformationFrom(catchNode);",
+            "ernie-3.5-128k": "Preconditions.checkState(tryBody.isBlock());",
+            "doubao-pro-4k": "Preconditions.checkState(tryBody.isBlock());\nPreconditions.checkState(catchNode.isCatch());",
+            "gpt-4o-mini": "Preconditions.checkState(tryBody.isBlock());"
+        },
+        "prompt_apr_1": {
+            "doubao-pro-4k": "public static Node tryCatch(Node tryBody, Node catchNode) {\n    Preconditions.checkState(tryBody.isBlock());\n    Preconditions.checkState(catchNode.isCatch());\n    Node catchBody = block(catchNode).copyInformationFrom(catchNode);\n    return new Node(Token.TRY, tryBody, catchBody);\n}",
+            "gpt-4o-mini": "public static Node tryCatch(Node tryBody, Node catchNode) {\n    Preconditions.checkState(tryBody.isBlock());\n    Preconditions.checkState(catchNode.isCatch());\n    Node catchBody = catchNode.getSecondChild().copyInformationFrom(catchNode); // Fix applied here\n    return new Node(Token.TRY, tryBody, catchBody);\n}",
+            "ernie-3.5-128k": "public static Node tryCatch(Node tryBody, Node catchNode) {\n    Preconditions.checkState(tryBody.isBlock());\n    Preconditions.checkState(catchNode.isCatch());\n    Node catchClause = catchNode; // Ensure we are using the catch node directly, not misinterpreting it\n    Node catchBody = block(catchClause.getFirstChild()).copyInformationFrom(catchClause);\n    return new Node(Token.TRY, tryBody, catchBody);\n}",
+            "qwen-turbo": "Certainly! The issue seems to be that `catchBody` should be the body of the catch block, not just a copy of the `catchNode`. Assuming `block(catchNode)` retrieves the body of the catch block, here is the corrected method:\n\n```java\npublic static Node tryCatch(Node tryBody, Node catchNode) {\n    Preconditions.checkState(tryBody.isBlock());\n    Preconditions.checkState(catchNode.isCatch());\n    Node catchBody = block(catchNode).copyInformationFrom(catchNode);\n    return new Node(Token.TRY, tryBody, catchBody);\n}\n```\n\nIf `block(catchNode)` should actually retrieve the body of the catch block, you might need to adjust it accordingly. Here\u2019s an example assuming `block(catchNode)` retrieves the body:\n\n```java\npublic static Node tryCatch(Node tryBody, Node catchNode) {\n    Preconditions.checkState(tryBody.isBlock());\n    Preconditions.checkState(catchNode.isCatch());\n    Node catchBody = block(catchNode); // Assuming this retrieves the body of the catch block\n    return new Node(Token.TRY, tryBody, catchBody.copyInformationFrom(catchNode));\n}\n```\n\nMake sure `block(catchNode)` correctly retrieves the body of the catch block and `copyInformationFrom` is applied appropriately. If `block(catchNode)` does not do what is expected, you may need to adjust it to get the correct body.",
+            "deepseek-chat": "public static Node tryCatch(Node tryBody, Node catchNode) {\n    Preconditions.checkState(tryBody.isBlock());\n    Preconditions.checkState(catchNode.isCatch());\n    Node catchBody = catchNode.getLastChild().copyInformationFrom(catchNode);\n    return new Node(Token.TRY, tryBody, catchBody);\n}"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\npublic static Node tryCatch(Node tryBody, Node catchNode) {\n    Preconditions.checkState(tryBody.isBlock());\n    Preconditions.checkState(catchNode.isCatch());\n    Node catchBody = ((Block) catchNode).copyInformationFrom(catchNode);\n    return new Node(Token.TRY, tryBody, catchBody);\n}\n```\n\nIn this correction, I assumed that `block(catchNode)` should be casting `catchNode` to `Block`. If `block(catchNode)` is actually a method that retrieves the block associated with `catchNode`, then the original line might be correct and no change is needed. Please verify the context and adjust accordingly.",
+            "deepseek-chat": "public static Node tryCatch(Node tryBody, Node catchNode) {\n    Preconditions.checkState(tryBody.isBlock());\n    Preconditions.checkState(catchNode.isCatch());\n    Node catchBody = catchNode.getLastChild().copyInformationFrom(catchNode);\n    return new Node(Token.TRY, tryBody, catchBody);\n}",
+            "gpt-4o-mini": "public static Node tryCatch(Node tryBody, Node catchNode) {\n    Preconditions.checkState(tryBody.isBlock());\n    Preconditions.checkState(catchNode.isCatch());\n    Node catchBody = block(catchNode.getSecondChild()).copyInformationFrom(catchNode);\n    return new Node(Token.TRY, tryBody, catchBody);\n}",
+            "doubao-pro-4k": "public static Node tryCatch(Node tryBody, Node catchNode) {\n    Preconditions.checkState(tryBody.isBlock());\n    Preconditions.checkState(catchNode.isCatch());\n    Node catchBody = catchNode.copyInformationFrom(catchNode);\n    return new Node(Token.TRY, tryBody, catchBody);\n}",
+            "ernie-3.5-128k": "Certainly! The issue in the provided line of code is that `block(catchNode)` is likely a function call that should return a `Node` representing a block, but without the context of what `block` does exactly, we need to ensure that it correctly processes the `catchNode` into a block node. Assuming `block` is a function that wraps a node in a block if it isn't already one, the line should be corrected to ensure it handles the `catchNode` properly.\n\nHowever, typically, a `catch` node already contains a block as its body. Therefore, you might not need to wrap it in another block unless `block` function is doing some additional processing or validation. If `block` is just a wrapper and `catchNode.getBody()` can directly give you the block, you should use that.\n\nHere is the corrected method assuming `block` is a helper function that correctly wraps nodes in a block, but also assuming you might want to directly access the body of the catch node if it's already a block:\n\npublic static Node tryCatch(Node tryBody, Node catchNode) {\n    Preconditions.checkState(tryBody.isBlock());\n    Preconditions.checkState(catchNode.isCatch());\n\n    // Assuming block() is a helper that ensures the node is wrapped in a block\n    // If block() is just a wrapper and you trust catchNode.getBody() is always a block,\n    // you can use catchNode.getBody() directly.\n    Node catchBody = catchNode.getBody().copyInformationFrom(catchNode);\n\n    // Alternatively, if block() does more than just wrapping, you might keep it:\n    // Node catchBody = block(catchNode.getBody()).copyInformationFrom(catchNode);\n\n    return new Node(Token.TRY, tryBody, catchBody);\n}\n\nIn this correction:\n- I used `catchNode.getBody()` to directly access the body of the catch block, assuming it is already a block.\n- If `block()` function does additional processing, you can uncomment the alternative line using `block(catchNode.getBody())`.\n\nMake sure to verify the exact behavior of `block()` in your codebase to choose the correct approach."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\npublic static Node tryCatch(Node tryBody, Node catchNode) {\n    Preconditions.checkState(tryBody.isBlock());\n    Preconditions.checkState(catchNode.isCatch());\n    Node catchBody = ((CatchNode)catchNode).getCaughtExceptionParameter().copyInformationFrom(catchNode);\n```",
+            "deepseek-chat": "```java\npublic static Node tryCatch(Node tryBody, Node catchNode) {\n    Preconditions.checkState(tryBody.isBlock());\n    Preconditions.checkState(catchNode.isCatch());\n    Node catchBody = catchNode.getFirstChild().copyInformationFrom(catchNode);\n```",
+            "doubao-pro-4k": "public static Node tryCatch(Node tryBody, Node catchNode) {\n    Preconditions.checkState(tryBody.isBlock());\n    Preconditions.checkState(catchNode.isCatch());\n    Node catchBody = block(catchNode).copyInformationFrom(catchNode);\n}",
+            "ernie-3.5-128k": "public static Node tryCatch(Node tryBody, Node catchNode) {\n    Preconditions.checkState(tryBody.isBlock());\n    Preconditions.checkState(catchNode.isCatch());\n    Node catchBody = ((CatchNode) catchNode).getBody().copyInformationFrom(catchNode);",
+            "gpt-4o-mini": "public static Node tryCatch(Node tryBody, Node catchNode) {\n    Preconditions.checkState(tryBody.isBlock());\n    Preconditions.checkState(catchNode.isCatch());\n    Node catchBody = catchNode.getFirstChild().copyInformationFrom(catchNode);"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"return new Node(Token.TRY, tryBody, new Node[] {catchBody});\"\n    }\n]",
+            "doubao-pro-4k": "[\n{\"line_number\": 4,\"fixed_statement\": \"Node catchBody = block(catchNode).copyInformationFrom(catchNode);\"}\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Node catchBody = catchNode.getFirstChild().copyInformationFrom(catchNode);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Node catchBody = block(catchBlock(catchNode)).copyInformationFrom(catchNode);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Node catchBody = catchNode.getFirstChild().copyInformationFrom(catchNode);\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"    Node catchBody = ((Catch)catchNode).getBody().copyInformationFrom(catchNode);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"Node catchBody = catchNode.getLastChild().copyInformationFrom(catchNode);\"\n    }\n]",
+            "doubao-pro-4k": "[\n{\n\"line_number\": 4,\n\"fixed_statement\": \"Node catchBody = catchNode.copyInformationFrom(catchNode);\"\n}\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Node catchBody = block(catchNode.getBody()).copyInformationFrom(catchNode);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Node catchBody = block(catchNode.getBlock()).copyInformationFrom(catchNode);\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"    Node catchBody = ((Catch)catchNode).getBody().copyInformationFrom(catchNode);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Node catchBody = catchNode.getLastChild().copyInformationFrom(catchNode);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Node catchBody = block(catchNode).copyInformationFrom(tryBody);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Node catchBody = catchNode.getFirstChild().copyInformationFrom(catchNode);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"Node catchBody = catchNode.get(\\\"block\\\").copyInformationFrom(catchNode);\"\n    }\n]"
+        }
+    }
+]

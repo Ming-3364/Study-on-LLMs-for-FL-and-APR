@@ -1,0 +1,389 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/dataformat/xml/deser/FromXmlParser.java
+================== buggy_method ==================
+{'method_name': 'nextToken', 'method_body': '@Override\n    public JsonToken nextToken() throws IOException\n    {\n        _binaryValue = null;\n        if (_nextToken != null) {\n            JsonToken t = _nextToken;\n            _currToken = t;\n            _nextToken = null;\n            switch (t) {\n            case START_OBJECT:\n                _parsingContext = _parsingContext.createChildObjectContext(-1, -1);\n                break;\n            case START_ARRAY:\n                _parsingContext = _parsingContext.createChildArrayContext(-1, -1);\n                break;\n            case END_OBJECT:\n            case END_ARRAY:\n                _parsingContext = _parsingContext.getParent();\n                _namesToWrap = _parsingContext.getNamesToWrap();\n                break;\n            case FIELD_NAME:\n                _parsingContext.setCurrentName(_xmlTokens.getLocalName());\n                break;\n            default: // VALUE_STRING, VALUE_NULL\n                // should be fine as is?\n            }\n            return t;\n        }\n        int token = _xmlTokens.next();\n\n        // Need to have a loop just because we may have to eat/convert\n        // a start-element that indicates an array element.\n        while (token == XmlTokenStream.XML_START_ELEMENT) {\n            // If we thought we might get leaf, no such luck\n            if (_mayBeLeaf) {\n                // leave _mayBeLeaf set, as we start a new context\n                _nextToken = JsonToken.FIELD_NAME;\n                _parsingContext = _parsingContext.createChildObjectContext(-1, -1);\n                return (_currToken = JsonToken.START_OBJECT);\n            }\n            if (_parsingContext.inArray()) {\n                // Yup: in array, so this element could be verified; but it won\'t be\n                // reported anyway, and we need to process following event.\n                token = _xmlTokens.next();\n                _mayBeLeaf = true;\n                continue;\n            }\n            String name = _xmlTokens.getLocalName();\n            _parsingContext.setCurrentName(name);\n\n            // Ok: virtual wrapping can be done by simply repeating current START_ELEMENT.\n            // Couple of ways to do it; but start by making _xmlTokens replay the thing...\n            if (_namesToWrap != null && _namesToWrap.contains(name)) {\n                _xmlTokens.repeatStartElement();\n            }\n\n            _mayBeLeaf = true;\n            // Ok: in array context we need to skip reporting field names.\n            // But what\'s the best way to find next token?\n            return (_currToken = JsonToken.FIELD_NAME);\n        }\n\n        // Ok; beyond start element, what do we get?\n        switch (token) {\n        case XmlTokenStream.XML_END_ELEMENT:\n            // Simple, except that if this is a leaf, need to suppress end:\n            if (_mayBeLeaf) {\n                _mayBeLeaf = false;\n                    // 06-Jan-2015, tatu: as per [dataformat-xml#180], need to\n                    //    expose as empty Object, not null\n                return (_currToken = JsonToken.VALUE_NULL);\n            }\n            _currToken = _parsingContext.inArray() ? JsonToken.END_ARRAY : JsonToken.END_OBJECT;\n            _parsingContext = _parsingContext.getParent();\n            _namesToWrap = _parsingContext.getNamesToWrap();\n            return _currToken;\n            \n        case XmlTokenStream.XML_ATTRIBUTE_NAME:\n            // If there was a chance of leaf node, no more...\n            if (_mayBeLeaf) {\n                _mayBeLeaf = false;\n                _nextToken = JsonToken.FIELD_NAME;\n                _currText = _xmlTokens.getText();\n                _parsingContext = _parsingContext.createChildObjectContext(-1, -1);\n                return (_currToken = JsonToken.START_OBJECT);\n            }\n            _parsingContext.setCurrentName(_xmlTokens.getLocalName());\n            return (_currToken = JsonToken.FIELD_NAME);\n        case XmlTokenStream.XML_ATTRIBUTE_VALUE:\n            _currText = _xmlTokens.getText();\n            return (_currToken = JsonToken.VALUE_STRING);\n        case XmlTokenStream.XML_TEXT:\n            _currText = _xmlTokens.getText();\n            if (_mayBeLeaf) {\n                _mayBeLeaf = false;\n                /* One more refinement (pronunced like "hack") is that if\n                 * we had an empty String (or all white space), and we are\n                 * deserializing an array, we better hide the empty text.\n                 */\n                // Also: must skip following END_ELEMENT\n                _xmlTokens.skipEndElement();\n                if (_parsingContext.inArray()) {\n                    if (_isEmpty(_currText)) {\n                        // 06-Jan-2015, tatu: as per [dataformat-xml#180], need to\n                        //    expose as empty Object, not null (or, worse, as used to\n                        //    be done, by swallowing the token)\n                        _currToken = JsonToken.END_ARRAY;\n                        _parsingContext = _parsingContext.getParent();\n                        _namesToWrap = _parsingContext.getNamesToWrap();\n                        return _currToken;\n                    }\n                }\n                return (_currToken = JsonToken.VALUE_STRING);\n            } else {\n                // [dataformat-xml#177]: empty text may also need to be skipped\n                if (_parsingContext.inObject()\n                        && (_currToken != JsonToken.FIELD_NAME) && _isEmpty(_currText)) {\n                    _currToken = JsonToken.END_OBJECT;\n                    _parsingContext = _parsingContext.getParent();\n                    _namesToWrap = _parsingContext.getNamesToWrap();\n                    return _currToken;\n                }\n            }\n            // If not a leaf (or otherwise ignorable), need to transform into property...\n            _parsingContext.setCurrentName(_cfgNameForTextElement);\n            _nextToken = JsonToken.VALUE_STRING;\n            return (_currToken = JsonToken.FIELD_NAME);\n        case XmlTokenStream.XML_END:\n            return (_currToken = null);\n        }\n        \n        // should never get here\n        _throwInternal();\n        return null;\n    }', 'start_line': 444, 'end_line': 578, 'buggy_lines': [550, 551, 552, 553]}
+================== buggy_method_src ==================
+@Override
+    public JsonToken nextToken() throws IOException
+    {
+        _binaryValue = null;
+        if (_nextToken != null) {
+            JsonToken t = _nextToken;
+            _currToken = t;
+            _nextToken = null;
+            switch (t) {
+            case START_OBJECT:
+                _parsingContext = _parsingContext.createChildObjectContext(-1, -1);
+                break;
+            case START_ARRAY:
+                _parsingContext = _parsingContext.createChildArrayContext(-1, -1);
+                break;
+            case END_OBJECT:
+            case END_ARRAY:
+                _parsingContext = _parsingContext.getParent();
+                _namesToWrap = _parsingContext.getNamesToWrap();
+                break;
+            case FIELD_NAME:
+                _parsingContext.setCurrentName(_xmlTokens.getLocalName());
+                break;
+            default: // VALUE_STRING, VALUE_NULL
+                // should be fine as is?
+            }
+            return t;
+        }
+        int token = _xmlTokens.next();
+
+        // Need to have a loop just because we may have to eat/convert
+        // a start-element that indicates an array element.
+        while (token == XmlTokenStream.XML_START_ELEMENT) {
+            // If we thought we might get leaf, no such luck
+            if (_mayBeLeaf) {
+                // leave _mayBeLeaf set, as we start a new context
+                _nextToken = JsonToken.FIELD_NAME;
+                _parsingContext = _parsingContext.createChildObjectContext(-1, -1);
+                return (_currToken = JsonToken.START_OBJECT);
+            }
+            if (_parsingContext.inArray()) {
+                // Yup: in array, so this element could be verified; but it won't be
+                // reported anyway, and we need to process following event.
+                token = _xmlTokens.next();
+                _mayBeLeaf = true;
+                continue;
+            }
+            String name = _xmlTokens.getLocalName();
+            _parsingContext.setCurrentName(name);
+
+            // Ok: virtual wrapping can be done by simply repeating current START_ELEMENT.
+            // Couple of ways to do it; but start by making _xmlTokens replay the thing...
+            if (_namesToWrap != null && _namesToWrap.contains(name)) {
+                _xmlTokens.repeatStartElement();
+            }
+
+            _mayBeLeaf = true;
+            // Ok: in array context we need to skip reporting field names.
+            // But what's the best way to find next token?
+            return (_currToken = JsonToken.FIELD_NAME);
+        }
+
+        // Ok; beyond start element, what do we get?
+        switch (token) {
+        case XmlTokenStream.XML_END_ELEMENT:
+            // Simple, except that if this is a leaf, need to suppress end:
+            if (_mayBeLeaf) {
+                _mayBeLeaf = false;
+                    // 06-Jan-2015, tatu: as per [dataformat-xml#180], need to
+                    //    expose as empty Object, not null
+                return (_currToken = JsonToken.VALUE_NULL);
+            }
+            _currToken = _parsingContext.inArray() ? JsonToken.END_ARRAY : JsonToken.END_OBJECT;
+            _parsingContext = _parsingContext.getParent();
+            _namesToWrap = _parsingContext.getNamesToWrap();
+            return _currToken;
+            
+        case XmlTokenStream.XML_ATTRIBUTE_NAME:
+            // If there was a chance of leaf node, no more...
+            if (_mayBeLeaf) {
+                _mayBeLeaf = false;
+                _nextToken = JsonToken.FIELD_NAME;
+                _currText = _xmlTokens.getText();
+                _parsingContext = _parsingContext.createChildObjectContext(-1, -1);
+                return (_currToken = JsonToken.START_OBJECT);
+            }
+            _parsingContext.setCurrentName(_xmlTokens.getLocalName());
+            return (_currToken = JsonToken.FIELD_NAME);
+        case XmlTokenStream.XML_ATTRIBUTE_VALUE:
+            _currText = _xmlTokens.getText();
+            return (_currToken = JsonToken.VALUE_STRING);
+        case XmlTokenStream.XML_TEXT:
+            _currText = _xmlTokens.getText();
+            if (_mayBeLeaf) {
+                _mayBeLeaf = false;
+                /* One more refinement (pronunced like "hack") is that if
+                 * we had an empty String (or all white space), and we are
+                 * deserializing an array, we better hide the empty text.
+                 */
+                // Also: must skip following END_ELEMENT
+                _xmlTokens.skipEndElement();
+                if (_parsingContext.inArray()) {
+                    if (_isEmpty(_currText)) {
+                        // 06-Jan-2015, tatu: as per [dataformat-xml#180], need to
+                        //    expose as empty Object, not null (or, worse, as used to
+                        //    be done, by swallowing the token)
+                        _currToken = JsonToken.END_ARRAY;
+                        _parsingContext = _parsingContext.getParent();
+                        _namesToWrap = _parsingContext.getNamesToWrap();
+                        return _currToken;
+                    }
+                }
+                return (_currToken = JsonToken.VALUE_STRING);
+            } else {
+                // [dataformat-xml#177]: empty text may also need to be skipped
+                if (_parsingContext.inObject()
+                        && (_currToken != JsonToken.FIELD_NAME) && _isEmpty(_currText)) {
+                    _currToken = JsonToken.END_OBJECT;
+                    _parsingContext = _parsingContext.getParent();
+                    _namesToWrap = _parsingContext.getNamesToWrap();
+                    return _currToken;
+                }
+            }
+            // If not a leaf (or otherwise ignorable), need to transform into property...
+            _parsingContext.setCurrentName(_cfgNameForTextElement);
+            _nextToken = JsonToken.VALUE_STRING;
+            return (_currToken = JsonToken.FIELD_NAME);
+        case XmlTokenStream.XML_END:
+            return (_currToken = null);
+        }
+        
+        // should never get here
+        _throwInternal();
+        return null;
+    }
+================== test_stack ==================
+com.fasterxml.jackson.dataformat.xml.lists.NestedUnwrappedLists180Test::testNestedUnwrappedLists180
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNotNull(Assert.java:256)
+	at junit.framework.Assert.assertNotNull(Assert.java:248)
+	at junit.framework.TestCase.assertNotNull(TestCase.java:417)
+	at com.fasterxml.jackson.dataformat.xml.lists.NestedUnwrappedLists180Test.testNestedUnwrappedLists180(NestedUnwrappedLists180Test.java:72)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.dataformat.xml.lists.NestedUnwrappedListsTest::testNestedWithEmpty2
+junit.framework.AssertionFailedError: expected:<1> but was:<0>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.Assert.assertEquals(Assert.java:241)
+	at junit.framework.TestCase.assertEquals(TestCase.java:409)
+	at com.fasterxml.jackson.dataformat.xml.lists.NestedUnwrappedListsTest.testNestedWithEmpty2(NestedUnwrappedListsTest.java:122)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.dataformat.xml.lists.NestedUnwrappedListsTest::testNestedWithEmpty
+junit.framework.AssertionFailedError: expected:<1> but was:<0>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.Assert.assertEquals(Assert.java:241)
+	at junit.framework.TestCase.assertEquals(TestCase.java:409)
+	at com.fasterxml.jackson.dataformat.xml.lists.NestedUnwrappedListsTest.testNestedWithEmpty(NestedUnwrappedListsTest.java:100)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertNotNull(result.records.get(0));
+
+================== buggy_lines_in_method ==================
+[107, 108, 109, 110]
+================== buggy_statements ==================
+['                        _currToken = JsonToken.END_ARRAY;', '                        _parsingContext = _parsingContext.getParent();', '                        _namesToWrap = _parsingContext.getNamesToWrap();', '                        return _currToken;']
+================== buggy_method_src_endswith_buggy_statement ==================
+@Override
+    public JsonToken nextToken() throws IOException
+    {
+        _binaryValue = null;
+        if (_nextToken != null) {
+            JsonToken t = _nextToken;
+            _currToken = t;
+            _nextToken = null;
+            switch (t) {
+            case START_OBJECT:
+                _parsingContext = _parsingContext.createChildObjectContext(-1, -1);
+                break;
+            case START_ARRAY:
+                _parsingContext = _parsingContext.createChildArrayContext(-1, -1);
+                break;
+            case END_OBJECT:
+            case END_ARRAY:
+                _parsingContext = _parsingContext.getParent();
+                _namesToWrap = _parsingContext.getNamesToWrap();
+                break;
+            case FIELD_NAME:
+                _parsingContext.setCurrentName(_xmlTokens.getLocalName());
+                break;
+            default: // VALUE_STRING, VALUE_NULL
+                // should be fine as is?
+            }
+            return t;
+        }
+        int token = _xmlTokens.next();
+
+        // Need to have a loop just because we may have to eat/convert
+        // a start-element that indicates an array element.
+        while (token == XmlTokenStream.XML_START_ELEMENT) {
+            // If we thought we might get leaf, no such luck
+            if (_mayBeLeaf) {
+                // leave _mayBeLeaf set, as we start a new context
+                _nextToken = JsonToken.FIELD_NAME;
+                _parsingContext = _parsingContext.createChildObjectContext(-1, -1);
+                return (_currToken = JsonToken.START_OBJECT);
+            }
+            if (_parsingContext.inArray()) {
+                // Yup: in array, so this element could be verified; but it won't be
+                // reported anyway, and we need to process following event.
+                token = _xmlTokens.next();
+                _mayBeLeaf = true;
+                continue;
+            }
+            String name = _xmlTokens.getLocalName();
+            _parsingContext.setCurrentName(name);
+
+            // Ok: virtual wrapping can be done by simply repeating current START_ELEMENT.
+            // Couple of ways to do it; but start by making _xmlTokens replay the thing...
+            if (_namesToWrap != null && _namesToWrap.contains(name)) {
+                _xmlTokens.repeatStartElement();
+            }
+
+            _mayBeLeaf = true;
+            // Ok: in array context we need to skip reporting field names.
+            // But what's the best way to find next token?
+            return (_currToken = JsonToken.FIELD_NAME);
+        }
+
+        // Ok; beyond start element, what do we get?
+        switch (token) {
+        case XmlTokenStream.XML_END_ELEMENT:
+            // Simple, except that if this is a leaf, need to suppress end:
+            if (_mayBeLeaf) {
+                _mayBeLeaf = false;
+                    // 06-Jan-2015, tatu: as per [dataformat-xml#180], need to
+                    //    expose as empty Object, not null
+                return (_currToken = JsonToken.VALUE_NULL);
+            }
+            _currToken = _parsingContext.inArray() ? JsonToken.END_ARRAY : JsonToken.END_OBJECT;
+            _parsingContext = _parsingContext.getParent();
+            _namesToWrap = _parsingContext.getNamesToWrap();
+            return _currToken;
+            
+        case XmlTokenStream.XML_ATTRIBUTE_NAME:
+            // If there was a chance of leaf node, no more...
+            if (_mayBeLeaf) {
+                _mayBeLeaf = false;
+                _nextToken = JsonToken.FIELD_NAME;
+                _currText = _xmlTokens.getText();
+                _parsingContext = _parsingContext.createChildObjectContext(-1, -1);
+                return (_currToken = JsonToken.START_OBJECT);
+            }
+            _parsingContext.setCurrentName(_xmlTokens.getLocalName());
+            return (_currToken = JsonToken.FIELD_NAME);
+        case XmlTokenStream.XML_ATTRIBUTE_VALUE:
+            _currText = _xmlTokens.getText();
+            return (_currToken = JsonToken.VALUE_STRING);
+        case XmlTokenStream.XML_TEXT:
+            _currText = _xmlTokens.getText();
+            if (_mayBeLeaf) {
+                _mayBeLeaf = false;
+                /* One more refinement (pronunced like "hack") is that if
+                 * we had an empty String (or all white space), and we are
+                 * deserializing an array, we better hide the empty text.
+                 */
+                // Also: must skip following END_ELEMENT
+                _xmlTokens.skipEndElement();
+                if (_parsingContext.inArray()) {
+                    if (_isEmpty(_currText)) {
+                        // 06-Jan-2015, tatu: as per [dataformat-xml#180], need to
+                        //    expose as empty Object, not null (or, worse, as used to
+                        //    be done, by swallowing the token)
+                        _currToken = JsonToken.END_ARRAY;
+                        _parsingContext = _parsingContext.getParent();
+                        _namesToWrap = _parsingContext.getNamesToWrap();
+                        return _currToken;

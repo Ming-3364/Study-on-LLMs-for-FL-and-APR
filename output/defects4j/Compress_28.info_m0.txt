@@ -1,0 +1,113 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/compress/archivers/tar/TarArchiveInputStream.java
+================== buggy_method ==================
+{'method_name': 'read', 'method_body': '@Override\n    public int read(byte[] buf, int offset, int numToRead) throws IOException {\n    \tint totalRead = 0;\n\n        if (hasHitEOF || entryOffset >= entrySize) {\n            return -1;\n        }\n\n        if (currEntry == null) {\n            throw new IllegalStateException("No current tar entry");\n        }\n\n        numToRead = Math.min(numToRead, available());\n        \n        totalRead = is.read(buf, offset, numToRead);\n        count(totalRead);\n        \n        if (totalRead == -1) {\n            hasHitEOF = true;\n        } else {\n            entryOffset += totalRead;\n        }\n\n        return totalRead;\n    }', 'start_line': 568, 'end_line': 592, 'buggy_lines': [583]}
+================== buggy_method_src ==================
+@Override
+    public int read(byte[] buf, int offset, int numToRead) throws IOException {
+    	int totalRead = 0;
+
+        if (hasHitEOF || entryOffset >= entrySize) {
+            return -1;
+        }
+
+        if (currEntry == null) {
+            throw new IllegalStateException("No current tar entry");
+        }
+
+        numToRead = Math.min(numToRead, available());
+        
+        totalRead = is.read(buf, offset, numToRead);
+        count(totalRead);
+        
+        if (totalRead == -1) {
+            hasHitEOF = true;
+        } else {
+            entryOffset += totalRead;
+        }
+
+        return totalRead;
+    }
+================== test_stack ==================
+org.apache.commons.compress.archivers.tar.TarArchiveInputStreamTest::shouldThrowAnExceptionOnTruncatedEntries
+junit.framework.AssertionFailedError: Expected exception: java.io.IOException
+	at org.junit.internal.runners.statements.ExpectException.evaluate(ExpectException.java:32)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+@Test(expected = IOException.class)
+    public void shouldThrowAnExceptionOnTruncatedEntries() throws Exception {
+        File dir = mkdir("COMPRESS-279");
+        TarArchiveInputStream is = getTestStream("/COMPRESS-279.tar");
+        FileOutputStream out = null;
+        try {
+            TarArchiveEntry entry = is.getNextTarEntry();
+            int count = 0;
+            while (entry != null) {
+                out = new FileOutputStream(new File(dir, String.valueOf(count)));
+                IOUtils.copy(is, out);
+                out.close();
+                out = null;
+                count++;
+                entry = is.getNextTarEntry();
+            }
+        } finally {
+            is.close();
+            if (out != null) {
+                out.close();
+            }
+        }
+    }
+================== buggy_lines_in_method ==================
+[16]
+================== buggy_statements ==================
+['        count(totalRead);']
+================== buggy_method_src_endswith_buggy_statement ==================
+@Override
+    public int read(byte[] buf, int offset, int numToRead) throws IOException {
+    	int totalRead = 0;
+
+        if (hasHitEOF || entryOffset >= entrySize) {
+            return -1;
+        }
+
+        if (currEntry == null) {
+            throw new IllegalStateException("No current tar entry");
+        }
+
+        numToRead = Math.min(numToRead, available());
+        
+        totalRead = is.read(buf, offset, numToRead);
+        count(totalRead);

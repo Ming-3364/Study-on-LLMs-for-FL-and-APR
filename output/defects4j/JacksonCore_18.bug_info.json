@@ -1,0 +1,64 @@
+[
+    {
+        "buggy_file": "src/main/java/com/fasterxml/jackson/core/json/UTF8JsonGenerator.java",
+        "buggy_method": {
+            "method_name": "writeNumber",
+            "method_body": "@Override\n    public void writeNumber(BigDecimal value) throws IOException\n    {\n        // Don't really know max length for big decimal, no point checking\n        _verifyValueWrite(WRITE_NUMBER);\n        if (value == null) {\n            _writeNull();\n        } else  if (_cfgNumbersAsStrings) {\n            String raw = Feature.WRITE_BIGDECIMAL_AS_PLAIN.enabledIn(_features) ? value.toPlainString() : value.toString();\n            _writeQuotedRaw(raw);\n        } else if (Feature.WRITE_BIGDECIMAL_AS_PLAIN.enabledIn(_features)) {\n            writeRaw(value.toPlainString());\n        } else {\n            writeRaw(_asString(value));\n        }\n    }",
+            "start_line": 902,
+            "end_line": 917,
+            "buggy_lines": [
+                910,
+                911,
+                912,
+                913
+            ]
+        },
+        "buggy_method_src": "@Override\n    public void writeNumber(BigDecimal value) throws IOException\n    {\n        // Don't really know max length for big decimal, no point checking\n        _verifyValueWrite(WRITE_NUMBER);\n        if (value == null) {\n            _writeNull();\n        } else  if (_cfgNumbersAsStrings) {\n            String raw = Feature.WRITE_BIGDECIMAL_AS_PLAIN.enabledIn(_features) ? value.toPlainString() : value.toString();\n            _writeQuotedRaw(raw);\n        } else if (Feature.WRITE_BIGDECIMAL_AS_PLAIN.enabledIn(_features)) {\n            writeRaw(value.toPlainString());\n        } else {\n            writeRaw(_asString(value));\n        }\n    }",
+        "test_stack": "com.fasterxml.jackson.core.json.TestJsonGeneratorFeatures::testTooBigBigDecimal\njunit.framework.AssertionFailedError: Should not have written without exception: 1E+10000\n\tat junit.framework.Assert.fail(Assert.java:57)\n\tat junit.framework.TestCase.fail(TestCase.java:227)\n\tat com.fasterxml.jackson.core.json.TestJsonGeneratorFeatures.testTooBigBigDecimal(TestJsonGeneratorFeatures.java:154)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n\tat sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.lang.reflect.Method.invoke(Method.java:498)\n\tat junit.framework.TestCase.runTest(TestCase.java:176)\n\tat junit.framework.TestCase.runBare(TestCase.java:141)\n\tat junit.framework.TestResult$1.protect(TestResult.java:122)\n\tat junit.framework.TestResult.runProtected(TestResult.java:142)\n\tat junit.framework.TestResult.run(TestResult.java:125)\n\tat junit.framework.TestCase.run(TestCase.java:129)\n\tat junit.framework.TestSuite.runTest(TestSuite.java:255)\n\tat junit.framework.TestSuite.run(TestSuite.java:250)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)\n\tat org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)\n\tat sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)\n\tat sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.lang.reflect.Method.invoke(Method.java:498)\n\tat org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)\n\tat org.apache.tools.ant.Task.perform(Task.java:348)\n\tat org.apache.tools.ant.Target.execute(Target.java:392)\n\tat org.apache.tools.ant.Target.performTasks(Target.java:413)\n\tat org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)\n\tat org.apache.tools.ant.Project.executeTarget(Project.java:1368)\n\tat org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)\n\tat org.apache.tools.ant.Project.executeTargets(Project.java:1251)\n\tat org.apache.tools.ant.Main.runBuild(Main.java:811)\n\tat org.apache.tools.ant.Main.startAnt(Main.java:217)\n\tat org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)\n\tat org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)\n",
+        "test_assert": "fail(\"Should not have written without exception: \"+input);\n",
+        "buggy_lines_in_method": [
+            9,
+            10,
+            11,
+            12
+        ],
+        "buggy_statements": [
+            "            String raw = Feature.WRITE_BIGDECIMAL_AS_PLAIN.enabledIn(_features) ? value.toPlainString() : value.toString();",
+            "            _writeQuotedRaw(raw);",
+            "        } else if (Feature.WRITE_BIGDECIMAL_AS_PLAIN.enabledIn(_features)) {",
+            "            writeRaw(value.toPlainString());"
+        ],
+        "buggy_method_src_endswith_buggy_statement": "@Override\n    public void writeNumber(BigDecimal value) throws IOException\n    {\n        // Don't really know max length for big decimal, no point checking\n        _verifyValueWrite(WRITE_NUMBER);\n        if (value == null) {\n            _writeNull();\n        } else  if (_cfgNumbersAsStrings) {\n            String raw = Feature.WRITE_BIGDECIMAL_AS_PLAIN.enabledIn(_features) ? value.toPlainString() : value.toString();\n            _writeQuotedRaw(raw);\n        } else if (Feature.WRITE_BIGDECIMAL_AS_PLAIN.enabledIn(_features)) {\n            writeRaw(value.toPlainString());"
+    },
+    {
+        "buggy_file": "src/main/java/com/fasterxml/jackson/core/json/WriterBasedJsonGenerator.java",
+        "buggy_method": {
+            "method_name": "writeNumber",
+            "method_body": "@Override\n    public void writeNumber(BigDecimal value) throws IOException\n    {\n        // Don't really know max length for big decimal, no point checking\n        _verifyValueWrite(WRITE_NUMBER);\n        if (value == null) {\n            _writeNull();\n        } else  if (_cfgNumbersAsStrings) {\n            String raw = isEnabled(Feature.WRITE_BIGDECIMAL_AS_PLAIN) ? value.toPlainString() : value.toString();\n            _writeQuotedRaw(raw);\n        } else if (isEnabled(Feature.WRITE_BIGDECIMAL_AS_PLAIN)) {\n            writeRaw(value.toPlainString());\n        } else {\n            writeRaw(_asString(value));\n        }\n    }",
+            "start_line": 679,
+            "end_line": 694,
+            "buggy_lines": [
+                687,
+                688,
+                689,
+                690
+            ]
+        },
+        "buggy_method_src": "@Override\n    public void writeNumber(BigDecimal value) throws IOException\n    {\n        // Don't really know max length for big decimal, no point checking\n        _verifyValueWrite(WRITE_NUMBER);\n        if (value == null) {\n            _writeNull();\n        } else  if (_cfgNumbersAsStrings) {\n            String raw = isEnabled(Feature.WRITE_BIGDECIMAL_AS_PLAIN) ? value.toPlainString() : value.toString();\n            _writeQuotedRaw(raw);\n        } else if (isEnabled(Feature.WRITE_BIGDECIMAL_AS_PLAIN)) {\n            writeRaw(value.toPlainString());\n        } else {\n            writeRaw(_asString(value));\n        }\n    }",
+        "test_stack": "com.fasterxml.jackson.core.json.TestJsonGeneratorFeatures::testTooBigBigDecimal\njunit.framework.AssertionFailedError: Should not have written without exception: 1E+10000\n\tat junit.framework.Assert.fail(Assert.java:57)\n\tat junit.framework.TestCase.fail(TestCase.java:227)\n\tat com.fasterxml.jackson.core.json.TestJsonGeneratorFeatures.testTooBigBigDecimal(TestJsonGeneratorFeatures.java:154)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n\tat sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.lang.reflect.Method.invoke(Method.java:498)\n\tat junit.framework.TestCase.runTest(TestCase.java:176)\n\tat junit.framework.TestCase.runBare(TestCase.java:141)\n\tat junit.framework.TestResult$1.protect(TestResult.java:122)\n\tat junit.framework.TestResult.runProtected(TestResult.java:142)\n\tat junit.framework.TestResult.run(TestResult.java:125)\n\tat junit.framework.TestCase.run(TestCase.java:129)\n\tat junit.framework.TestSuite.runTest(TestSuite.java:255)\n\tat junit.framework.TestSuite.run(TestSuite.java:250)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)\n\tat org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)\n\tat sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)\n\tat sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.lang.reflect.Method.invoke(Method.java:498)\n\tat org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)\n\tat org.apache.tools.ant.Task.perform(Task.java:348)\n\tat org.apache.tools.ant.Target.execute(Target.java:392)\n\tat org.apache.tools.ant.Target.performTasks(Target.java:413)\n\tat org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)\n\tat org.apache.tools.ant.Project.executeTarget(Project.java:1368)\n\tat org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)\n\tat org.apache.tools.ant.Project.executeTargets(Project.java:1251)\n\tat org.apache.tools.ant.Main.runBuild(Main.java:811)\n\tat org.apache.tools.ant.Main.startAnt(Main.java:217)\n\tat org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)\n\tat org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)\n",
+        "test_assert": "fail(\"Should not have written without exception: \"+input);\n",
+        "buggy_lines_in_method": [
+            9,
+            10,
+            11,
+            12
+        ],
+        "buggy_statements": [
+            "            String raw = isEnabled(Feature.WRITE_BIGDECIMAL_AS_PLAIN) ? value.toPlainString() : value.toString();",
+            "            _writeQuotedRaw(raw);",
+            "        } else if (isEnabled(Feature.WRITE_BIGDECIMAL_AS_PLAIN)) {",
+            "            writeRaw(value.toPlainString());"
+        ],
+        "buggy_method_src_endswith_buggy_statement": "@Override\n    public void writeNumber(BigDecimal value) throws IOException\n    {\n        // Don't really know max length for big decimal, no point checking\n        _verifyValueWrite(WRITE_NUMBER);\n        if (value == null) {\n            _writeNull();\n        } else  if (_cfgNumbersAsStrings) {\n            String raw = isEnabled(Feature.WRITE_BIGDECIMAL_AS_PLAIN) ? value.toPlainString() : value.toString();\n            _writeQuotedRaw(raw);\n        } else if (isEnabled(Feature.WRITE_BIGDECIMAL_AS_PLAIN)) {\n            writeRaw(value.toPlainString());"
+    }
+]

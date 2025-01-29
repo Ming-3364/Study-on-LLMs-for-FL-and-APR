@@ -1,0 +1,174 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "7",
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "**6**",
+            "deepseek-chat": "3",
+            "gpt-4o-mini": "6"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "7",
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "**8**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "7"
+        },
+        "prompt_fl_3": {
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "**4**",
+            "deepseek-chat": "1",
+            "doubao-pro-4k": "1",
+            "gpt-4o-mini": "42"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "criterion += residual * residual * residualsWeights[i];",
+            "doubao-pro-4k": "criterion += residual * residual * residualsWeights[i];",
+            "ernie-3.5-128k": "criterion += residual * residual * residualsWeights[i];",
+            "deepseek-chat": "```java\ncriterion += residual * residual * residualsWeights[i];\n```",
+            "gpt-4o-mini": "criterion += residual * residual * residualsWeights[i];"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "criterion += residual * residual * residualsWeights[i];",
+            "doubao-pro-4k": "return Math.sqrt(criterion / rows);",
+            "ernie-3.5-128k": "criterion += residual * residual * residualsWeights[i];",
+            "deepseek-chat": "return Math.sqrt(criterion / rows);",
+            "gpt-4o-mini": "criterion += residual * residual * residualsWeights[i];"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "assertEquals(0.004, errors[0], 0.001);",
+            "ernie-3.5-128k": "criterion += residual * residual * residualsWeights[i];",
+            "deepseek-chat": "return Math.sqrt(criterion / rows);",
+            "doubao-pro-4k": "assertEquals(0.004, errors[0], 0.001);",
+            "gpt-4o-mini": "criterion += residual * residual * residualsWeights[i];"
+        },
+        "prompt_apr_1": {
+            "doubao-pro-4k": "public double getRMS() {\n    double criterion = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        criterion += residual * residual * residualsWeights[i];\n    }\n    return Math.sqrt(criterion / rows);\n}",
+            "gpt-4o-mini": "public double getRMS() {\n    double criterion = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        final double weight = residualsWeights[i];\n        criterion += residual * residual * weight;\n    }\n    return Math.sqrt(criterion / rows);\n}",
+            "ernie-3.5-128k": "public double getRMS() {\n    double criterion = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        criterion += residual * residual * residualsWeights[i];\n    }\n    if (rows > 0) {\n        return Math.sqrt(criterion / rows);\n    } else {\n        return 0;  // Avoid division by zero if rows is zero\n    }\n}",
+            "qwen-turbo": "Certainly! It appears that the issue might be related to how `residuals` and `residualsWeights` arrays are being accessed and used. The main problem could be that the division by `rows` should actually be by the number of valid data points rather than just the total number of rows if not all rows are considered. However, without more context, I'll assume the current logic is correct but ensure that all variables and indices are correctly handled.\n\nHere's the corrected version of the method:\n\n```java\npublic double getRMS() {\n    double criterion = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        criterion += residual * residual * residualsWeights[i];\n    }\n    return Math.sqrt(criterion / rows);\n}\n```\n\nIf `rows` is supposed to represent the number of valid data points instead of the total number of rows, you would need to adjust the denominator accordingly. Here is an adjusted version assuming `validRows` represents the number of valid data points:\n\n```java\npublic double getRMS() {\n    double criterion = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        criterion += residual * residual * residualsWeights[i];\n    }\n    return Math.sqrt(criterion / validRows);\n}\n```\n\nEnsure that `validRows` is defined and correctly represents the number of valid data points. If `validRows` is not available, you may need to calculate it within the method.",
+            "deepseek-chat": "The bug in the code is that it does not account for the possibility of `residualsWeights` being null or having a different length than `residuals`. Additionally, if `rows` is zero, it could lead to a division by zero error. Here is the corrected method:\n\npublic double getRMS() {\n    if (rows <= 0) {\n        throw new IllegalArgumentException(\"Number of rows must be greater than zero.\");\n    }\n    if (residuals == null || residualsWeights == null || residuals.length != residualsWeights.length) {\n        throw new IllegalArgumentException(\"Residuals and residualsWeights arrays must be non-null and of the same length.\");\n    }\n    double criterion = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        criterion += residual * residual * residualsWeights[i];\n    }\n    return Math.sqrt(criterion / rows);\n}\n\nThis version of the method includes checks to ensure that `rows` is greater than zero and that `residuals` and `residualsWeights` are non-null and of the same length. If any of these conditions are not met, an `IllegalArgumentException` is thrown."
+        },
+        "prompt_apr_2": {
+            "gpt-4o-mini": "public double getRMS() {\n    double criterion = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        criterion += residual * residual * residualsWeights[i];\n    }\n    return Math.sqrt(criterion / Arrays.stream(residualsWeights).sum());\n}",
+            "qwen-turbo": "Certainly, the issue in your code is that you are dividing the `criterion` by `rows` before taking the square root, which might not be the intended behavior if `rows` is zero or if you want to average the weighted residuals. If you intend to calculate the root mean square (RMS) correctly, you should divide by the number of elements after summing up the weighted residuals squared. Here is the corrected version of your method:\n\n```java\npublic double getRMS() {\n    double criterion = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        criterion += residual * residual * residualsWeights[i];\n    }\n    if (rows > 0) {\n        return Math.sqrt(criterion / rows);\n    } else {\n        // Handle the case where rows is zero to avoid division by zero\n        return 0.0;\n    }\n}\n```\n\nThis ensures that the division happens only when `rows` is greater than zero and handles the edge case where `rows` might be zero to prevent division by zero.",
+            "doubao-pro-4k": "public double getRMS() {\n    double criterion = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        criterion += residual * residual * residualsWeights[i];\n    }\n    return Math.sqrt(criterion / rows);\n}",
+            "ernie-3.5-128k": "public double getRMS() {\n    double criterion = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        criterion += residual * residual * residualsWeights[i];\n    }\n    if (rows > 0) {\n        return Math.sqrt(criterion / rows);\n    } else {\n        return 0.0;  // Avoid division by zero if rows is zero\n    }\n}",
+            "deepseek-chat": "The bug in the code is that it does not account for the possibility that `residualsWeights` might be `null`. If `residualsWeights` is `null`, the code will throw a `NullPointerException`. To fix this, we need to check if `residualsWeights` is `null` and handle it appropriately. Here is the corrected method:\n\npublic double getRMS() {\n    double criterion = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        if (residualsWeights == null) {\n            criterion += residual * residual;\n        } else {\n            criterion += residual * residual * residualsWeights[i];\n        }\n    }\n    return Math.sqrt(criterion / rows);\n}\n\nThis version of the method checks if `residualsWeights` is `null`. If it is, it simply adds the square of the residual to the criterion. If `residualsWeights` is not `null`, it multiplies the square of the residual by the corresponding weight before adding it to the criterion. This ensures that the method works correctly regardless of whether `residualsWeights` is `null` or not."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\npublic double getRMS() {\n    double criterion = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        criterion += residual * residual * residualsWeights[i];\n    }\n    return Math.sqrt(criterion / (rows - numberOfFixedPoints));\n}\n```",
+            "deepseek-chat": "public double getRMS() {\n    double criterion = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        criterion += residual * residual * residualsWeights[i];\n    }\n    return Math.sqrt(criterion / rows);\n}",
+            "ernie-3.5-128k": "public double getRMS() {\n        double criterion = 0;\n        for (int i = 0; i < rows; ++i) {\n            final double residual = residuals[i];\n            criterion += residual * residual * residualsWeights[i];\n        }\n        return Math.sqrt(criterion / (rows > 0 ? rows : 1));",
+            "doubao-pro-4k": "public double getRMS() {\n    double criterion = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        criterion += residual * residual * residualsWeights[i];\n    }\n    return Math.sqrt(criterion / (rows * rows));\n}",
+            "gpt-4o-mini": "public double getRMS() {\n        double criterion = 0;\n        for (int i = 0; i < rows; ++i) {\n            final double residual = residuals[i];\n            criterion += residual * residual * residualsWeights[i];\n        }\n        return Math.sqrt(criterion / (rows * residualsWeightsSum));"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"final double residual = residuals[i] * residualsWeights[i];\"\n    }\n]",
+            "doubao-pro-4k": "[\n{\"line_number\":5,\"fixed_statement\":\"final double residual = residuals[i];\"}\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"double residual = residuals[i];\"\n    },\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"criterion += residual * residual * residualsWeights[i];\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"double criterion = 0.0;\"\n    },\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"for (int i = 0; i < rows; i++) {\"\n    },\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"    final double residual = residuals[i];\"\n    },\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"    criterion += residual * residual * residualsWeights[i];\"\n    },\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"}\"\n    },\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"return Math.sqrt(criterion / rows);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"double criterion = 0.0;\"\n    },\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"for (int i = 0; i < rows; ++i) {\"\n    },\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"    final double residual = residuals[i];\"\n    },\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"    criterion += residual * residual * residualsWeights[i];\"\n    },\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"}\"\n    },\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"return Math.sqrt(criterion / (rows > 0 ? rows : 1));\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"        double criterion = 0.0;\"\n    },\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"            criterion += residual * residual * residualsWeights[i] / rows;\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"criterion += residual * residual * residualsWeights[i] / residualsWeights[i];\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"double criterion = 0.0;\"\n    },\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"criterion += residual * residual * (residualsWeights != null ? residualsWeights[i] : 1.0);\"\n    },\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return Math.sqrt(criterion / (residualsWeights != null ? rows : 1.0));\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"double criterion = 0.0;\"\n    },\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"            criterion += residual * residual * residualsWeights[i] / rows;\"\n    },\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"return Math.sqrt(criterion);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"            criterion += residual * residual * residualsWeights[i]; // Ensure residualsWeights[i] is correctly used as a weight, potentially need normalization if not already done\"\n    },\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"        return Math.sqrt(criterion / (rows * sumOfWeights)); // Add normalization by sum of weights if residualsWeights are not normalized to sum to rows\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"criterion /= rows;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return Math.sqrt(criterion / (rows * 1.0));\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"return Math.sqrt(criterion / (rows * (rows > 0 ? 1 : 0)));\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"return Math.sqrt(criterion / (double)rows);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"return Math.sqrt(criterion / rows / residualsWeightsSum);\"\n    }\n]"
+        }
+    },
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "6",
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "**4**",
+            "deepseek-chat": "4",
+            "gpt-4o-mini": "9"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "3",
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "**4**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "21"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "3",
+            "qwen-turbo": "442",
+            "ernie-3.5-128k": "442",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "442"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "chiSquare += residual * residual / residualsWeights[i];",
+            "ernie-3.5-128k": "final double residual = residuals[i];",
+            "doubao-pro-4k": "chiSquare += residual * residual / residualsWeights[i];",
+            "deepseek-chat": "chiSquare += residual * residual / residualsWeights[i];",
+            "gpt-4o-mini": "chiSquare += residual * residual / residualsWeights[i];"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "chiSquare += residual * residual / residualsWeights[i];",
+            "doubao-pro-4k": "chiSquare += residual * residual / residualsWeights[i];",
+            "deepseek-chat": "chiSquare += residual * residual / residualsWeights[i];",
+            "ernie-3.5-128k": "double chiSquare = residuals[i] * residuals[i] / residualsWeights[i];",
+            "gpt-4o-mini": "chiSquare += residual * residual / residualsWeights[i];"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "chiSquare += residual * residual / residualsWeights[i];",
+            "ernie-3.5-128k": "assertEquals(0.004, getChiSquare(), 0.001);",
+            "doubao-pro-4k": "assertEquals(0.004, errors[0], 0.001);",
+            "deepseek-chat": "assertEquals(0.004, errors[0], 0.001);",
+            "gpt-4o-mini": "assertEquals(0.004, errors[0], 0.002);"
+        },
+        "prompt_apr_1": {
+            "deepseek-chat": "public double getChiSquare() {\n    double chiSquare = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        chiSquare += residual * residual / (residualsWeights[i] * residualsWeights[i]);\n    }\n    return chiSquare;\n}",
+            "ernie-3.5-128k": "public double getChiSquare() {\n    double chiSquare = 0;\n    for (int i = 0; i < rows; ++i) {\n        double residual = residuals[i];  // Corrected from final double residual = residuals[i];\n        chiSquare += residual * residual / residualsWeights[i];\n    }\n    return chiSquare;\n}",
+            "qwen-turbo": "Certainly, the issue on line 5 seems to be related to accessing `residualsWeights` without ensuring that its size matches the size of the `residuals` array. To fix this, you should first check if `residualsWeights` is properly initialized and has the same length as `residuals`. Here is the complete corrected method with the necessary checks:\n\n```java\npublic double getChiSquare() {\n    double chiSquare = 0;\n    if (residuals == null || residualsWeights == null) {\n        throw new IllegalStateException(\"Residuals or residuals weights are not initialized\");\n    }\n    if (residuals.length != residualsWeights.length) {\n        throw new IllegalArgumentException(\"Residuals and residuals weights must have the same length\");\n    }\n    for (int i = 0; i < residuals.length; ++i) {\n        final double residual = residuals[i];\n        chiSquare += residual * residual / residualsWeights[i];\n    }\n    return chiSquare;\n}\n```\n\nThis code includes checks to ensure that both `residuals` and `residualsWeights` arrays are properly initialized and have the same length before performing the calculation.",
+            "gpt-4o-mini": "public double getChiSquare() {\n    double chiSquare = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        // Ensure residualsWeights[i] is not zero before performing division\n        if (residualsWeights[i] != 0) {\n            chiSquare += residual * residual / residualsWeights[i];\n        } else {\n            // Handle division by zero (could set a default value or skip, depending on requirements)\n            // For now, we assume you would want to skip the invalid weight\n            // or handle it as appropriate for your application.\n            // Here's an example where we simply skip invalid weights:\n            continue;\n        }\n    }\n    return chiSquare;\n}",
+            "doubao-pro-4k": "public double getChiSquare() {\n    double chiSquare = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        if (residualWeights[i]!= 0) { // Added this check to avoid division by zero\n            chiSquare += residual * residual / residualsWeights[i];\n        }\n    }\n    return chiSquare;\n}"
+        },
+        "prompt_apr_2": {
+            "ernie-3.5-128k": "public double getChiSquare() {\n    double chiSquare = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        chiSquare += residual * residual / (residualsWeights[i] != 0 ? residualsWeights[i] : 1);\n    }\n    return chiSquare;\n}",
+            "gpt-4o-mini": "public double getChiSquare() {\n    double chiSquare = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        final double weight = residualsWeights[i];\n        \n        // Ensure weight is not zero to avoid division by zero\n        if (weight != 0) {\n            chiSquare += residual * residual / weight;\n        } else {\n            // Handle zero weight case if necessary, e.g., skip or assign a default value\n            // For now, let's assume skipping is appropriate\n            // Alternatively, you could throw an exception if you want to catch this case explicitly\n        }\n    }\n    return chiSquare;\n}",
+            "doubao-pro-4k": "public double getChiSquare() {\n        double chiSquare = 0;\n        for (int i = 0; i < rows; ++i) {\n            final double residual = residuals[i];\n            if (residualWeights[i]!= 0) {\n                chiSquare += residual * residual / residualsWeights[i];\n            }\n        }\n        return chiSquare;\n    }",
+            "qwen-turbo": "Certainly, here is the corrected method. The bug seems to be related to the possibility that `residualsWeights[i]` could be zero, which would cause a division by zero error. To handle this, we should add a check to ensure that `residualsWeights[i]` is not zero before performing the division.\n\nHere is the complete corrected method:\n\n```java\npublic double getChiSquare() {\n    double chiSquare = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        if (residualsWeights[i] != 0) {\n            chiSquare += residual * residual / residualsWeights[i];\n        } else {\n            // Handle the case where residualsWeights[i] is zero, e.g., log an error or use a default value\n            System.err.println(\"Warning: residualsWeights[\" + i + \"] is zero, skipping division.\");\n        }\n    }\n    return chiSquare;\n}\n```\n\nThis ensures that the division only occurs when `residualsWeights[i]` is non-zero, avoiding potential runtime errors.",
+            "deepseek-chat": "The bug in the line `chiSquare += residual * residual / residualsWeights[i];` is that it does not account for the possibility of division by zero if `residualsWeights[i]` is zero. To fix this, we should add a check to ensure that `residualsWeights[i]` is not zero before performing the division. Here is the complete corrected method:\n\npublic double getChiSquare() {\n    double chiSquare = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        if (residualsWeights[i] != 0) {\n            chiSquare += residual * residual / residualsWeights[i];\n        } else {\n            // Handle the case where residualsWeights[i] is zero, e.g., by skipping or logging an error\n            // For now, we'll skip adding to chiSquare if the weight is zero\n        }\n    }\n    return chiSquare;\n}"
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\npublic double getChiSquare() {\n    double chiSquare = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        if (residualsWeights[i] != 0) { // Ensure division by zero does not occur\n            chiSquare += residual * residual / residualsWeights[i];\n        }\n    }\n```",
+            "deepseek-chat": "public double getChiSquare() {\n    double chiSquare = 0;\n    for (int i = 0; i < rows; ++i) {\n        final double residual = residuals[i];\n        chiSquare += residual * residual / (residualsWeights[i] != 0 ? residualsWeights[i] : 1);",
+            "ernie-3.5-128k": "public double getChiSquare() {\n        double chiSquare = 0;\n        for (int i = 0; i < rows; ++i) {\n            final double residual = residuals[i];\n            chiSquare += residual * residual / (residualsWeights != null ? residualsWeights[i] : 1.0);",
+            "gpt-4o-mini": "public double getChiSquare() {\n        double chiSquare = 0;\n        for (int i = 0; i < rows; ++i) {\n            final double residual = residuals[i];\n            chiSquare += residual * residual / residualsWeights[i];\n        }",
+            "doubao-pro-4k": "public double getChiSquare() {\n        double chiSquare = 0;\n        for (int i = 0; i < rows; ++i) {\n            final double residual = residuals[i];\n            chiSquare += residual * residual / (residualWeights[i] == 0? 1 : residualsWeights[i]);\n        }\n}"
+        },
+        "prompt_apr_4": {
+            "deepseek-chat": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"chiSquare += residual * residual * residualsWeights[i];\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"chiSquare += residual * residual / residualsWeights[i].doubleValue();\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"chiSquare += residual * residual / residualsWeights[i] / residualsWeights[i];\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"chiSquare += residual * residual / (residualsWeights[i] == 0? 1 : residualsWeights[i]);\"\n    }\n]",
+            "qwen-turbo": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"chiSquare += residual * residual / (residualsWeights[i] != 0 ? residualsWeights[i] : 1);\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"chiSquare += residual * residual / (residualsWeights[i] != 0 ? residualsWeights[i] : 1);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"chiSquare += residual * residual * residualsWeights[i];\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"chiSquare += residual * residual * residualsWeights[i];\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"chiSquare += residual * residual / (residualsWeights[i] == 0? Double.POSITIVE_INFINITY : residualsWeights[i]);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"chiSquare += Math.pow(residual, 2) / residualsWeights[i];\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"chiSquare += residual * residual / (residualsWeights[i] ?? 1);\"\n    }\n]",
+            "doubao-pro-4k": "[\n{\"line_number\": 6,\"fixed_statement\": \"chiSquare += residual * residual / (residualsWeights[i]!= 0? residualsWeights[i] : 1);\"}\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"chiSquare += residual * residual / residualsWeights[i].doubleValue();\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"chiSquare += residual * residual / residualsWeights[i];\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"chiSquare += residual * residual * residualsWeights[i];\"\n    }\n]"
+        }
+    }
+]

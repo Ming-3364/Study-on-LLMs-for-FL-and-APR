@@ -1,0 +1,254 @@
+
+================== buggy_file ==================
+src/org/mockito/internal/util/reflection/GenericMetadataSupport.java
+================== buggy_method ==================
+{'method_name': 'registerTypeVariablesOn', 'method_body': 'protected void registerTypeVariablesOn(Type classType) {\n        if (!(classType instanceof ParameterizedType)) {\n            return;\n        }\n        ParameterizedType parameterizedType = (ParameterizedType) classType;\n        TypeVariable[] typeParameters = ((Class<?>) parameterizedType.getRawType()).getTypeParameters();\n        Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();\n        for (int i = 0; i < actualTypeArguments.length; i++) {\n            TypeVariable typeParameter = typeParameters[i];\n            Type actualTypeArgument = actualTypeArguments[i];\n\n            if (actualTypeArgument instanceof WildcardType) {\n                contextualActualTypeParameters.put(typeParameter, boundsOf((WildcardType) actualTypeArgument));\n            } else {\n                contextualActualTypeParameters.put(typeParameter, actualTypeArgument);\n            }\n            // logger.log("For \'" + parameterizedType + "\' found type variable : { \'" + typeParameter + "(" + System.identityHashCode(typeParameter) + ")" + "\' : \'" + actualTypeArgument + "(" + System.identityHashCode(typeParameter) + ")" + "\' }");\n        }\n    }', 'start_line': 66, 'end_line': 84, 'buggy_lines': [79]}
+================== buggy_method_src ==================
+protected void registerTypeVariablesOn(Type classType) {
+        if (!(classType instanceof ParameterizedType)) {
+            return;
+        }
+        ParameterizedType parameterizedType = (ParameterizedType) classType;
+        TypeVariable[] typeParameters = ((Class<?>) parameterizedType.getRawType()).getTypeParameters();
+        Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+        for (int i = 0; i < actualTypeArguments.length; i++) {
+            TypeVariable typeParameter = typeParameters[i];
+            Type actualTypeArgument = actualTypeArguments[i];
+
+            if (actualTypeArgument instanceof WildcardType) {
+                contextualActualTypeParameters.put(typeParameter, boundsOf((WildcardType) actualTypeArgument));
+            } else {
+                contextualActualTypeParameters.put(typeParameter, actualTypeArgument);
+            }
+            // logger.log("For '" + parameterizedType + "' found type variable : { '" + typeParameter + "(" + System.identityHashCode(typeParameter) + ")" + "' : '" + actualTypeArgument + "(" + System.identityHashCode(typeParameter) + ")" + "' }");
+        }
+    }
+================== test_stack ==================
+org.mockito.internal.util.reflection.GenericMetadataSupportTest::typeVariable_of_self_type
+java.lang.StackOverflowError
+	at sun.reflect.generics.reflectiveObjects.TypeVariableImpl.hashCode(TypeVariableImpl.java:201)
+	at java.util.HashMap.hash(HashMap.java:339)
+	at java.util.HashMap.get(HashMap.java:557)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:182)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+	at org.mockito.internal.util.reflection.GenericMetadataSupport.getActualTypeArgumentFor(GenericMetadataSupport.java:185)
+
+================== test_assert ==================
+@Test
+    public void typeVariable_of_self_type() {
+        GenericMetadataSupport genericMetadata = inferFrom(GenericsSelfReference.class).resolveGenericReturnType(firstNamedMethod("self", GenericsSelfReference.class));
+
+        assertThat(genericMetadata.rawType()).isEqualTo(GenericsSelfReference.class);
+    }
+================== buggy_lines_in_method ==================
+[14]
+================== buggy_statements ==================
+['            } else {']
+================== buggy_method_src_endswith_buggy_statement ==================
+protected void registerTypeVariablesOn(Type classType) {
+        if (!(classType instanceof ParameterizedType)) {
+            return;
+        }
+        ParameterizedType parameterizedType = (ParameterizedType) classType;
+        TypeVariable[] typeParameters = ((Class<?>) parameterizedType.getRawType()).getTypeParameters();
+        Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+        for (int i = 0; i < actualTypeArguments.length; i++) {
+            TypeVariable typeParameter = typeParameters[i];
+            Type actualTypeArgument = actualTypeArguments[i];
+
+            if (actualTypeArgument instanceof WildcardType) {
+                contextualActualTypeParameters.put(typeParameter, boundsOf((WildcardType) actualTypeArgument));
+            } else {

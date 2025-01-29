@@ -1,0 +1,103 @@
+
+================== buggy_file ==================
+source/org/jfree/chart/util/ShapeUtilities.java
+================== buggy_method ==================
+{'method_name': 'equal', 'method_body': 'public static boolean equal(GeneralPath p1, GeneralPath p2) {\n        if (p1 == null) {\n            return (p2 == null);\n        }\n        if (p2 == null) {\n            return false;\n        }\n        if (p1.getWindingRule() != p2.getWindingRule()) {\n            return false;\n        }\n        PathIterator iterator1 = p1.getPathIterator(null);\n        PathIterator iterator2 = p1.getPathIterator(null);\n        double[] d1 = new double[6];\n        double[] d2 = new double[6];\n        boolean done = iterator1.isDone() && iterator2.isDone();\n        while (!done) {\n            if (iterator1.isDone() != iterator2.isDone()) {\n                return false;\n            }\n            int seg1 = iterator1.currentSegment(d1);\n            int seg2 = iterator2.currentSegment(d2);\n            if (seg1 != seg2) {\n                return false;\n            }\n            if (!Arrays.equals(d1, d2)) {\n                return false;\n            }\n            iterator1.next();\n            iterator2.next();\n            done = iterator1.isDone() && iterator2.isDone();\n        }\n        return true;\n    }', 'start_line': 264, 'end_line': 296, 'buggy_lines': [275]}
+================== buggy_method_src ==================
+public static boolean equal(GeneralPath p1, GeneralPath p2) {
+        if (p1 == null) {
+            return (p2 == null);
+        }
+        if (p2 == null) {
+            return false;
+        }
+        if (p1.getWindingRule() != p2.getWindingRule()) {
+            return false;
+        }
+        PathIterator iterator1 = p1.getPathIterator(null);
+        PathIterator iterator2 = p1.getPathIterator(null);
+        double[] d1 = new double[6];
+        double[] d2 = new double[6];
+        boolean done = iterator1.isDone() && iterator2.isDone();
+        while (!done) {
+            if (iterator1.isDone() != iterator2.isDone()) {
+                return false;
+            }
+            int seg1 = iterator1.currentSegment(d1);
+            int seg2 = iterator2.currentSegment(d2);
+            if (seg1 != seg2) {
+                return false;
+            }
+            if (!Arrays.equals(d1, d2)) {
+                return false;
+            }
+            iterator1.next();
+            iterator2.next();
+            done = iterator1.isDone() && iterator2.isDone();
+        }
+        return true;
+    }
+================== test_stack ==================
+org.jfree.chart.util.junit.ShapeUtilitiesTests::testEqualGeneralPaths
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertFalse(Assert.java:39)
+	at junit.framework.Assert.assertFalse(Assert.java:47)
+	at junit.framework.TestCase.assertFalse(TestCase.java:219)
+	at org.jfree.chart.util.junit.ShapeUtilitiesTests.testEqualGeneralPaths(ShapeUtilitiesTests.java:212)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertFalse(ShapeUtilities.equal(g1, g2));
+
+================== buggy_lines_in_method ==================
+[12]
+================== buggy_statements ==================
+['        PathIterator iterator2 = p1.getPathIterator(null);']
+================== buggy_method_src_endswith_buggy_statement ==================
+public static boolean equal(GeneralPath p1, GeneralPath p2) {
+        if (p1 == null) {
+            return (p2 == null);
+        }
+        if (p2 == null) {
+            return false;
+        }
+        if (p1.getWindingRule() != p2.getWindingRule()) {
+            return false;
+        }
+        PathIterator iterator1 = p1.getPathIterator(null);
+        PathIterator iterator2 = p1.getPathIterator(null);

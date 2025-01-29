@@ -1,0 +1,90 @@
+
+================== buggy_file ==================
+faultyVersion.java
+================== buggy_method ==================
+{'method_name': 'solve', 'method_body': 'private void solve(final FastIO io, final String[] args) {\n\t\tio.setAutoFlush(true);\n\t\tio.setAutoOutFlush(false);\n\t\t/*\n\t\t * author: 31536000\n\t\t * AtCoder Beginner Contest 352 F問題\n\t\t * 考察メモ\n\t\t * まず、疎な頂点が二つある場合は明らかにそこに関しては一意に定まらない\n\t\t * よって、残りの頂点に対する割り当てだけ考えれば良い\n\t\t * 各連結成分に対して、最小値を決めれば残りは一意に定まる\n\t\t * ということは、連結成分はN/2個以下であり、それぞれに最小値を決めるのは16P8≒5e8とか(実際にはもっと小さいはず)\n\t\t */\n\t\tint N = io.nextInt(), M = io.nextInt();\n\t\tACL.DisjointSetUnion dsu = ACL.DisjointSetUnion.create(N);\n\t\tArrayList<ArrayList<Edge>> graph = new ArrayList<>(N);\n\t\tfor (int i = 0;i < N;++ i) graph.add(new ArrayList<>());\n\t\tfor (int i = 0;i < M;++ i) {\n\t\t\tint A = io.nextInt() - 1, B = io.nextInt() - 1, C = io.nextInt();\n\t\t\tdsu.merge(A, B);\n\t\t\tgraph.get(A).add(new Edge(A, B, -C));\n\t\t\tgraph.get(B).add(new Edge(B, A, C));\n\t\t}\n\t\t// 要素数1の連結成分が二つ以上あるなら、数えない\n\t\tint one = IntStream.range(0, N).filter(i -> dsu.getSize(i) == 1).sum();\n\t\tComponent[] comp = Arrays\n\t\t\t\t.stream(dsu.getGroups().stream().filter(i -> one <= 1 || i.size() != 1).mapToInt(i -> i.get(0)).toArray())\n\t\t\t\t.mapToObj(i -> new Component(i, graph)).toArray(Component[]::new);\n\t\tdfs(comp, new BitSet(N), 0, N);\n\t\tint[] ans = new int[N];\n\t\tArrays.fill(ans, -1);\n\t\tfor (Component c : comp) {\n\t\t\tif (c.candidate.cardinality() != 1) continue;\n\t\t\tint min = c.candidate.nextSetBit(0) + 1;\n\t\t\tfor (Map.Entry<Integer, Integer> e : c.add.entrySet()) ans[e.getKey()] = e.getValue() + min;\n\t\t}\n\t\tio.println(ans);\n\t}\n\tclass Edge {\n\t\tint source, target, dist;\n\t\tEdge(int source, int target, int dist) {\n\t\t\tthis.source = source;\n\t\t\tthis.target = target;\n\t\t\tthis.dist = dist;\n\t\t}\n\t}\n\tclass Component {\n\t\tBitSet candidate;\n\t\tint[] fill;\n\t\tHashMap<Integer, Integer> add = new HashMap<>();\n\t\tint N, max, target;\n\t\tComponent(int i, ArrayList<Array', 'start_line': 27, 'end_line': 63}
+================== buggy_method_src ==================
+private void solve(final FastIO io, final String[] args) {
+		io.setAutoFlush(true);
+		io.setAutoOutFlush(false);
+		/*
+		 * author: 31536000
+		 * AtCoder Beginner Contest 352 F問題
+		 * 考察メモ
+		 * まず、疎な頂点が二つある場合は明らかにそこに関しては一意に定まらない
+		 * よって、残りの頂点に対する割り当てだけ考えれば良い
+		 * 各連結成分に対して、最小値を決めれば残りは一意に定まる
+		 * ということは、連結成分はN/2個以下であり、それぞれに最小値を決めるのは16P8≒5e8とか(実際にはもっと小さいはず)
+		 */
+		int N = io.nextInt(), M = io.nextInt();
+		ACL.DisjointSetUnion dsu = ACL.DisjointSetUnion.create(N);
+		ArrayList<ArrayList<Edge>> graph = new ArrayList<>(N);
+		for (int i = 0;i < N;++ i) graph.add(new ArrayList<>());
+		for (int i = 0;i < M;++ i) {
+			int A = io.nextInt() - 1, B = io.nextInt() - 1, C = io.nextInt();
+			dsu.merge(A, B);
+			graph.get(A).add(new Edge(A, B, -C));
+			graph.get(B).add(new Edge(B, A, C));
+		}
+		// 要素数1の連結成分が二つ以上あるなら、数えない
+		int one = IntStream.range(0, N).filter(i -> dsu.getSize(i) == 1).sum();
+		Component[] comp = Arrays
+				.stream(dsu.getGroups().stream().filter(i -> one <= 1 || i.size() != 1).mapToInt(i -> i.get(0)).toArray())
+				.mapToObj(i -> new Component(i, graph)).toArray(Component[]::new);
+		dfs(comp, new BitSet(N), 0, N);
+		int[] ans = new int[N];
+		Arrays.fill(ans, -1);
+		for (Component c : comp) {
+			if (c.candidate.cardinality() != 1) continue;
+			int min = c.candidate.nextSetBit(0) + 1;
+			for (Map.Entry<Integer, Integer> e : c.add.entrySet()) ans[e.getKey()] = e.getValue() + min;
+		}
+		io.println(ans);
+	}
+	class Edge {
+		int source, target, dist;
+		Edge(int source, int target, int dist) {
+			this.source = source;
+			this.target = target;
+			this.dist = dist;
+		}
+	}
+	class Component {
+		BitSet candidate;
+		int[] fill;
+		HashMap<Integer, Integer> add = new HashMap<>();
+		int N, max, target;
+		Component(int i, ArrayList<Array
+================== test_stack ==================
+None
+================== test_assert ==================
+None
+================== buggy_lines_in_method ==================
+[24]
+================== buggy_statements ==================
+['\t\tint one = IntStream.range(0, N).filter(i -> dsu.getSize(i) == 1).sum();']
+================== buggy_method_src_endswith_buggy_statement ==================
+private void solve(final FastIO io, final String[] args) {
+		io.setAutoFlush(true);
+		io.setAutoOutFlush(false);
+		/*
+		 * author: 31536000
+		 * AtCoder Beginner Contest 352 F問題
+		 * 考察メモ
+		 * まず、疎な頂点が二つある場合は明らかにそこに関しては一意に定まらない
+		 * よって、残りの頂点に対する割り当てだけ考えれば良い
+		 * 各連結成分に対して、最小値を決めれば残りは一意に定まる
+		 * ということは、連結成分はN/2個以下であり、それぞれに最小値を決めるのは16P8≒5e8とか(実際にはもっと小さいはず)
+		 */
+		int N = io.nextInt(), M = io.nextInt();
+		ACL.DisjointSetUnion dsu = ACL.DisjointSetUnion.create(N);
+		ArrayList<ArrayList<Edge>> graph = new ArrayList<>(N);
+		for (int i = 0;i < N;++ i) graph.add(new ArrayList<>());
+		for (int i = 0;i < M;++ i) {
+			int A = io.nextInt() - 1, B = io.nextInt() - 1, C = io.nextInt();
+			dsu.merge(A, B);
+			graph.get(A).add(new Edge(A, B, -C));
+			graph.get(B).add(new Edge(B, A, C));
+		}
+		// 要素数1の連結成分が二つ以上あるなら、数えない
+		int one = IntStream.range(0, N).filter(i -> dsu.getSize(i) == 1).sum();

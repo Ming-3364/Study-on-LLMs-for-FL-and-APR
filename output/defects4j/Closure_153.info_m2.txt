@@ -1,0 +1,252 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/SyntacticScopeCreator.java
+================== buggy_method ==================
+{'method_name': 'scanVars', 'method_body': "private void scanVars(Node n, Node parent) {\n    switch (n.getType()) {\n      case Token.VAR:\n        // Declare all variables. e.g. var x = 1, y, z;\n        for (Node child = n.getFirstChild();\n             child != null;) {\n          Node next = child.getNext();\n          Preconditions.checkState(child.getType() == Token.NAME);\n          String name = child.getString();\n          declareVar(name, child, n, parent, null, n);\n          child = next;\n        }\n        return;\n\n      case Token.FUNCTION:\n        if (NodeUtil.isFunctionExpression(n)) {\n          return;\n        }\n\n        String fnName = n.getFirstChild().getString();\n        if (fnName.isEmpty()) {\n          // This is invalid, but allow it so the checks can catch it.\n          return;\n        }\n        declareVar(fnName, n.getFirstChild(), n, parent, null, n);\n        return;   // should not examine function's children\n\n      case Token.CATCH:\n        Preconditions.checkState(n.getChildCount() == 2);\n        Preconditions.checkState(n.getFirstChild().getType() == Token.NAME);\n        // the first child is the catch var and the third child\n        // is the code block\n\n        final Node var = n.getFirstChild();\n        final Node block = var.getNext();\n\n        declareVar(var.getString(), var, n, parent, null, n);\n        scanVars(block, n);\n        return;  // only one child to scan\n\n      case Token.SCRIPT:\n        sourceName = (String) n.getProp(Node.SOURCENAME_PROP);\n        break;\n    }\n\n    // Variables can only occur in statement-level nodes, so\n    // we only need to traverse children in a couple special cases.\n    if (NodeUtil.isControlStructure(n) || NodeUtil.isStatementBlock(n)) {\n      for (Node child = n.getFirstChild();\n           child != null;) {\n        Node next = child.getNext();\n        scanVars(child, n);\n        child = next;\n      }\n    }\n  }", 'start_line': 117, 'end_line': 172, 'buggy_lines': [124, 125, 126, 141, 153]}
+================== buggy_method_src ==================
+private void scanVars(Node n, Node parent) {
+    switch (n.getType()) {
+      case Token.VAR:
+        // Declare all variables. e.g. var x = 1, y, z;
+        for (Node child = n.getFirstChild();
+             child != null;) {
+          Node next = child.getNext();
+          Preconditions.checkState(child.getType() == Token.NAME);
+          String name = child.getString();
+          declareVar(name, child, n, parent, null, n);
+          child = next;
+        }
+        return;
+
+      case Token.FUNCTION:
+        if (NodeUtil.isFunctionExpression(n)) {
+          return;
+        }
+
+        String fnName = n.getFirstChild().getString();
+        if (fnName.isEmpty()) {
+          // This is invalid, but allow it so the checks can catch it.
+          return;
+        }
+        declareVar(fnName, n.getFirstChild(), n, parent, null, n);
+        return;   // should not examine function's children
+
+      case Token.CATCH:
+        Preconditions.checkState(n.getChildCount() == 2);
+        Preconditions.checkState(n.getFirstChild().getType() == Token.NAME);
+        // the first child is the catch var and the third child
+        // is the code block
+
+        final Node var = n.getFirstChild();
+        final Node block = var.getNext();
+
+        declareVar(var.getString(), var, n, parent, null, n);
+        scanVars(block, n);
+        return;  // only one child to scan
+
+      case Token.SCRIPT:
+        sourceName = (String) n.getProp(Node.SOURCENAME_PROP);
+        break;
+    }
+
+    // Variables can only occur in statement-level nodes, so
+    // we only need to traverse children in a couple special cases.
+    if (NodeUtil.isControlStructure(n) || NodeUtil.isStatementBlock(n)) {
+      for (Node child = n.getFirstChild();
+           child != null;) {
+        Node next = child.getNext();
+        scanVars(child, n);
+        child = next;
+      }
+    }
+  }
+================== test_stack ==================
+com.google.javascript.jscomp.NormalizeTest::testDuplicateVarInExterns
+junit.framework.AssertionFailedError:
+Expected: var extern=3
+Result: extern=3
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [sourcename: expected0] [synthetic: 1]
+        VAR 1 [sourcename: expected0]
+            NAME extern 1 [sourcename: expected0]
+                NUMBER 3.0 1 [sourcename: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [sourcename: testcode] [synthetic: 1]
+        EXPR_RESULT 1 [sourcename: testcode]
+            ASSIGN 1 [sourcename: testcode]
+                NAME extern 1 [sourcename: testcode]
+                NUMBER 3.0 1 [sourcename: testcode]
+
+
+Subtree1: VAR 1 [sourcename: expected0]
+    NAME extern 1 [sourcename: expected0]
+        NUMBER 3.0 1 [sourcename: expected0]
+
+
+Subtree2: EXPR_RESULT 1 [sourcename: testcode]
+    ASSIGN 1 [sourcename: testcode]
+        NAME extern 1 [sourcename: testcode]
+        NUMBER 3.0 1 [sourcename: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:797)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:377)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:345)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:322)
+	at com.google.javascript.jscomp.NormalizeTest.testDuplicateVarInExterns(NormalizeTest.java:95)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.NormalizeTest::testMakeLocalNamesUnique
+junit.framework.AssertionFailedError:
+Expected: var window
+Result:
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [sourcename: expected0] [synthetic: 1]
+        VAR 1 [sourcename: expected0]
+            NAME window 1 [sourcename: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [sourcename: testcode] [synthetic: 1]
+
+
+Subtree1: SCRIPT 1 [sourcename: expected0] [synthetic: 1]
+    VAR 1 [sourcename: expected0]
+        NAME window 1 [sourcename: expected0]
+
+
+Subtree2: SCRIPT 1 [sourcename: testcode] [synthetic: 1]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:797)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:377)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:306)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:275)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:263)
+	at com.google.javascript.jscomp.NormalizeTest.testMakeLocalNamesUnique(NormalizeTest.java:259)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+test("var extern;",
+
+================== buggy_lines_in_method ==================
+[8, 9, 10, 25, 37]
+================== buggy_statements ==================
+['          Preconditions.checkState(child.getType() == Token.NAME);', '          String name = child.getString();', '          declareVar(name, child, n, parent, null, n);', '        declareVar(fnName, n.getFirstChild(), n, parent, null, n);', '        declareVar(var.getString(), var, n, parent, null, n);']
+================== buggy_method_src_endswith_buggy_statement ==================
+private void scanVars(Node n, Node parent) {
+    switch (n.getType()) {
+      case Token.VAR:
+        // Declare all variables. e.g. var x = 1, y, z;
+        for (Node child = n.getFirstChild();
+             child != null;) {
+          Node next = child.getNext();
+          Preconditions.checkState(child.getType() == Token.NAME);
+          String name = child.getString();
+          declareVar(name, child, n, parent, null, n);
+          child = next;
+        }
+        return;
+
+      case Token.FUNCTION:
+        if (NodeUtil.isFunctionExpression(n)) {
+          return;
+        }
+
+        String fnName = n.getFirstChild().getString();
+        if (fnName.isEmpty()) {
+          // This is invalid, but allow it so the checks can catch it.
+          return;
+        }
+        declareVar(fnName, n.getFirstChild(), n, parent, null, n);
+        return;   // should not examine function's children
+
+      case Token.CATCH:
+        Preconditions.checkState(n.getChildCount() == 2);
+        Preconditions.checkState(n.getFirstChild().getType() == Token.NAME);
+        // the first child is the catch var and the third child
+        // is the code block
+
+        final Node var = n.getFirstChild();
+        final Node block = var.getNext();
+
+        declareVar(var.getString(), var, n, parent, null, n);

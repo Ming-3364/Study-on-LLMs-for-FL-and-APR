@@ -1,0 +1,175 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/jsontype/impl/TypeDeserializerBase.java
+================== buggy_method ==================
+{'method_name': '_findDeserializer', 'method_body': "protected final JsonDeserializer<Object> _findDeserializer(DeserializationContext ctxt,\n            String typeId) throws IOException\n    {\n        JsonDeserializer<Object> deser = _deserializers.get(typeId);\n        if (deser == null) {\n            /* As per [Databind#305], need to provide contextual info. But for\n             * backwards compatibility, let's start by only supporting this\n             * for base class, not via interface. Later on we can add this\n             * to the interface, assuming deprecation at base class helps.\n             */\n            JavaType type = _idResolver.typeFromId(ctxt, typeId);\n            if (type == null) {\n                // As per [JACKSON-614], use the default impl if no type id available:\n                deser = _findDefaultImplDeserializer(ctxt);\n                if (deser == null) {\n                    // 10-May-2016, tatu: We may get some help...\n                    JavaType actual = _handleUnknownTypeId(ctxt, typeId, _idResolver, _baseType);\n                    if (actual == null) { // what should this be taken to mean?\n                        // TODO: try to figure out something better\n                        return null;\n                    }\n                    // ... would this actually work?\n                    deser = ctxt.findContextualValueDeserializer(actual, _property);\n                }\n            } else {\n                /* 16-Dec-2010, tatu: Since nominal type we get here has no (generic) type parameters,\n                 *   we actually now need to explicitly narrow from base type (which may have parameterization)\n                 *   using raw type.\n                 *\n                 *   One complication, though; can not change 'type class' (simple type to container); otherwise\n                 *   we may try to narrow a SimpleType (Object.class) into MapType (Map.class), losing actual\n                 *   type in process (getting SimpleType of Map.class which will not work as expected)\n                 */\n                if ((_baseType != null)\n                        && _baseType.getClass() == type.getClass()) {\n                    /* 09-Aug-2015, tatu: Not sure if the second part of the check makes sense;\n                     *   but it appears to check that JavaType impl class is the same which is\n                     *   important for some reason?\n                     *   Disabling the check will break 2 Enum-related tests.\n                     */\n                    // 19-Jun-2016, tatu: As per [databind#1270] we may actually get full\n                    //   generic type with custom type resolvers. If so, should try to retain them.\n                    //  Whether this is sufficient to avoid problems remains to be seen, but for\n                    //  now it should improve things.\n                        type = ctxt.getTypeFactory().constructSpecializedType(_baseType, type.getRawClass());\n                }\n                deser = ctxt.findContextualValueDeserializer(type, _property);\n            }\n            _deserializers.put(typeId, deser);\n        }\n        return deser;\n    }", 'start_line': 140, 'end_line': 191, 'buggy_lines': [184, 186]}
+================== buggy_method_src ==================
+protected final JsonDeserializer<Object> _findDeserializer(DeserializationContext ctxt,
+            String typeId) throws IOException
+    {
+        JsonDeserializer<Object> deser = _deserializers.get(typeId);
+        if (deser == null) {
+            /* As per [Databind#305], need to provide contextual info. But for
+             * backwards compatibility, let's start by only supporting this
+             * for base class, not via interface. Later on we can add this
+             * to the interface, assuming deprecation at base class helps.
+             */
+            JavaType type = _idResolver.typeFromId(ctxt, typeId);
+            if (type == null) {
+                // As per [JACKSON-614], use the default impl if no type id available:
+                deser = _findDefaultImplDeserializer(ctxt);
+                if (deser == null) {
+                    // 10-May-2016, tatu: We may get some help...
+                    JavaType actual = _handleUnknownTypeId(ctxt, typeId, _idResolver, _baseType);
+                    if (actual == null) { // what should this be taken to mean?
+                        // TODO: try to figure out something better
+                        return null;
+                    }
+                    // ... would this actually work?
+                    deser = ctxt.findContextualValueDeserializer(actual, _property);
+                }
+            } else {
+                /* 16-Dec-2010, tatu: Since nominal type we get here has no (generic) type parameters,
+                 *   we actually now need to explicitly narrow from base type (which may have parameterization)
+                 *   using raw type.
+                 *
+                 *   One complication, though; can not change 'type class' (simple type to container); otherwise
+                 *   we may try to narrow a SimpleType (Object.class) into MapType (Map.class), losing actual
+                 *   type in process (getting SimpleType of Map.class which will not work as expected)
+                 */
+                if ((_baseType != null)
+                        && _baseType.getClass() == type.getClass()) {
+                    /* 09-Aug-2015, tatu: Not sure if the second part of the check makes sense;
+                     *   but it appears to check that JavaType impl class is the same which is
+                     *   important for some reason?
+                     *   Disabling the check will break 2 Enum-related tests.
+                     */
+                    // 19-Jun-2016, tatu: As per [databind#1270] we may actually get full
+                    //   generic type with custom type resolvers. If so, should try to retain them.
+                    //  Whether this is sufficient to avoid problems remains to be seen, but for
+                    //  now it should improve things.
+                        type = ctxt.getTypeFactory().constructSpecializedType(_baseType, type.getRawClass());
+                }
+                deser = ctxt.findContextualValueDeserializer(type, _property);
+            }
+            _deserializers.put(typeId, deser);
+        }
+        return deser;
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.jsontype.TestCustomTypeIdResolver::testPolymorphicTypeViaCustom
+com.fasterxml.jackson.databind.JsonMappingException: Problem deserializing property 'options' (expected type: [simple type, class java.lang.Object]; actual type: java.util.LinkedHashMap), problem: Can not set com.fasterxml.jackson.databind.jsontype.TestCustomTypeIdResolver$Poly1Base field com.fasterxml.jackson.databind.jsontype.TestCustomTypeIdResolver$Base1270.options to java.util.LinkedHashMap
+ at [Source: {"b":{"type":"poly1","options":{"val":"optionValue"},"val":"some value"}}; line: 1, column: 52] (through reference chain: com.fasterxml.jackson.databind.jsontype.Top1270["b"]->com.fasterxml.jackson.databind.jsontype.Base1270["options"])
+	at com.fasterxml.jackson.databind.JsonMappingException.from(JsonMappingException.java:268)
+	at com.fasterxml.jackson.databind.deser.SettableBeanProperty._throwAsIOE(SettableBeanProperty.java:516)
+	at com.fasterxml.jackson.databind.deser.impl.FieldProperty.deserializeAndSet(FieldProperty.java:105)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializer.vanillaDeserialize(BeanDeserializer.java:276)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializer._deserializeOther(BeanDeserializer.java:178)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializer.deserialize(BeanDeserializer.java:150)
+	at com.fasterxml.jackson.databind.jsontype.impl.AsPropertyTypeDeserializer._deserializeTypedForId(AsPropertyTypeDeserializer.java:126)
+	at com.fasterxml.jackson.databind.jsontype.impl.AsPropertyTypeDeserializer.deserializeTypedFromObject(AsPropertyTypeDeserializer.java:97)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.deserializeWithType(BeanDeserializerBase.java:1079)
+	at com.fasterxml.jackson.databind.deser.SettableBeanProperty.deserialize(SettableBeanProperty.java:488)
+	at com.fasterxml.jackson.databind.deser.impl.FieldProperty.deserializeAndSet(FieldProperty.java:101)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializer.vanillaDeserialize(BeanDeserializer.java:276)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializer.deserialize(BeanDeserializer.java:140)
+	at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:3789)
+	at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:2833)
+	at com.fasterxml.jackson.databind.jsontype.TestCustomTypeIdResolver.testPolymorphicTypeViaCustom(TestCustomTypeIdResolver.java:226)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+Caused by: java.lang.IllegalArgumentException: Can not set com.fasterxml.jackson.databind.jsontype.TestCustomTypeIdResolver$Poly1Base field com.fasterxml.jackson.databind.jsontype.TestCustomTypeIdResolver$Base1270.options to java.util.LinkedHashMap
+	at sun.reflect.UnsafeFieldAccessorImpl.throwSetIllegalArgumentException(UnsafeFieldAccessorImpl.java:167)
+	at sun.reflect.UnsafeFieldAccessorImpl.throwSetIllegalArgumentException(UnsafeFieldAccessorImpl.java:171)
+	at sun.reflect.UnsafeObjectFieldAccessorImpl.set(UnsafeObjectFieldAccessorImpl.java:81)
+	at java.lang.reflect.Field.set(Field.java:764)
+	at com.fasterxml.jackson.databind.deser.impl.FieldProperty.deserializeAndSet(FieldProperty.java:103)
+	... 47 more
+
+================== test_assert ==================
+Top1270 itemRead = MAPPER.readValue(json, Top1270.class);
+
+================== buggy_lines_in_method ==================
+[45, 47]
+================== buggy_statements ==================
+['                        type = ctxt.getTypeFactory().constructSpecializedType(_baseType, type.getRawClass());', '                deser = ctxt.findContextualValueDeserializer(type, _property);']
+================== buggy_method_src_endswith_buggy_statement ==================
+protected final JsonDeserializer<Object> _findDeserializer(DeserializationContext ctxt,
+            String typeId) throws IOException
+    {
+        JsonDeserializer<Object> deser = _deserializers.get(typeId);
+        if (deser == null) {
+            /* As per [Databind#305], need to provide contextual info. But for
+             * backwards compatibility, let's start by only supporting this
+             * for base class, not via interface. Later on we can add this
+             * to the interface, assuming deprecation at base class helps.
+             */
+            JavaType type = _idResolver.typeFromId(ctxt, typeId);
+            if (type == null) {
+                // As per [JACKSON-614], use the default impl if no type id available:
+                deser = _findDefaultImplDeserializer(ctxt);
+                if (deser == null) {
+                    // 10-May-2016, tatu: We may get some help...
+                    JavaType actual = _handleUnknownTypeId(ctxt, typeId, _idResolver, _baseType);
+                    if (actual == null) { // what should this be taken to mean?
+                        // TODO: try to figure out something better
+                        return null;
+                    }
+                    // ... would this actually work?
+                    deser = ctxt.findContextualValueDeserializer(actual, _property);
+                }
+            } else {
+                /* 16-Dec-2010, tatu: Since nominal type we get here has no (generic) type parameters,
+                 *   we actually now need to explicitly narrow from base type (which may have parameterization)
+                 *   using raw type.
+                 *
+                 *   One complication, though; can not change 'type class' (simple type to container); otherwise
+                 *   we may try to narrow a SimpleType (Object.class) into MapType (Map.class), losing actual
+                 *   type in process (getting SimpleType of Map.class which will not work as expected)
+                 */
+                if ((_baseType != null)
+                        && _baseType.getClass() == type.getClass()) {
+                    /* 09-Aug-2015, tatu: Not sure if the second part of the check makes sense;
+                     *   but it appears to check that JavaType impl class is the same which is
+                     *   important for some reason?
+                     *   Disabling the check will break 2 Enum-related tests.
+                     */
+                    // 19-Jun-2016, tatu: As per [databind#1270] we may actually get full
+                    //   generic type with custom type resolvers. If so, should try to retain them.
+                    //  Whether this is sufficient to avoid problems remains to be seen, but for
+                    //  now it should improve things.
+                        type = ctxt.getTypeFactory().constructSpecializedType(_baseType, type.getRawClass());
+                }
+                deser = ctxt.findContextualValueDeserializer(type, _property);

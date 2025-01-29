@@ -1,0 +1,109 @@
+
+================== buggy_file ==================
+src/org/mockito/internal/configuration/injection/filter/NameBasedCandidateFilter.java
+================== buggy_method ==================
+{'method_name': 'filterCandidate', 'method_body': 'public OngoingInjecter filterCandidate(Collection<Object> mocks,\n\t\t\tField field, Object fieldInstance) {\n\t\tList<Object> mockNameMatches = new ArrayList<Object>();\n\t\tif (mocks.size() > 1) {\n\t\t\tfor (Object mock : mocks) {\n\t\t\t\tif (field.getName().equals(mockUtil.getMockName(mock).toString())) {\n\t\t\t\t\tmockNameMatches.add(mock);\n\t\t\t\t}\n\t\t\t}\n\t\t\treturn next.filterCandidate(mockNameMatches, field,\n\t\t\t\t\tfieldInstance);\n\t\t\t/*\n\t\t\t * In this case we have to check whether we have conflicting naming\n\t\t\t * fields. E.g. 2 fields of the same type, but we have to make sure\n\t\t\t * we match on the correct name.\n\t\t\t * \n\t\t\t * Therefore we have to go through all other fields and make sure\n\t\t\t * whenever we find a field that does match its name with the mock\n\t\t\t * name, we should take that field instead.\n\t\t\t */\n\t\t}\n\t\treturn next.filterCandidate(mocks, field, fieldInstance);\n\t}', 'start_line': 22, 'end_line': 44, 'buggy_lines': [23, 31, 43]}
+================== buggy_method_src ==================
+public OngoingInjecter filterCandidate(Collection<Object> mocks,
+			Field field, Object fieldInstance) {
+		List<Object> mockNameMatches = new ArrayList<Object>();
+		if (mocks.size() > 1) {
+			for (Object mock : mocks) {
+				if (field.getName().equals(mockUtil.getMockName(mock).toString())) {
+					mockNameMatches.add(mock);
+				}
+			}
+			return next.filterCandidate(mockNameMatches, field,
+					fieldInstance);
+			/*
+			 * In this case we have to check whether we have conflicting naming
+			 * fields. E.g. 2 fields of the same type, but we have to make sure
+			 * we match on the correct name.
+			 * 
+			 * Therefore we have to go through all other fields and make sure
+			 * whenever we find a field that does match its name with the mock
+			 * name, we should take that field instead.
+			 */
+		}
+		return next.filterCandidate(mocks, field, fieldInstance);
+	}
+================== test_stack ==================
+org.mockitousage.annotation.MockInjectionUsingSetterOrPropertyTest::shouldInsertFieldWithCorrectNameWhenMultipleTypesAvailable
+junit.framework.AssertionFailedError: Expected: <null> but was: candidate2
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.Assert.assertNull(Assert.java:268)
+	at org.mockitousage.annotation.MockInjectionUsingSetterOrPropertyTest.shouldInsertFieldWithCorrectNameWhenMultipleTypesAvailable(MockInjectionUsingSetterOrPropertyTest.java:115)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:534)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1617)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:1039)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:2162)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:853)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:292)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:99)
+	at org.apache.tools.ant.Task.perform(Task.java:350)
+	at org.apache.tools.ant.Target.execute(Target.java:449)
+	at org.apache.tools.ant.Target.performTasks(Target.java:470)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1388)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1361)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:834)
+	at org.apache.tools.ant.Main.startAnt(Main.java:223)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:284)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:101)
+
+================== test_assert ==================
+assertNull(otherSuperUnderTesting.candidate1);
+
+================== buggy_lines_in_method ==================
+[2, 10, 22]
+================== buggy_statements ==================
+['\t\t\tField field, Object fieldInstance) {', '\t\t\treturn next.filterCandidate(mockNameMatches, field,', '\t\treturn next.filterCandidate(mocks, field, fieldInstance);']
+================== buggy_method_src_endswith_buggy_statement ==================
+public OngoingInjecter filterCandidate(Collection<Object> mocks,
+			Field field, Object fieldInstance) {
+		List<Object> mockNameMatches = new ArrayList<Object>();
+		if (mocks.size() > 1) {
+			for (Object mock : mocks) {
+				if (field.getName().equals(mockUtil.getMockName(mock).toString())) {
+					mockNameMatches.add(mock);
+				}
+			}
+			return next.filterCandidate(mockNameMatches, field,
+					fieldInstance);
+			/*
+			 * In this case we have to check whether we have conflicting naming
+			 * fields. E.g. 2 fields of the same type, but we have to make sure
+			 * we match on the correct name.
+			 * 
+			 * Therefore we have to go through all other fields and make sure
+			 * whenever we find a field that does match its name with the mock
+			 * name, we should take that field instead.
+			 */
+		}
+		return next.filterCandidate(mocks, field, fieldInstance);

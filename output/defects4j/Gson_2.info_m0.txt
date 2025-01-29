@@ -1,0 +1,82 @@
+
+================== buggy_file ==================
+gson/src/main/java/com/google/gson/internal/bind/TypeAdapters.java
+================== buggy_method ==================
+{'method_name': 'newTypeHierarchyFactory', 'method_body': 'public static <T1> TypeAdapterFactory newTypeHierarchyFactory(\n      final Class<T1> clazz, final TypeAdapter<T1> typeAdapter) {\n    return new TypeAdapterFactory() {\n      @SuppressWarnings("unchecked")\n      public <T2> TypeAdapter<T2> create(Gson gson, TypeToken<T2> typeToken) {\n        final Class<? super T2> requestedType = typeToken.getRawType();\n        if (!clazz.isAssignableFrom(requestedType)) {\n          return null;\n        }\n        return (TypeAdapter<T2>) typeAdapter;\n\n      }\n      @Override public String toString() {\n        return "Factory[typeHierarchy=" + clazz.getName() + ",adapter=" + typeAdapter + "]";\n      }\n    };\n  }', 'start_line': 824, 'end_line': 840, 'buggy_lines': [833]}
+================== buggy_method_src ==================
+public static <T1> TypeAdapterFactory newTypeHierarchyFactory(
+      final Class<T1> clazz, final TypeAdapter<T1> typeAdapter) {
+    return new TypeAdapterFactory() {
+      @SuppressWarnings("unchecked")
+      public <T2> TypeAdapter<T2> create(Gson gson, TypeToken<T2> typeToken) {
+        final Class<? super T2> requestedType = typeToken.getRawType();
+        if (!clazz.isAssignableFrom(requestedType)) {
+          return null;
+        }
+        return (TypeAdapter<T2>) typeAdapter;
+
+      }
+      @Override public String toString() {
+        return "Factory[typeHierarchy=" + clazz.getName() + ",adapter=" + typeAdapter + "]";
+      }
+    };
+  }
+================== test_stack ==================
+com.google.gson.functional.DefaultTypeAdaptersTest::testJsonElementTypeMismatch
+java.lang.ClassCastException: Cannot cast com.google.gson.JsonPrimitive to com.google.gson.JsonObject
+	at java.lang.Class.cast(Class.java:3369)
+	at com.google.gson.Gson.fromJson(Gson.java:701)
+	at com.google.gson.functional.DefaultTypeAdaptersTest.testJsonElementTypeMismatch(DefaultTypeAdaptersTest.java:623)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+gson.fromJson("\"abc\"", JsonObject.class);
+
+================== buggy_lines_in_method ==================
+[10]
+================== buggy_statements ==================
+['        return (TypeAdapter<T2>) typeAdapter;']
+================== buggy_method_src_endswith_buggy_statement ==================
+public static <T1> TypeAdapterFactory newTypeHierarchyFactory(
+      final Class<T1> clazz, final TypeAdapter<T1> typeAdapter) {
+    return new TypeAdapterFactory() {
+      @SuppressWarnings("unchecked")
+      public <T2> TypeAdapter<T2> create(Gson gson, TypeToken<T2> typeToken) {
+        final Class<? super T2> requestedType = typeToken.getRawType();
+        if (!clazz.isAssignableFrom(requestedType)) {
+          return null;
+        }
+        return (TypeAdapter<T2>) typeAdapter;

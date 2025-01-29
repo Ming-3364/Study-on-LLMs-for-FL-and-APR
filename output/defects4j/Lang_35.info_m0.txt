@@ -1,0 +1,75 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/lang3/ArrayUtils.java
+================== buggy_method ==================
+{'method_name': 'add', 'method_body': 'public static <T> T[] add(T[] array, T element) {\n        Class<?> type;\n        if (array != null){\n            type = array.getClass();\n        } else if (element != null) {\n            type = element.getClass();\n        } else {\n            type = Object.class;\n        }\n        @SuppressWarnings("unchecked") // type must be T\n        T[] newArray = (T[]) copyArrayGrow1(array, type);\n        newArray[newArray.length - 1] = element;\n        return newArray;\n    }', 'start_line': 3288, 'end_line': 3301, 'buggy_lines': [3295]}
+================== buggy_method_src ==================
+public static <T> T[] add(T[] array, T element) {
+        Class<?> type;
+        if (array != null){
+            type = array.getClass();
+        } else if (element != null) {
+            type = element.getClass();
+        } else {
+            type = Object.class;
+        }
+        @SuppressWarnings("unchecked") // type must be T
+        T[] newArray = (T[]) copyArrayGrow1(array, type);
+        newArray[newArray.length - 1] = element;
+        return newArray;
+    }
+================== test_stack ==================
+org.apache.commons.lang3.ArrayUtilsAddTest::testLANG571
+java.lang.ClassCastException: [Ljava.lang.Object; cannot be cast to [Ljava.lang.String;
+	at org.apache.commons.lang3.ArrayUtilsAddTest.testLANG571(ArrayUtilsAddTest.java:232)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+String[] sa = ArrayUtils.add(stringArray, aString);
+
+================== buggy_lines_in_method ==================
+[8]
+================== buggy_statements ==================
+['            type = Object.class;']
+================== buggy_method_src_endswith_buggy_statement ==================
+public static <T> T[] add(T[] array, T element) {
+        Class<?> type;
+        if (array != null){
+            type = array.getClass();
+        } else if (element != null) {
+            type = element.getClass();
+        } else {
+            type = Object.class;

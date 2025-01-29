@@ -1,0 +1,109 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/cli/HelpFormatter.java
+================== buggy_method ==================
+{'method_name': 'renderWrappedText', 'method_body': 'protected StringBuffer renderWrappedText(StringBuffer sb, int width, \n                                             int nextLineTabStop, String text)\n    {\n        int pos = findWrapPos(text, width, 0);\n\n        if (pos == -1)\n        {\n            sb.append(rtrim(text));\n\n            return sb;\n        }\n        sb.append(rtrim(text.substring(0, pos))).append(defaultNewLine);\n\n        // all following lines must be padded with nextLineTabStop space \n        // characters\n        final String padding = createPadding(nextLineTabStop);\n\n        while (true)\n        {\n            text = padding + text.substring(pos).trim();\n            pos = findWrapPos(text, width, nextLineTabStop);\n\n            if (pos == -1)\n            {\n                sb.append(text);\n\n                return sb;\n            }\n\n            sb.append(rtrim(text.substring(0, pos))).append(defaultNewLine);\n        }\n    }', 'start_line': 792, 'end_line': 823, 'buggy_lines': [812]}
+================== buggy_method_src ==================
+protected StringBuffer renderWrappedText(StringBuffer sb, int width, 
+                                             int nextLineTabStop, String text)
+    {
+        int pos = findWrapPos(text, width, 0);
+
+        if (pos == -1)
+        {
+            sb.append(rtrim(text));
+
+            return sb;
+        }
+        sb.append(rtrim(text.substring(0, pos))).append(defaultNewLine);
+
+        // all following lines must be padded with nextLineTabStop space 
+        // characters
+        final String padding = createPadding(nextLineTabStop);
+
+        while (true)
+        {
+            text = padding + text.substring(pos).trim();
+            pos = findWrapPos(text, width, nextLineTabStop);
+
+            if (pos == -1)
+            {
+                sb.append(text);
+
+                return sb;
+            }
+
+            sb.append(rtrim(text.substring(0, pos))).append(defaultNewLine);
+        }
+    }
+================== test_stack ==================
+org.apache.commons.cli.HelpFormatterTest::testPrintWrapped
+junit.framework.ComparisonFailure: single line padded text 2 expected:<...TE[-DATE] where DATE[
+                       ] has form YYYY[MM[DD...> but was:<...TE[-DATE] where DATE[] has form YYYY[MM[DD...>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.TestCase.assertEquals(TestCase.java:261)
+	at org.apache.commons.cli.HelpFormatterTest.testPrintWrapped(HelpFormatterTest.java:96)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals("single line padded text 2", expected, sb.toString());
+
+================== buggy_lines_in_method ==================
+[21]
+================== buggy_statements ==================
+['            pos = findWrapPos(text, width, nextLineTabStop);']
+================== buggy_method_src_endswith_buggy_statement ==================
+protected StringBuffer renderWrappedText(StringBuffer sb, int width, 
+                                             int nextLineTabStop, String text)
+    {
+        int pos = findWrapPos(text, width, 0);
+
+        if (pos == -1)
+        {
+            sb.append(rtrim(text));
+
+            return sb;
+        }
+        sb.append(rtrim(text.substring(0, pos))).append(defaultNewLine);
+
+        // all following lines must be padded with nextLineTabStop space 
+        // characters
+        final String padding = createPadding(nextLineTabStop);
+
+        while (true)
+        {
+            text = padding + text.substring(pos).trim();
+            pos = findWrapPos(text, width, nextLineTabStop);

@@ -1,0 +1,184 @@
+
+================== buggy_file ==================
+source/org/jfree/data/general/DatasetUtilities.java
+================== buggy_method ==================
+{'method_name': 'iterateRangeBounds', 'method_body': 'public static Range iterateRangeBounds(XYDataset dataset,\n            boolean includeInterval) {\n        double minimum = Double.POSITIVE_INFINITY;\n        double maximum = Double.NEGATIVE_INFINITY;\n        int seriesCount = dataset.getSeriesCount();\n\n        // handle three cases by dataset type\n        if (includeInterval && dataset instanceof IntervalXYDataset) {\n            // handle special case of IntervalXYDataset\n            IntervalXYDataset ixyd = (IntervalXYDataset) dataset;\n            for (int series = 0; series < seriesCount; series++) {\n                int itemCount = dataset.getItemCount(series);\n                for (int item = 0; item < itemCount; item++) {\n                    double lvalue = ixyd.getStartYValue(series, item);\n                    double uvalue = ixyd.getEndYValue(series, item);\n                    if (!Double.isNaN(lvalue)) {\n                        minimum = Math.min(minimum, lvalue);\n                    }\n                    if (!Double.isNaN(uvalue)) {\n                        maximum = Math.max(maximum, uvalue);\n                    }\n                }\n            }\n        }\n        else if (includeInterval && dataset instanceof OHLCDataset) {\n            // handle special case of OHLCDataset\n            OHLCDataset ohlc = (OHLCDataset) dataset;\n            for (int series = 0; series < seriesCount; series++) {\n                int itemCount = dataset.getItemCount(series);\n                for (int item = 0; item < itemCount; item++) {\n                    double lvalue = ohlc.getLowValue(series, item);\n                    double uvalue = ohlc.getHighValue(series, item);\n                    if (!Double.isNaN(lvalue)) {\n                        minimum = Math.min(minimum, lvalue);\n                    }\n                    if (!Double.isNaN(uvalue)) {\n                        maximum = Math.max(maximum, uvalue);\n                    }\n                }\n            }\n        }\n        else {\n            // standard case - plain XYDataset\n            for (int series = 0; series < seriesCount; series++) {\n                int itemCount = dataset.getItemCount(series);\n                for (int item = 0; item < itemCount; item++) {\n                    double value = dataset.getYValue(series, item);\n                    if (!Double.isNaN(value)) {\n                        minimum = Math.min(minimum, value);\n                        maximum = Math.max(maximum, value);\n                    }\n                }\n            }\n        }\n        if (minimum == Double.POSITIVE_INFINITY) {\n            return null;\n        }\n        else {\n            return new Range(minimum, maximum);\n        }\n    }', 'start_line': 1229, 'end_line': 1289, 'buggy_lines': [1249, 1255, 1258, 1261]}
+================== buggy_method_src ==================
+public static Range iterateRangeBounds(XYDataset dataset,
+            boolean includeInterval) {
+        double minimum = Double.POSITIVE_INFINITY;
+        double maximum = Double.NEGATIVE_INFINITY;
+        int seriesCount = dataset.getSeriesCount();
+
+        // handle three cases by dataset type
+        if (includeInterval && dataset instanceof IntervalXYDataset) {
+            // handle special case of IntervalXYDataset
+            IntervalXYDataset ixyd = (IntervalXYDataset) dataset;
+            for (int series = 0; series < seriesCount; series++) {
+                int itemCount = dataset.getItemCount(series);
+                for (int item = 0; item < itemCount; item++) {
+                    double lvalue = ixyd.getStartYValue(series, item);
+                    double uvalue = ixyd.getEndYValue(series, item);
+                    if (!Double.isNaN(lvalue)) {
+                        minimum = Math.min(minimum, lvalue);
+                    }
+                    if (!Double.isNaN(uvalue)) {
+                        maximum = Math.max(maximum, uvalue);
+                    }
+                }
+            }
+        }
+        else if (includeInterval && dataset instanceof OHLCDataset) {
+            // handle special case of OHLCDataset
+            OHLCDataset ohlc = (OHLCDataset) dataset;
+            for (int series = 0; series < seriesCount; series++) {
+                int itemCount = dataset.getItemCount(series);
+                for (int item = 0; item < itemCount; item++) {
+                    double lvalue = ohlc.getLowValue(series, item);
+                    double uvalue = ohlc.getHighValue(series, item);
+                    if (!Double.isNaN(lvalue)) {
+                        minimum = Math.min(minimum, lvalue);
+                    }
+                    if (!Double.isNaN(uvalue)) {
+                        maximum = Math.max(maximum, uvalue);
+                    }
+                }
+            }
+        }
+        else {
+            // standard case - plain XYDataset
+            for (int series = 0; series < seriesCount; series++) {
+                int itemCount = dataset.getItemCount(series);
+                for (int item = 0; item < itemCount; item++) {
+                    double value = dataset.getYValue(series, item);
+                    if (!Double.isNaN(value)) {
+                        minimum = Math.min(minimum, value);
+                        maximum = Math.max(maximum, value);
+                    }
+                }
+            }
+        }
+        if (minimum == Double.POSITIVE_INFINITY) {
+            return null;
+        }
+        else {
+            return new Range(minimum, maximum);
+        }
+    }
+================== test_stack ==================
+org.jfree.data.general.junit.DatasetUtilitiesTests::testBug2849731_2
+java.lang.NullPointerException
+	at org.jfree.data.general.junit.DatasetUtilitiesTests.testBug2849731_2(DatasetUtilitiesTests.java:1276)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.jfree.data.general.junit.DatasetUtilitiesTests::testBug2849731_3
+java.lang.NullPointerException
+	at org.jfree.data.general.junit.DatasetUtilitiesTests.testBug2849731_3(DatasetUtilitiesTests.java:1299)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals(1.0, r.getLowerBound(), EPSILON);
+
+================== buggy_lines_in_method ==================
+[21, 27, 30, 33]
+================== buggy_statements ==================
+['                    }', '            OHLCDataset ohlc = (OHLCDataset) dataset;', '                for (int item = 0; item < itemCount; item++) {', '                    if (!Double.isNaN(lvalue)) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+public static Range iterateRangeBounds(XYDataset dataset,
+            boolean includeInterval) {
+        double minimum = Double.POSITIVE_INFINITY;
+        double maximum = Double.NEGATIVE_INFINITY;
+        int seriesCount = dataset.getSeriesCount();
+
+        // handle three cases by dataset type
+        if (includeInterval && dataset instanceof IntervalXYDataset) {
+            // handle special case of IntervalXYDataset
+            IntervalXYDataset ixyd = (IntervalXYDataset) dataset;
+            for (int series = 0; series < seriesCount; series++) {
+                int itemCount = dataset.getItemCount(series);
+                for (int item = 0; item < itemCount; item++) {
+                    double lvalue = ixyd.getStartYValue(series, item);
+                    double uvalue = ixyd.getEndYValue(series, item);
+                    if (!Double.isNaN(lvalue)) {
+                        minimum = Math.min(minimum, lvalue);
+                    }
+                    if (!Double.isNaN(uvalue)) {
+                        maximum = Math.max(maximum, uvalue);
+                    }
+                }
+            }
+        }
+        else if (includeInterval && dataset instanceof OHLCDataset) {
+            // handle special case of OHLCDataset
+            OHLCDataset ohlc = (OHLCDataset) dataset;
+            for (int series = 0; series < seriesCount; series++) {
+                int itemCount = dataset.getItemCount(series);
+                for (int item = 0; item < itemCount; item++) {
+                    double lvalue = ohlc.getLowValue(series, item);
+                    double uvalue = ohlc.getHighValue(series, item);
+                    if (!Double.isNaN(lvalue)) {

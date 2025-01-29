@@ -1,0 +1,125 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/deser/impl/CreatorCollector.java
+================== buggy_method ==================
+{'method_name': 'verifyNonDup', 'method_body': 'protected void verifyNonDup(AnnotatedWithParams newOne, int typeIndex, boolean explicit)\n    {\n        final int mask = (1 << typeIndex);\n        _hasNonDefaultCreator = true;\n        AnnotatedWithParams oldOne = _creators[typeIndex];\n        // already had an explicitly marked one?\n        if (oldOne != null) {\n\n            if ((_explicitCreators & mask) != 0) { // already had explicitly annotated, leave as-is\n                // but skip, if new one not annotated\n                if (!explicit) {\n                    return;\n                }\n                // both explicit: verify\n                // otherwise only verify if neither explicitly annotated.\n            }\n\n            // one more thing: ok to override in sub-class\n            if (oldOne.getClass() == newOne.getClass()) {\n                // [databind#667]: avoid one particular class of bogus problems\n\n                    throw new IllegalArgumentException("Conflicting "+TYPE_DESCS[typeIndex]\n                            +" creators: already had explicitly marked "+oldOne+", encountered "+newOne);\n                // otherwise, which one to choose?\n                    // new type more generic, use old\n                // new type more specific, use it\n            }\n        }\n        if (explicit) {\n            _explicitCreators |= mask;\n        }\n        _creators[typeIndex] = _fixAccess(newOne);\n    }', 'start_line': 276, 'end_line': 308, 'buggy_lines': [294]}
+================== buggy_method_src ==================
+protected void verifyNonDup(AnnotatedWithParams newOne, int typeIndex, boolean explicit)
+    {
+        final int mask = (1 << typeIndex);
+        _hasNonDefaultCreator = true;
+        AnnotatedWithParams oldOne = _creators[typeIndex];
+        // already had an explicitly marked one?
+        if (oldOne != null) {
+
+            if ((_explicitCreators & mask) != 0) { // already had explicitly annotated, leave as-is
+                // but skip, if new one not annotated
+                if (!explicit) {
+                    return;
+                }
+                // both explicit: verify
+                // otherwise only verify if neither explicitly annotated.
+            }
+
+            // one more thing: ok to override in sub-class
+            if (oldOne.getClass() == newOne.getClass()) {
+                // [databind#667]: avoid one particular class of bogus problems
+
+                    throw new IllegalArgumentException("Conflicting "+TYPE_DESCS[typeIndex]
+                            +" creators: already had explicitly marked "+oldOne+", encountered "+newOne);
+                // otherwise, which one to choose?
+                    // new type more generic, use old
+                // new type more specific, use it
+            }
+        }
+        if (explicit) {
+            _explicitCreators |= mask;
+        }
+        _creators[typeIndex] = _fixAccess(newOne);
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.deser.TestJdkTypes::testStringBuilder
+com.fasterxml.jackson.databind.JsonMappingException: Conflicting String creators: already had explicitly marked [constructor for java.lang.StringBuilder, annotations: [null]], encountered [constructor for java.lang.StringBuilder, annotations: [null]]
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:267)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:242)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:143)
+	at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:439)
+	at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:3664)
+	at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:3556)
+	at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:2576)
+	at com.fasterxml.jackson.databind.deser.TestJdkTypes.testStringBuilder(TestJdkTypes.java:425)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+Caused by: java.lang.IllegalArgumentException: Conflicting String creators: already had explicitly marked [constructor for java.lang.StringBuilder, annotations: [null]], encountered [constructor for java.lang.StringBuilder, annotations: [null]]
+	at com.fasterxml.jackson.databind.deser.impl.CreatorCollector.verifyNonDup(CreatorCollector.java:297)
+	at com.fasterxml.jackson.databind.deser.impl.CreatorCollector.addStringCreator(CreatorCollector.java:158)
+	at com.fasterxml.jackson.databind.deser.BasicDeserializerFactory._handleSingleArgumentConstructor(BasicDeserializerFactory.java:555)
+	at com.fasterxml.jackson.databind.deser.BasicDeserializerFactory._addDeserializerConstructors(BasicDeserializerFactory.java:439)
+	at com.fasterxml.jackson.databind.deser.BasicDeserializerFactory._constructDefaultValueInstantiator(BasicDeserializerFactory.java:325)
+	at com.fasterxml.jackson.databind.deser.BasicDeserializerFactory.findValueInstantiator(BasicDeserializerFactory.java:258)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializerFactory.buildBeanDeserializer(BeanDeserializerFactory.java:216)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializerFactory.createBeanDeserializer(BeanDeserializerFactory.java:143)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createDeserializer2(DeserializerCache.java:405)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createDeserializer(DeserializerCache.java:354)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:262)
+	... 41 more
+
+================== test_assert ==================
+StringBuilder sb = MAPPER.readValue(quote("abc"), StringBuilder.class);
+
+================== buggy_lines_in_method ==================
+[19]
+================== buggy_statements ==================
+['            if (oldOne.getClass() == newOne.getClass()) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+protected void verifyNonDup(AnnotatedWithParams newOne, int typeIndex, boolean explicit)
+    {
+        final int mask = (1 << typeIndex);
+        _hasNonDefaultCreator = true;
+        AnnotatedWithParams oldOne = _creators[typeIndex];
+        // already had an explicitly marked one?
+        if (oldOne != null) {
+
+            if ((_explicitCreators & mask) != 0) { // already had explicitly annotated, leave as-is
+                // but skip, if new one not annotated
+                if (!explicit) {
+                    return;
+                }
+                // both explicit: verify
+                // otherwise only verify if neither explicitly annotated.
+            }
+
+            // one more thing: ok to override in sub-class
+            if (oldOne.getClass() == newOne.getClass()) {

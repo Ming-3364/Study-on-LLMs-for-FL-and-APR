@@ -1,0 +1,110 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/math/optimization/linear/SimplexTableau.java
+================== buggy_method ==================
+{'method_name': 'getSolution', 'method_body': 'protected RealPointValuePair getSolution() {\n      int negativeVarColumn = columnLabels.indexOf(NEGATIVE_VAR_COLUMN_LABEL);\n      Integer negativeVarBasicRow = negativeVarColumn > 0 ? getBasicRow(negativeVarColumn) : null;\n      double mostNegative = negativeVarBasicRow == null ? 0 : getEntry(negativeVarBasicRow, getRhsOffset());\n\n      Set<Integer> basicRows = new HashSet<Integer>();\n      double[] coefficients = new double[getOriginalNumDecisionVariables()];\n      for (int i = 0; i < coefficients.length; i++) {\n          int colIndex = columnLabels.indexOf("x" + i);\n          if (colIndex < 0) {\n            coefficients[i] = 0;\n            continue;\n          }\n          Integer basicRow = getBasicRow(colIndex);\n              // if the basic row is found to be the objective function row\n              // set the coefficient to 0 -> this case handles unconstrained \n              // variables that are still part of the objective function\n          if (basicRows.contains(basicRow)) {\n              // if multiple variables can take a given value\n              // then we choose the first and set the rest equal to 0\n              coefficients[i] = 0 - (restrictToNonNegative ? 0 : mostNegative);\n          } else {\n              basicRows.add(basicRow);\n              coefficients[i] =\n                  (basicRow == null ? 0 : getEntry(basicRow, getRhsOffset())) -\n                  (restrictToNonNegative ? 0 : mostNegative);\n          }\n      }\n      return new RealPointValuePair(coefficients, f.getValue(coefficients));\n    }', 'start_line': 396, 'end_line': 425, 'buggy_lines': [413]}
+================== buggy_method_src ==================
+protected RealPointValuePair getSolution() {
+      int negativeVarColumn = columnLabels.indexOf(NEGATIVE_VAR_COLUMN_LABEL);
+      Integer negativeVarBasicRow = negativeVarColumn > 0 ? getBasicRow(negativeVarColumn) : null;
+      double mostNegative = negativeVarBasicRow == null ? 0 : getEntry(negativeVarBasicRow, getRhsOffset());
+
+      Set<Integer> basicRows = new HashSet<Integer>();
+      double[] coefficients = new double[getOriginalNumDecisionVariables()];
+      for (int i = 0; i < coefficients.length; i++) {
+          int colIndex = columnLabels.indexOf("x" + i);
+          if (colIndex < 0) {
+            coefficients[i] = 0;
+            continue;
+          }
+          Integer basicRow = getBasicRow(colIndex);
+              // if the basic row is found to be the objective function row
+              // set the coefficient to 0 -> this case handles unconstrained 
+              // variables that are still part of the objective function
+          if (basicRows.contains(basicRow)) {
+              // if multiple variables can take a given value
+              // then we choose the first and set the rest equal to 0
+              coefficients[i] = 0 - (restrictToNonNegative ? 0 : mostNegative);
+          } else {
+              basicRows.add(basicRow);
+              coefficients[i] =
+                  (basicRow == null ? 0 : getEntry(basicRow, getRhsOffset())) -
+                  (restrictToNonNegative ? 0 : mostNegative);
+          }
+      }
+      return new RealPointValuePair(coefficients, f.getValue(coefficients));
+    }
+================== test_stack ==================
+org.apache.commons.math.optimization.linear.SimplexSolverTest::testMath713NegativeVariable
+junit.framework.AssertionFailedError
+	at org.junit.Assert.fail(Assert.java:86)
+	at org.junit.Assert.assertTrue(Assert.java:41)
+	at org.junit.Assert.assertTrue(Assert.java:52)
+	at org.apache.commons.math.optimization.linear.SimplexSolverTest.testMath713NegativeVariable(SimplexSolverTest.java:43)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+Assert.assertTrue(Precision.compareTo(solution.getPoint()[1], 0.0d, epsilon) >= 0);
+
+================== buggy_lines_in_method ==================
+[18]
+================== buggy_statements ==================
+['          if (basicRows.contains(basicRow)) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+protected RealPointValuePair getSolution() {
+      int negativeVarColumn = columnLabels.indexOf(NEGATIVE_VAR_COLUMN_LABEL);
+      Integer negativeVarBasicRow = negativeVarColumn > 0 ? getBasicRow(negativeVarColumn) : null;
+      double mostNegative = negativeVarBasicRow == null ? 0 : getEntry(negativeVarBasicRow, getRhsOffset());
+
+      Set<Integer> basicRows = new HashSet<Integer>();
+      double[] coefficients = new double[getOriginalNumDecisionVariables()];
+      for (int i = 0; i < coefficients.length; i++) {
+          int colIndex = columnLabels.indexOf("x" + i);
+          if (colIndex < 0) {
+            coefficients[i] = 0;
+            continue;
+          }
+          Integer basicRow = getBasicRow(colIndex);
+              // if the basic row is found to be the objective function row
+              // set the coefficient to 0 -> this case handles unconstrained 
+              // variables that are still part of the objective function
+          if (basicRows.contains(basicRow)) {

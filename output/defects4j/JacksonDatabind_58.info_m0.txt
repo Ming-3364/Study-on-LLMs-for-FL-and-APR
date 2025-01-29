@@ -1,0 +1,142 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/deser/BeanDeserializerFactory.java
+================== buggy_method ==================
+{'method_name': 'constructSettableProperty', 'method_body': "protected SettableBeanProperty constructSettableProperty(DeserializationContext ctxt,\n            BeanDescription beanDesc, BeanPropertyDefinition propDef,\n            JavaType propType0)\n        throws JsonMappingException\n    {\n        // need to ensure method is callable (for non-public)\n        AnnotatedMember mutator = propDef.getNonConstructorMutator();\n\n        if (ctxt.canOverrideAccessModifiers()) {\n            // [databind#877]: explicitly prevent forced access to `cause` of `Throwable`;\n            // never needed and attempts may cause problems on some platforms.\n            // !!! NOTE: should be handled better for 2.8 and later\n                mutator.fixAccess(ctxt.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));\n        }\n        // note: this works since we know there's exactly one argument for methods\n        BeanProperty.Std property = new BeanProperty.Std(propDef.getFullName(),\n                propType0, propDef.getWrapperName(),\n                beanDesc.getClassAnnotations(), mutator, propDef.getMetadata());\n        JavaType type = resolveType(ctxt, beanDesc, propType0, mutator);\n        // did type change?\n        if (type != propType0) {\n            property = property.withType(type);\n        }\n\n        // First: does the Method specify the deserializer to use? If so, let's use it.\n        JsonDeserializer<Object> propDeser = findDeserializerFromAnnotation(ctxt, mutator);\n        type = modifyTypeByAnnotation(ctxt, mutator, type);\n        TypeDeserializer typeDeser = type.getTypeHandler();\n        SettableBeanProperty prop;\n        if (mutator instanceof AnnotatedMethod) {\n            prop = new MethodProperty(propDef, type, typeDeser,\n                    beanDesc.getClassAnnotations(), (AnnotatedMethod) mutator);\n        } else {\n            prop = new FieldProperty(propDef, type, typeDeser,\n                    beanDesc.getClassAnnotations(), (AnnotatedField) mutator);\n        }\n        if (propDeser != null) {\n            prop = prop.withValueDeserializer(propDeser);\n        }\n        // need to retain name of managed forward references:\n        AnnotationIntrospector.ReferenceProperty ref = propDef.findReferenceType();\n        if (ref != null && ref.isManagedReference()) {\n            prop.setManagedReferenceName(ref.getName());\n        }\n        ObjectIdInfo objectIdInfo = propDef.findObjectIdInfo();\n        if(objectIdInfo != null){\n            prop.setObjectIdInfo(objectIdInfo);\n        }\n        return prop;\n    }", 'start_line': 703, 'end_line': 752, 'buggy_lines': [718, 720]}
+================== buggy_method_src ==================
+protected SettableBeanProperty constructSettableProperty(DeserializationContext ctxt,
+            BeanDescription beanDesc, BeanPropertyDefinition propDef,
+            JavaType propType0)
+        throws JsonMappingException
+    {
+        // need to ensure method is callable (for non-public)
+        AnnotatedMember mutator = propDef.getNonConstructorMutator();
+
+        if (ctxt.canOverrideAccessModifiers()) {
+            // [databind#877]: explicitly prevent forced access to `cause` of `Throwable`;
+            // never needed and attempts may cause problems on some platforms.
+            // !!! NOTE: should be handled better for 2.8 and later
+                mutator.fixAccess(ctxt.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
+        }
+        // note: this works since we know there's exactly one argument for methods
+        BeanProperty.Std property = new BeanProperty.Std(propDef.getFullName(),
+                propType0, propDef.getWrapperName(),
+                beanDesc.getClassAnnotations(), mutator, propDef.getMetadata());
+        JavaType type = resolveType(ctxt, beanDesc, propType0, mutator);
+        // did type change?
+        if (type != propType0) {
+            property = property.withType(type);
+        }
+
+        // First: does the Method specify the deserializer to use? If so, let's use it.
+        JsonDeserializer<Object> propDeser = findDeserializerFromAnnotation(ctxt, mutator);
+        type = modifyTypeByAnnotation(ctxt, mutator, type);
+        TypeDeserializer typeDeser = type.getTypeHandler();
+        SettableBeanProperty prop;
+        if (mutator instanceof AnnotatedMethod) {
+            prop = new MethodProperty(propDef, type, typeDeser,
+                    beanDesc.getClassAnnotations(), (AnnotatedMethod) mutator);
+        } else {
+            prop = new FieldProperty(propDef, type, typeDeser,
+                    beanDesc.getClassAnnotations(), (AnnotatedField) mutator);
+        }
+        if (propDeser != null) {
+            prop = prop.withValueDeserializer(propDeser);
+        }
+        // need to retain name of managed forward references:
+        AnnotationIntrospector.ReferenceProperty ref = propDef.findReferenceType();
+        if (ref != null && ref.isManagedReference()) {
+            prop.setManagedReferenceName(ref.getName());
+        }
+        ObjectIdInfo objectIdInfo = propDef.findObjectIdInfo();
+        if(objectIdInfo != null){
+            prop.setObjectIdInfo(objectIdInfo);
+        }
+        return prop;
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.misc.AccessFixTest::testCauseOfThrowableIgnoral
+com.fasterxml.jackson.databind.JsonMappingException: Can not access private java.lang.Throwable java.lang.Throwable.cause (from class java.lang.Throwable; failed to set access: Can not force permission: ("java.lang.reflect.ReflectPermission" "suppressAccessChecks")
+ at [Source: {}; line: 1, column: 1]
+	at com.fasterxml.jackson.databind.JsonMappingException.from(JsonMappingException.java:290)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:269)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:244)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:142)
+	at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:477)
+	at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:3908)
+	at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:3803)
+	at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:2797)
+	at com.fasterxml.jackson.databind.misc.AccessFixTest._testCauseOfThrowableIgnoral(AccessFixTest.java:39)
+	at com.fasterxml.jackson.databind.misc.AccessFixTest.testCauseOfThrowableIgnoral(AccessFixTest.java:29)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+Caused by: java.lang.IllegalArgumentException: Can not access private java.lang.Throwable java.lang.Throwable.cause (from class java.lang.Throwable; failed to set access: Can not force permission: ("java.lang.reflect.ReflectPermission" "suppressAccessChecks")
+	at com.fasterxml.jackson.databind.util.ClassUtil.checkAndFixAccess(ClassUtil.java:787)
+	at com.fasterxml.jackson.databind.introspect.AnnotatedMember.fixAccess(AnnotatedMember.java:136)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializerFactory.constructSettableProperty(BeanDeserializerFactory.java:715)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializerFactory.addBeanProps(BeanDeserializerFactory.java:507)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializerFactory.buildThrowableDeserializer(BeanDeserializerFactory.java:364)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializerFactory.createBeanDeserializer(BeanDeserializerFactory.java:112)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createDeserializer2(DeserializerCache.java:406)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createDeserializer(DeserializerCache.java:352)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:264)
+	... 42 more
+
+================== test_assert ==================
+IOException e = mapper.readValue("{}", IOException.class);
+
+================== buggy_lines_in_method ==================
+[16, 18]
+================== buggy_statements ==================
+['        BeanProperty.Std property = new BeanProperty.Std(propDef.getFullName(),', '                beanDesc.getClassAnnotations(), mutator, propDef.getMetadata());']
+================== buggy_method_src_endswith_buggy_statement ==================
+protected SettableBeanProperty constructSettableProperty(DeserializationContext ctxt,
+            BeanDescription beanDesc, BeanPropertyDefinition propDef,
+            JavaType propType0)
+        throws JsonMappingException
+    {
+        // need to ensure method is callable (for non-public)
+        AnnotatedMember mutator = propDef.getNonConstructorMutator();
+
+        if (ctxt.canOverrideAccessModifiers()) {
+            // [databind#877]: explicitly prevent forced access to `cause` of `Throwable`;
+            // never needed and attempts may cause problems on some platforms.
+            // !!! NOTE: should be handled better for 2.8 and later
+                mutator.fixAccess(ctxt.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
+        }
+        // note: this works since we know there's exactly one argument for methods
+        BeanProperty.Std property = new BeanProperty.Std(propDef.getFullName(),
+                propType0, propDef.getWrapperName(),
+                beanDesc.getClassAnnotations(), mutator, propDef.getMetadata());

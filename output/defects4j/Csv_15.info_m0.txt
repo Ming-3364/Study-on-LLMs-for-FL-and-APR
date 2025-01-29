@@ -1,0 +1,210 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/csv/CSVFormat.java
+================== buggy_method ==================
+{'method_name': 'printAndQuote', 'method_body': 'private void printAndQuote(final Object object, final CharSequence value, final int offset, final int len,\n            final Appendable out, final boolean newRecord) throws IOException {\n        boolean quote = false;\n        int start = offset;\n        int pos = offset;\n        final int end = offset + len;\n\n        final char delimChar = getDelimiter();\n        final char quoteChar = getQuoteCharacter().charValue();\n\n        QuoteMode quoteModePolicy = getQuoteMode();\n        if (quoteModePolicy == null) {\n            quoteModePolicy = QuoteMode.MINIMAL;\n        }\n        switch (quoteModePolicy) {\n        case ALL:\n        case ALL_NON_NULL:\n            quote = true;\n            break;\n        case NON_NUMERIC:\n            quote = !(object instanceof Number);\n            break;\n        case NONE:\n            // Use the existing escaping code\n            printAndEscape(value, offset, len, out);\n            return;\n        case MINIMAL:\n            if (len <= 0) {\n                // always quote an empty token that is the first\n                // on the line, as it may be the only thing on the\n                // line. If it were not quoted in that case,\n                // an empty line has no tokens.\n                if (newRecord) {\n                    quote = true;\n                }\n            } else {\n                char c = value.charAt(pos);\n\n                if (newRecord && (c < 0x20 || c > 0x21 && c < 0x23 || c > 0x2B && c < 0x2D || c > 0x7E)) {\n                    quote = true;\n                } else if (c <= COMMENT) {\n                    // Some other chars at the start of a value caused the parser to fail, so for now\n                    // encapsulate if we start in anything less than \'#\'. We are being conservative\n                    // by including the default comment char too.\n                    quote = true;\n                } else {\n                    while (pos < end) {\n                        c = value.charAt(pos);\n                        if (c == LF || c == CR || c == quoteChar || c == delimChar) {\n                            quote = true;\n                            break;\n                        }\n                        pos++;\n                    }\n\n                    if (!quote) {\n                        pos = end - 1;\n                        c = value.charAt(pos);\n                        // Some other chars at the end caused the parser to fail, so for now\n                        // encapsulate if we end in anything less than \' \'\n                        if (c <= SP) {\n                            quote = true;\n                        }\n                    }\n                }\n            }\n\n            if (!quote) {\n                // no encapsulation needed - write out the original value\n                out.append(value, start, end);\n                return;\n            }\n            break;\n        default:\n            throw new IllegalStateException("Unexpected Quote value: " + quoteModePolicy);\n        }\n\n        if (!quote) {\n            // no encapsulation needed - write out the original value\n            out.append(value, start, end);\n            return;\n        }\n\n        // we hit something that needed encapsulation\n        out.append(quoteChar);\n\n        // Pick up where we left off: pos should be positioned on the first character that caused\n        // the need for encapsulation.\n        while (pos < end) {\n            final char c = value.charAt(pos);\n            if (c == quoteChar) {\n                // write out the chunk up until this point\n\n                // add 1 to the length to write out the encapsulator also\n                out.append(value, start, pos + 1);\n                // put the next starting position on the encapsulator so we will\n                // write it out again with the next string (effectively doubling it)\n                start = pos;\n            }\n            pos++;\n        }\n\n        // write the last segment\n        out.append(value, start, pos);\n        out.append(quoteChar);\n    }', 'start_line': 1151, 'end_line': 1256, 'buggy_lines': [1189, 1190, 1191]}
+================== buggy_method_src ==================
+private void printAndQuote(final Object object, final CharSequence value, final int offset, final int len,
+            final Appendable out, final boolean newRecord) throws IOException {
+        boolean quote = false;
+        int start = offset;
+        int pos = offset;
+        final int end = offset + len;
+
+        final char delimChar = getDelimiter();
+        final char quoteChar = getQuoteCharacter().charValue();
+
+        QuoteMode quoteModePolicy = getQuoteMode();
+        if (quoteModePolicy == null) {
+            quoteModePolicy = QuoteMode.MINIMAL;
+        }
+        switch (quoteModePolicy) {
+        case ALL:
+        case ALL_NON_NULL:
+            quote = true;
+            break;
+        case NON_NUMERIC:
+            quote = !(object instanceof Number);
+            break;
+        case NONE:
+            // Use the existing escaping code
+            printAndEscape(value, offset, len, out);
+            return;
+        case MINIMAL:
+            if (len <= 0) {
+                // always quote an empty token that is the first
+                // on the line, as it may be the only thing on the
+                // line. If it were not quoted in that case,
+                // an empty line has no tokens.
+                if (newRecord) {
+                    quote = true;
+                }
+            } else {
+                char c = value.charAt(pos);
+
+                if (newRecord && (c < 0x20 || c > 0x21 && c < 0x23 || c > 0x2B && c < 0x2D || c > 0x7E)) {
+                    quote = true;
+                } else if (c <= COMMENT) {
+                    // Some other chars at the start of a value caused the parser to fail, so for now
+                    // encapsulate if we start in anything less than '#'. We are being conservative
+                    // by including the default comment char too.
+                    quote = true;
+                } else {
+                    while (pos < end) {
+                        c = value.charAt(pos);
+                        if (c == LF || c == CR || c == quoteChar || c == delimChar) {
+                            quote = true;
+                            break;
+                        }
+                        pos++;
+                    }
+
+                    if (!quote) {
+                        pos = end - 1;
+                        c = value.charAt(pos);
+                        // Some other chars at the end caused the parser to fail, so for now
+                        // encapsulate if we end in anything less than ' '
+                        if (c <= SP) {
+                            quote = true;
+                        }
+                    }
+                }
+            }
+
+            if (!quote) {
+                // no encapsulation needed - write out the original value
+                out.append(value, start, end);
+                return;
+            }
+            break;
+        default:
+            throw new IllegalStateException("Unexpected Quote value: " + quoteModePolicy);
+        }
+
+        if (!quote) {
+            // no encapsulation needed - write out the original value
+            out.append(value, start, end);
+            return;
+        }
+
+        // we hit something that needed encapsulation
+        out.append(quoteChar);
+
+        // Pick up where we left off: pos should be positioned on the first character that caused
+        // the need for encapsulation.
+        while (pos < end) {
+            final char c = value.charAt(pos);
+            if (c == quoteChar) {
+                // write out the chunk up until this point
+
+                // add 1 to the length to write out the encapsulator also
+                out.append(value, start, pos + 1);
+                // put the next starting position on the encapsulator so we will
+                // write it out again with the next string (effectively doubling it)
+                start = pos;
+            }
+            pos++;
+        }
+
+        // write the last segment
+        out.append(value, start, pos);
+        out.append(quoteChar);
+    }
+================== test_stack ==================
+org.apache.commons.csv.CSVPrinterTest::testDontQuoteEuroFirstChar
+junit.framework.AssertionFailedError: expected:<[€],Deux
+> but was:<["€"],Deux
+>
+	at org.junit.Assert.assertEquals(Assert.java:115)
+	at org.junit.Assert.assertEquals(Assert.java:144)
+	at org.apache.commons.csv.CSVPrinterTest.testDontQuoteEuroFirstChar(CSVPrinterTest.java:1040)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals(EURO_CH + ",Deux" + recordSeparator, sw.toString());
+
+================== buggy_lines_in_method ==================
+[39, 40, 41]
+================== buggy_statements ==================
+['                if (newRecord && (c < 0x20 || c > 0x21 && c < 0x23 || c > 0x2B && c < 0x2D || c > 0x7E)) {', '                    quote = true;', '                } else if (c <= COMMENT) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+private void printAndQuote(final Object object, final CharSequence value, final int offset, final int len,
+            final Appendable out, final boolean newRecord) throws IOException {
+        boolean quote = false;
+        int start = offset;
+        int pos = offset;
+        final int end = offset + len;
+
+        final char delimChar = getDelimiter();
+        final char quoteChar = getQuoteCharacter().charValue();
+
+        QuoteMode quoteModePolicy = getQuoteMode();
+        if (quoteModePolicy == null) {
+            quoteModePolicy = QuoteMode.MINIMAL;
+        }
+        switch (quoteModePolicy) {
+        case ALL:
+        case ALL_NON_NULL:
+            quote = true;
+            break;
+        case NON_NUMERIC:
+            quote = !(object instanceof Number);
+            break;
+        case NONE:
+            // Use the existing escaping code
+            printAndEscape(value, offset, len, out);
+            return;
+        case MINIMAL:
+            if (len <= 0) {
+                // always quote an empty token that is the first
+                // on the line, as it may be the only thing on the
+                // line. If it were not quoted in that case,
+                // an empty line has no tokens.
+                if (newRecord) {
+                    quote = true;
+                }
+            } else {
+                char c = value.charAt(pos);
+
+                if (newRecord && (c < 0x20 || c > 0x21 && c < 0x23 || c > 0x2B && c < 0x2D || c > 0x7E)) {
+                    quote = true;
+                } else if (c <= COMMENT) {

@@ -1,0 +1,139 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/math/analysis/solvers/BrentSolver.java
+================== buggy_method ==================
+{'method_name': 'solve', 'method_body': 'public double solve(final UnivariateRealFunction f,\n                        final double min, final double max, final double initial)\n        throws MaxIterationsExceededException, FunctionEvaluationException {\n\n        clearResult();\n        verifySequence(min, initial, max);\n\n        // return the initial guess if it is good enough\n        double yInitial = f.value(initial);\n        if (Math.abs(yInitial) <= functionValueAccuracy) {\n            setResult(initial, 0);\n            return result;\n        }\n\n        // return the first endpoint if it is good enough\n        double yMin = f.value(min);\n        if (Math.abs(yMin) <= functionValueAccuracy) {\n            setResult(yMin, 0);\n            return result;\n        }\n\n        // reduce interval if min and initial bracket the root\n        if (yInitial * yMin < 0) {\n            return solve(f, min, yMin, initial, yInitial, min, yMin);\n        }\n\n        // return the second endpoint if it is good enough\n        double yMax = f.value(max);\n        if (Math.abs(yMax) <= functionValueAccuracy) {\n            setResult(yMax, 0);\n            return result;\n        }\n\n        // reduce interval if initial and max bracket the root\n        if (yInitial * yMax < 0) {\n            return solve(f, initial, yInitial, max, yMax, initial, yInitial);\n        }\n\n\n        // full Brent algorithm starting with provided initial guess\n        return solve(f, min, yMin, max, yMax, initial, yInitial);\n\n    }', 'start_line': 98, 'end_line': 140, 'buggy_lines': [139]}
+================== buggy_method_src ==================
+public double solve(final UnivariateRealFunction f,
+                        final double min, final double max, final double initial)
+        throws MaxIterationsExceededException, FunctionEvaluationException {
+
+        clearResult();
+        verifySequence(min, initial, max);
+
+        // return the initial guess if it is good enough
+        double yInitial = f.value(initial);
+        if (Math.abs(yInitial) <= functionValueAccuracy) {
+            setResult(initial, 0);
+            return result;
+        }
+
+        // return the first endpoint if it is good enough
+        double yMin = f.value(min);
+        if (Math.abs(yMin) <= functionValueAccuracy) {
+            setResult(yMin, 0);
+            return result;
+        }
+
+        // reduce interval if min and initial bracket the root
+        if (yInitial * yMin < 0) {
+            return solve(f, min, yMin, initial, yInitial, min, yMin);
+        }
+
+        // return the second endpoint if it is good enough
+        double yMax = f.value(max);
+        if (Math.abs(yMax) <= functionValueAccuracy) {
+            setResult(yMax, 0);
+            return result;
+        }
+
+        // reduce interval if initial and max bracket the root
+        if (yInitial * yMax < 0) {
+            return solve(f, initial, yInitial, max, yMax, initial, yInitial);
+        }
+
+
+        // full Brent algorithm starting with provided initial guess
+        return solve(f, min, yMin, max, yMax, initial, yInitial);
+
+    }
+================== test_stack ==================
+org.apache.commons.math.analysis.solvers.BrentSolverTest::testBadEndpoints
+junit.framework.AssertionFailedError: Expecting IllegalArgumentException - non-bracketing
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.TestCase.fail(TestCase.java:227)
+	at org.apache.commons.math.analysis.solvers.BrentSolverTest.testBadEndpoints(BrentSolverTest.java:334)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+fail("Expecting IllegalArgumentException - non-bracketing");
+
+================== buggy_lines_in_method ==================
+[42]
+================== buggy_statements ==================
+['']
+================== buggy_method_src_endswith_buggy_statement ==================
+public double solve(final UnivariateRealFunction f,
+                        final double min, final double max, final double initial)
+        throws MaxIterationsExceededException, FunctionEvaluationException {
+
+        clearResult();
+        verifySequence(min, initial, max);
+
+        // return the initial guess if it is good enough
+        double yInitial = f.value(initial);
+        if (Math.abs(yInitial) <= functionValueAccuracy) {
+            setResult(initial, 0);
+            return result;
+        }
+
+        // return the first endpoint if it is good enough
+        double yMin = f.value(min);
+        if (Math.abs(yMin) <= functionValueAccuracy) {
+            setResult(yMin, 0);
+            return result;
+        }
+
+        // reduce interval if min and initial bracket the root
+        if (yInitial * yMin < 0) {
+            return solve(f, min, yMin, initial, yInitial, min, yMin);
+        }
+
+        // return the second endpoint if it is good enough
+        double yMax = f.value(max);
+        if (Math.abs(yMax) <= functionValueAccuracy) {
+            setResult(yMax, 0);
+            return result;
+        }
+
+        // reduce interval if initial and max bracket the root
+        if (yInitial * yMax < 0) {
+            return solve(f, initial, yInitial, max, yMax, initial, yInitial);
+        }
+
+
+        // full Brent algorithm starting with provided initial guess
+        return solve(f, min, yMin, max, yMax, initial, yInitial);

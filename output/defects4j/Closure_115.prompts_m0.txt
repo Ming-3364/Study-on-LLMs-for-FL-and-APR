@@ -1,0 +1,3364 @@
+
+================== prompt_fl_1 ==================
+
+source code:
+private CanInlineResult canInlineReferenceDirectly(
+      Node callNode, Node fnNode) {
+    if (!isDirectCallNodeReplacementPossible(fnNode)) {
+      return CanInlineResult.NO;
+    }
+
+    Node block = fnNode.getLastChild();
+
+    boolean hasSideEffects = false;
+    if (block.hasChildren()) {
+      Preconditions.checkState(block.hasOneChild());
+      Node stmt = block.getFirstChild();
+      if (stmt.isReturn()) {
+        hasSideEffects = NodeUtil.mayHaveSideEffects(stmt.getFirstChild(), compiler);
+      }
+    }
+    // CALL NODE: [ NAME, ARG1, ARG2, ... ]
+    Node cArg = callNode.getFirstChild().getNext();
+
+    // Functions called via 'call' and 'apply' have a this-object as
+    // the first parameter, but this is not part of the called function's
+    // parameter list.
+    if (!callNode.getFirstChild().isName()) {
+      if (NodeUtil.isFunctionObjectCall(callNode)) {
+        // TODO(johnlenz): Support replace this with a value.
+        if (cArg == null || !cArg.isThis()) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      } else {
+        // ".apply" call should be filtered before this.
+        Preconditions.checkState(!NodeUtil.isFunctionObjectApply(callNode));
+      }
+    }
+
+    // FUNCTION NODE -> LP NODE: [ ARG1, ARG2, ... ]
+    Node fnParam = NodeUtil.getFunctionParameters(fnNode).getFirstChild();
+    while (cArg != null || fnParam != null) {
+      // For each named parameter check if a mutable argument use more than one.
+      if (fnParam != null) {
+        if (cArg != null) {
+          if (hasSideEffects && NodeUtil.canBeSideEffected(cArg)) {
+            return CanInlineResult.NO;
+          }
+          // Check for arguments that are evaluated more than once.
+          // Note: Unlike block inlining, there it is not possible that a
+          // parameter reference will be in a loop.
+          if (NodeUtil.mayEffectMutableState(cArg, compiler)
+              && NodeUtil.getNameReferenceCount(
+                  block, fnParam.getString()) > 1) {
+            return CanInlineResult.NO;
+          }
+        }
+
+        // Move to the next name.
+        fnParam = fnParam.getNext();
+      }
+
+      // For every call argument check for side-effects, even if there
+      // isn't a named parameter to match.
+      if (cArg != null) {
+        if (NodeUtil.mayHaveSideEffects(cArg, compiler)) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      }
+    }
+
+    return CanInlineResult.YES;
+  }
+
+There is a bug in the above code, please help me locate it.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_2 ==================
+
+source code:
+private CanInlineResult canInlineReferenceDirectly(
+      Node callNode, Node fnNode) {
+    if (!isDirectCallNodeReplacementPossible(fnNode)) {
+      return CanInlineResult.NO;
+    }
+
+    Node block = fnNode.getLastChild();
+
+    boolean hasSideEffects = false;
+    if (block.hasChildren()) {
+      Preconditions.checkState(block.hasOneChild());
+      Node stmt = block.getFirstChild();
+      if (stmt.isReturn()) {
+        hasSideEffects = NodeUtil.mayHaveSideEffects(stmt.getFirstChild(), compiler);
+      }
+    }
+    // CALL NODE: [ NAME, ARG1, ARG2, ... ]
+    Node cArg = callNode.getFirstChild().getNext();
+
+    // Functions called via 'call' and 'apply' have a this-object as
+    // the first parameter, but this is not part of the called function's
+    // parameter list.
+    if (!callNode.getFirstChild().isName()) {
+      if (NodeUtil.isFunctionObjectCall(callNode)) {
+        // TODO(johnlenz): Support replace this with a value.
+        if (cArg == null || !cArg.isThis()) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      } else {
+        // ".apply" call should be filtered before this.
+        Preconditions.checkState(!NodeUtil.isFunctionObjectApply(callNode));
+      }
+    }
+
+    // FUNCTION NODE -> LP NODE: [ ARG1, ARG2, ... ]
+    Node fnParam = NodeUtil.getFunctionParameters(fnNode).getFirstChild();
+    while (cArg != null || fnParam != null) {
+      // For each named parameter check if a mutable argument use more than one.
+      if (fnParam != null) {
+        if (cArg != null) {
+          if (hasSideEffects && NodeUtil.canBeSideEffected(cArg)) {
+            return CanInlineResult.NO;
+          }
+          // Check for arguments that are evaluated more than once.
+          // Note: Unlike block inlining, there it is not possible that a
+          // parameter reference will be in a loop.
+          if (NodeUtil.mayEffectMutableState(cArg, compiler)
+              && NodeUtil.getNameReferenceCount(
+                  block, fnParam.getString()) > 1) {
+            return CanInlineResult.NO;
+          }
+        }
+
+        // Move to the next name.
+        fnParam = fnParam.getNext();
+      }
+
+      // For every call argument check for side-effects, even if there
+      // isn't a named parameter to match.
+      if (cArg != null) {
+        if (NodeUtil.mayHaveSideEffects(cArg, compiler)) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      }
+    }
+
+    return CanInlineResult.YES;
+  }
+
+stack trace:
+com.google.javascript.jscomp.InlineFunctionsTest::testBug4944818
+junit.framework.AssertionFailedError:
+Expected: HangoutStarter.prototype.launchHangout=function(){var self$$2=a.b;var JSCompiler_temp_const$$0=goog.Uri;var JSCompiler_inline_result$$1;var self$$inline_2=self$$2;if(!self$$inline_2.domServices_)self$$inline_2.domServices_=goog$component$DomServices.get(self$$inline_2.appContext_);JSCompiler_inline_result$$1=self$$inline_2.domServices_;var myUrl=new JSCompiler_temp_const$$0(JSCompiler_inline_result$$1.getDomHelper().getWindow().location.href)}
+Result: HangoutStarter.prototype.launchHangout=function(){var self$$2=a.b;var JSCompiler_temp_const$$0=goog.Uri;var JSCompiler_inline_result$$1;var JSCompiler_inline_result$$0;var self$$inline_1=self$$2;if(!self$$inline_1.domServices_)self$$inline_1.domServices_=goog$component$DomServices.get(self$$inline_1.appContext_);JSCompiler_inline_result$$0=self$$inline_1.domServices_;JSCompiler_inline_result$$1=JSCompiler_inline_result$$0.getDomHelper().getWindow();var myUrl=new JSCompiler_temp_const$$0(JSCompiler_inline_result$$1.location.href)}
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            ASSIGN 1 [source_file: expected0]
+                GETPROP 1 [source_file: expected0]
+                    GETPROP 1 [source_file: expected0]
+                        NAME HangoutStarter 1 [source_file: expected0]
+                        STRING prototype 1 [source_file: expected0]
+                    STRING launchHangout 1 [source_file: expected0]
+                FUNCTION  1 [source_file: expected0]
+                    NAME  1 [source_file: expected0]
+                    PARAM_LIST 1 [source_file: expected0]
+                    BLOCK 1 [source_file: expected0]
+                        VAR 1 [source_file: expected0]
+                            NAME self$$2 1 [source_file: expected0]
+                                GETPROP 1 [source_file: expected0]
+                                    NAME a 1 [source_file: expected0]
+                                    STRING b 1 [source_file: expected0]
+                        VAR 1 [source_file: expected0]
+                            NAME JSCompiler_temp_const$$0 1 [source_file: expected0]
+                                GETPROP 1 [source_file: expected0]
+                                    NAME goog 1 [source_file: expected0]
+                                    STRING Uri 1 [source_file: expected0]
+                        VAR 1 [source_file: expected0]
+                            NAME JSCompiler_inline_result$$1 1 [source_file: expected0]
+                        BLOCK 1 [source_file: expected0]
+                            VAR 1 [source_file: expected0]
+                                NAME self$$inline_2 1 [source_file: expected0]
+                                    NAME self$$2 1 [source_file: expected0]
+                            IF 1 [source_file: expected0]
+                                NOT 1 [source_file: expected0]
+                                    GETPROP 1 [source_file: expected0]
+                                        NAME self$$inline_2 1 [source_file: expected0]
+                                        STRING domServices_ 1 [source_file: expected0]
+                                BLOCK 1 [source_file: expected0]
+                                    EXPR_RESULT 1 [source_file: expected0]
+                                        ASSIGN 1 [source_file: expected0]
+                                            GETPROP 1 [source_file: expected0]
+                                                NAME self$$inline_2 1 [source_file: expected0]
+                                                STRING domServices_ 1 [source_file: expected0]
+                                            CALL 1 [source_file: expected0]
+                                                GETPROP 1 [source_file: expected0]
+                                                    NAME goog$component$DomServices 1 [source_file: expected0]
+                                                    STRING get 1 [source_file: expected0]
+                                                GETPROP 1 [source_file: expected0]
+                                                    NAME self$$inline_2 1 [source_file: expected0]
+                                                    STRING appContext_ 1 [source_file: expected0]
+                            EXPR_RESULT 1 [source_file: expected0]
+                                ASSIGN 1 [source_file: expected0]
+                                    NAME JSCompiler_inline_result$$1 1 [source_file: expected0]
+                                    GETPROP 1 [source_file: expected0]
+                                        NAME self$$inline_2 1 [source_file: expected0]
+                                        STRING domServices_ 1 [source_file: expected0]
+                        VAR 1 [source_file: expected0]
+                            NAME myUrl 1 [source_file: expected0]
+                                NEW 1 [source_file: expected0]
+                                    NAME JSCompiler_temp_const$$0 1 [source_file: expected0]
+                                    GETPROP 1 [source_file: expected0]
+                                        GETPROP 1 [source_file: expected0]
+                                            CALL 1 [source_file: expected0]
+                                                GETPROP 1 [source_file: expected0]
+                                                    CALL 1 [source_file: expected0]
+                                                        GETPROP 1 [source_file: expected0]
+                                                            NAME JSCompiler_inline_result$$1 1 [source_file: expected0]
+                                                            STRING getDomHelper 1 [source_file: expected0]
+                                                    STRING getWindow 1 [source_file: expected0]
+                                            STRING location 1 [source_file: expected0]
+                                        STRING href 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        EXPR_RESULT 13 [source_file: testcode]
+            ASSIGN 13 [source_file: testcode]
+                GETPROP 13 [source_file: testcode]
+                    GETPROP 13 [source_file: testcode]
+                        NAME HangoutStarter 13 [source_file: testcode]
+                        STRING prototype 13 [source_file: testcode]
+                    STRING launchHangout 13 [source_file: testcode]
+                FUNCTION  13 [source_file: testcode]
+                    NAME  13 [source_file: testcode]
+                    PARAM_LIST 13 [source_file: testcode]
+                    BLOCK 13 [source_file: testcode]
+                        VAR 14 [source_file: testcode]
+                            NAME self$$2 14 [source_file: testcode]
+                                GETPROP 14 [source_file: testcode]
+                                    NAME a 14 [source_file: testcode]
+                                    STRING b 14 [source_file: testcode]
+                        VAR 15 [source_file: testcode]
+                            NAME JSCompiler_temp_const$$0 15 [source_file: testcode]
+                                GETPROP 15 [source_file: testcode]
+                                    NAME goog 15 [source_file: testcode]
+                                    STRING Uri 15 [source_file: testcode]
+                        VAR 15 [source_file: testcode]
+                            NAME JSCompiler_inline_result$$1 15 [source_file: testcode]
+                        BLOCK 9 [source_file: testcode]
+                            VAR 10 [source_file: testcode]
+                                NAME JSCompiler_inline_result$$0 10 [source_file: testcode]
+                            BLOCK 1 [source_file: testcode]
+                                VAR 15 [source_file: testcode]
+                                    NAME self$$inline_1 15 [source_file: testcode]
+                                        NAME self$$2 15 [source_file: testcode]
+                                IF 2 [source_file: testcode]
+                                    NOT 2 [source_file: testcode]
+                                        GETPROP 2 [source_file: testcode]
+                                            NAME self$$inline_1 2 [source_file: testcode]
+                                            STRING domServices_ 2 [source_file: testcode]
+                                    BLOCK 2 [source_file: testcode]
+                                        EXPR_RESULT 3 [source_file: testcode]
+                                            ASSIGN 3 [source_file: testcode]
+                                                GETPROP 3 [source_file: testcode]
+                                                    NAME self$$inline_1 3 [source_file: testcode]
+                                                    STRING domServices_ 3 [source_file: testcode]
+                                                CALL 3 [source_file: testcode]
+                                                    GETPROP 3 [source_file: testcode]
+                                                        NAME goog$component$DomServices 3 [source_file: testcode]
+                                                        STRING get 3 [source_file: testcode]
+                                                    GETPROP 3 [source_file: testcode]
+                                                        NAME self$$inline_1 3 [source_file: testcode]
+                                                        STRING appContext_ 3 [source_file: testcode]
+                                EXPR_RESULT 6 [source_file: testcode]
+                                    ASSIGN 6 [source_file: testcode]
+                                        NAME JSCompiler_inline_result$$0 6 [source_file: testcode]
+                                        GETPROP 6 [source_file: testcode]
+                                            NAME self$$inline_1 6 [source_file: testcode]
+                                            STRING domServices_ 6 [source_file: testcode]
+                            EXPR_RESULT 10 [source_file: testcode]
+                                ASSIGN 10 [source_file: testcode]
+                                    NAME JSCompiler_inline_result$$1 10 [source_file: testcode]
+                                    CALL 10 [source_file: testcode]
+                                        GETPROP 10 [source_file: testcode]
+                                            CALL 10 [source_file: testcode]
+                                                GETPROP 10 [source_file: testcode]
+                                                    NAME JSCompiler_inline_result$$0 10 [source_file: testcode]
+                                                    STRING getDomHelper 10 [source_file: testcode]
+                                            STRING getWindow 10 [source_file: testcode]
+                        VAR 15 [source_file: testcode]
+                            NAME myUrl 15 [source_file: testcode]
+                                NEW 15 [source_file: testcode]
+                                    NAME JSCompiler_temp_const$$0 15 [source_file: testcode]
+                                    GETPROP 15 [source_file: testcode]
+                                        GETPROP 15 [source_file: testcode]
+                                            NAME JSCompiler_inline_result$$1 15 [source_file: testcode]
+                                            STRING location 15 [source_file: testcode]
+                                        STRING href 15 [source_file: testcode]
+
+
+Subtree1: NAME self$$inline_2 1 [source_file: expected0]
+    NAME self$$2 1 [source_file: expected0]
+
+
+Subtree2: NAME JSCompiler_inline_result$$0 10 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testBug4944818(InlineFunctionsTest.java:2060)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+com.google.javascript.jscomp.InlineFunctionsTest::testDoubleInlining1
+junit.framework.AssertionFailedError:
+Expected: getWindow(x)
+Result: var foo=function(a){return getWindow(a)};foo(x)
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            CALL 1 [free_call: 1] [source_file: expected0]
+                NAME getWindow 1 [source_file: expected0]
+                NAME x 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        VAR 1 [source_file: testcode]
+            NAME foo 1 [source_file: testcode]
+                FUNCTION  1 [source_file: testcode]
+                    NAME  1 [source_file: testcode]
+                    PARAM_LIST 1 [source_file: testcode]
+                        NAME a 1 [source_file: testcode]
+                    BLOCK 1 [source_file: testcode]
+                        RETURN 1 [source_file: testcode]
+                            CALL 1 [free_call: 1] [source_file: testcode]
+                                NAME getWindow 1 [source_file: testcode]
+                                NAME a 1 [source_file: testcode]
+        EXPR_RESULT 1 [source_file: testcode]
+            CALL 1 [free_call: 1] [source_file: testcode]
+                NAME foo 1 [source_file: testcode]
+                NAME x 1 [source_file: testcode]
+
+
+Subtree1: SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+    EXPR_RESULT 1 [source_file: expected0]
+        CALL 1 [free_call: 1] [source_file: expected0]
+            NAME getWindow 1 [source_file: expected0]
+            NAME x 1 [source_file: expected0]
+
+
+Subtree2: SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+    VAR 1 [source_file: testcode]
+        NAME foo 1 [source_file: testcode]
+            FUNCTION  1 [source_file: testcode]
+                NAME  1 [source_file: testcode]
+                PARAM_LIST 1 [source_file: testcode]
+                    NAME a 1 [source_file: testcode]
+                BLOCK 1 [source_file: testcode]
+                    RETURN 1 [source_file: testcode]
+                        CALL 1 [free_call: 1] [source_file: testcode]
+                            NAME getWindow 1 [source_file: testcode]
+                            NAME a 1 [source_file: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        CALL 1 [free_call: 1] [source_file: testcode]
+            NAME foo 1 [source_file: testcode]
+            NAME x 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testDoubleInlining1(InlineFunctionsTest.java:1099)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.InlineFunctionsTest::testNoInlineIfParametersModified8
+junit.framework.AssertionFailedError:
+Expected: o.x=2
+Result: o.x=2
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            ASSIGN 1 [source_file: expected0]
+                GETPROP 1 [source_file: expected0]
+                    NAME o 1 [source_file: expected0]
+                    STRING x 1 [source_file: expected0]
+                NUMBER 2.0 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        BLOCK 1 [source_file: testcode]
+            EXPR_RESULT 1 [source_file: testcode]
+                ASSIGN 1 [source_file: testcode]
+                    GETPROP 1 [source_file: testcode]
+                        NAME o 1 [source_file: testcode]
+                        STRING x 1 [source_file: testcode]
+                    NUMBER 2.0 1 [source_file: testcode]
+
+
+Subtree1: EXPR_RESULT 1 [source_file: expected0]
+    ASSIGN 1 [source_file: expected0]
+        GETPROP 1 [source_file: expected0]
+            NAME o 1 [source_file: expected0]
+            STRING x 1 [source_file: expected0]
+        NUMBER 2.0 1 [source_file: expected0]
+
+
+Subtree2: BLOCK 1 [source_file: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        ASSIGN 1 [source_file: testcode]
+            GETPROP 1 [source_file: testcode]
+                NAME o 1 [source_file: testcode]
+                STRING x 1 [source_file: testcode]
+            NUMBER 2.0 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testNoInlineIfParametersModified8(InlineFunctionsTest.java:598)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.InlineFunctionsTest::testNoInlineIfParametersModified9
+junit.framework.AssertionFailedError:
+Expected: o[2]=2
+Result: o[2]=2
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            ASSIGN 1 [source_file: expected0]
+                GETELEM 1 [source_file: expected0]
+                    NAME o 1 [source_file: expected0]
+                    NUMBER 2.0 1 [source_file: expected0]
+                NUMBER 2.0 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        BLOCK 1 [source_file: testcode]
+            EXPR_RESULT 1 [source_file: testcode]
+                ASSIGN 1 [source_file: testcode]
+                    GETELEM 1 [source_file: testcode]
+                        NAME o 1 [source_file: testcode]
+                        NUMBER 2.0 1 [source_file: testcode]
+                    NUMBER 2.0 1 [source_file: testcode]
+
+
+Subtree1: EXPR_RESULT 1 [source_file: expected0]
+    ASSIGN 1 [source_file: expected0]
+        GETELEM 1 [source_file: expected0]
+            NAME o 1 [source_file: expected0]
+            NUMBER 2.0 1 [source_file: expected0]
+        NUMBER 2.0 1 [source_file: expected0]
+
+
+Subtree2: BLOCK 1 [source_file: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        ASSIGN 1 [source_file: testcode]
+            GETELEM 1 [source_file: testcode]
+                NAME o 1 [source_file: testcode]
+                NUMBER 2.0 1 [source_file: testcode]
+            NUMBER 2.0 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testNoInlineIfParametersModified9(InlineFunctionsTest.java:603)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.InlineFunctionsTest::testInlineFunctions6
+junit.framework.AssertionFailedError:
+Expected: alert(baz(foo(1+2)))
+Result: var JSCompiler_temp_const$$0=alert;var JSCompiler_inline_result$$1;JSCompiler_inline_result$$1=baz(foo(1+2));JSCompiler_temp_const$$0(JSCompiler_inline_result$$1)
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            CALL 1 [free_call: 1] [source_file: expected0]
+                NAME alert 1 [source_file: expected0]
+                CALL 1 [free_call: 1] [source_file: expected0]
+                    NAME baz 1 [source_file: expected0]
+                    CALL 1 [free_call: 1] [source_file: expected0]
+                        NAME foo 1 [source_file: expected0]
+                        ADD 1 [source_file: expected0]
+                            NUMBER 1.0 1 [source_file: expected0]
+                            NUMBER 2.0 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        VAR 1 [source_file: testcode]
+            NAME JSCompiler_temp_const$$0 1 [source_file: testcode]
+                NAME alert 1 [source_file: testcode]
+        VAR 1 [source_file: testcode]
+            NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+        BLOCK 1 [source_file: testcode]
+            EXPR_RESULT 1 [source_file: testcode]
+                ASSIGN 1 [source_file: testcode]
+                    NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+                    CALL 1 [free_call: 1] [source_file: testcode]
+                        NAME baz 1 [source_file: testcode]
+                        CALL 1 [free_call: 1] [source_file: testcode]
+                            NAME foo 1 [source_file: testcode]
+                            ADD 1 [source_file: testcode]
+                                NUMBER 1.0 1 [source_file: testcode]
+                                NUMBER 2.0 1 [source_file: testcode]
+        EXPR_RESULT 1 [source_file: testcode]
+            CALL 1 [free_call: 1] [source_file: testcode]
+                NAME JSCompiler_temp_const$$0 1 [source_file: testcode]
+                NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+
+
+Subtree1: SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+    EXPR_RESULT 1 [source_file: expected0]
+        CALL 1 [free_call: 1] [source_file: expected0]
+            NAME alert 1 [source_file: expected0]
+            CALL 1 [free_call: 1] [source_file: expected0]
+                NAME baz 1 [source_file: expected0]
+                CALL 1 [free_call: 1] [source_file: expected0]
+                    NAME foo 1 [source_file: expected0]
+                    ADD 1 [source_file: expected0]
+                        NUMBER 1.0 1 [source_file: expected0]
+                        NUMBER 2.0 1 [source_file: expected0]
+
+
+Subtree2: SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+    VAR 1 [source_file: testcode]
+        NAME JSCompiler_temp_const$$0 1 [source_file: testcode]
+            NAME alert 1 [source_file: testcode]
+    VAR 1 [source_file: testcode]
+        NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+    BLOCK 1 [source_file: testcode]
+        EXPR_RESULT 1 [source_file: testcode]
+            ASSIGN 1 [source_file: testcode]
+                NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+                CALL 1 [free_call: 1] [source_file: testcode]
+                    NAME baz 1 [source_file: testcode]
+                    CALL 1 [free_call: 1] [source_file: testcode]
+                        NAME foo 1 [source_file: testcode]
+                        ADD 1 [source_file: testcode]
+                            NUMBER 1.0 1 [source_file: testcode]
+                            NUMBER 2.0 1 [source_file: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        CALL 1 [free_call: 1] [source_file: testcode]
+            NAME JSCompiler_temp_const$$0 1 [source_file: testcode]
+            NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testInlineFunctions6(InlineFunctionsTest.java:152)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_3 ==================
+
+source code:
+private CanInlineResult canInlineReferenceDirectly(
+      Node callNode, Node fnNode) {
+    if (!isDirectCallNodeReplacementPossible(fnNode)) {
+      return CanInlineResult.NO;
+    }
+
+    Node block = fnNode.getLastChild();
+
+    boolean hasSideEffects = false;
+    if (block.hasChildren()) {
+      Preconditions.checkState(block.hasOneChild());
+      Node stmt = block.getFirstChild();
+      if (stmt.isReturn()) {
+        hasSideEffects = NodeUtil.mayHaveSideEffects(stmt.getFirstChild(), compiler);
+      }
+    }
+    // CALL NODE: [ NAME, ARG1, ARG2, ... ]
+    Node cArg = callNode.getFirstChild().getNext();
+
+    // Functions called via 'call' and 'apply' have a this-object as
+    // the first parameter, but this is not part of the called function's
+    // parameter list.
+    if (!callNode.getFirstChild().isName()) {
+      if (NodeUtil.isFunctionObjectCall(callNode)) {
+        // TODO(johnlenz): Support replace this with a value.
+        if (cArg == null || !cArg.isThis()) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      } else {
+        // ".apply" call should be filtered before this.
+        Preconditions.checkState(!NodeUtil.isFunctionObjectApply(callNode));
+      }
+    }
+
+    // FUNCTION NODE -> LP NODE: [ ARG1, ARG2, ... ]
+    Node fnParam = NodeUtil.getFunctionParameters(fnNode).getFirstChild();
+    while (cArg != null || fnParam != null) {
+      // For each named parameter check if a mutable argument use more than one.
+      if (fnParam != null) {
+        if (cArg != null) {
+          if (hasSideEffects && NodeUtil.canBeSideEffected(cArg)) {
+            return CanInlineResult.NO;
+          }
+          // Check for arguments that are evaluated more than once.
+          // Note: Unlike block inlining, there it is not possible that a
+          // parameter reference will be in a loop.
+          if (NodeUtil.mayEffectMutableState(cArg, compiler)
+              && NodeUtil.getNameReferenceCount(
+                  block, fnParam.getString()) > 1) {
+            return CanInlineResult.NO;
+          }
+        }
+
+        // Move to the next name.
+        fnParam = fnParam.getNext();
+      }
+
+      // For every call argument check for side-effects, even if there
+      // isn't a named parameter to match.
+      if (cArg != null) {
+        if (NodeUtil.mayHaveSideEffects(cArg, compiler)) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      }
+    }
+
+    return CanInlineResult.YES;
+  }
+
+stack trace:
+com.google.javascript.jscomp.InlineFunctionsTest::testBug4944818
+junit.framework.AssertionFailedError:
+Expected: HangoutStarter.prototype.launchHangout=function(){var self$$2=a.b;var JSCompiler_temp_const$$0=goog.Uri;var JSCompiler_inline_result$$1;var self$$inline_2=self$$2;if(!self$$inline_2.domServices_)self$$inline_2.domServices_=goog$component$DomServices.get(self$$inline_2.appContext_);JSCompiler_inline_result$$1=self$$inline_2.domServices_;var myUrl=new JSCompiler_temp_const$$0(JSCompiler_inline_result$$1.getDomHelper().getWindow().location.href)}
+Result: HangoutStarter.prototype.launchHangout=function(){var self$$2=a.b;var JSCompiler_temp_const$$0=goog.Uri;var JSCompiler_inline_result$$1;var JSCompiler_inline_result$$0;var self$$inline_1=self$$2;if(!self$$inline_1.domServices_)self$$inline_1.domServices_=goog$component$DomServices.get(self$$inline_1.appContext_);JSCompiler_inline_result$$0=self$$inline_1.domServices_;JSCompiler_inline_result$$1=JSCompiler_inline_result$$0.getDomHelper().getWindow();var myUrl=new JSCompiler_temp_const$$0(JSCompiler_inline_result$$1.location.href)}
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            ASSIGN 1 [source_file: expected0]
+                GETPROP 1 [source_file: expected0]
+                    GETPROP 1 [source_file: expected0]
+                        NAME HangoutStarter 1 [source_file: expected0]
+                        STRING prototype 1 [source_file: expected0]
+                    STRING launchHangout 1 [source_file: expected0]
+                FUNCTION  1 [source_file: expected0]
+                    NAME  1 [source_file: expected0]
+                    PARAM_LIST 1 [source_file: expected0]
+                    BLOCK 1 [source_file: expected0]
+                        VAR 1 [source_file: expected0]
+                            NAME self$$2 1 [source_file: expected0]
+                                GETPROP 1 [source_file: expected0]
+                                    NAME a 1 [source_file: expected0]
+                                    STRING b 1 [source_file: expected0]
+                        VAR 1 [source_file: expected0]
+                            NAME JSCompiler_temp_const$$0 1 [source_file: expected0]
+                                GETPROP 1 [source_file: expected0]
+                                    NAME goog 1 [source_file: expected0]
+                                    STRING Uri 1 [source_file: expected0]
+                        VAR 1 [source_file: expected0]
+                            NAME JSCompiler_inline_result$$1 1 [source_file: expected0]
+                        BLOCK 1 [source_file: expected0]
+                            VAR 1 [source_file: expected0]
+                                NAME self$$inline_2 1 [source_file: expected0]
+                                    NAME self$$2 1 [source_file: expected0]
+                            IF 1 [source_file: expected0]
+                                NOT 1 [source_file: expected0]
+                                    GETPROP 1 [source_file: expected0]
+                                        NAME self$$inline_2 1 [source_file: expected0]
+                                        STRING domServices_ 1 [source_file: expected0]
+                                BLOCK 1 [source_file: expected0]
+                                    EXPR_RESULT 1 [source_file: expected0]
+                                        ASSIGN 1 [source_file: expected0]
+                                            GETPROP 1 [source_file: expected0]
+                                                NAME self$$inline_2 1 [source_file: expected0]
+                                                STRING domServices_ 1 [source_file: expected0]
+                                            CALL 1 [source_file: expected0]
+                                                GETPROP 1 [source_file: expected0]
+                                                    NAME goog$component$DomServices 1 [source_file: expected0]
+                                                    STRING get 1 [source_file: expected0]
+                                                GETPROP 1 [source_file: expected0]
+                                                    NAME self$$inline_2 1 [source_file: expected0]
+                                                    STRING appContext_ 1 [source_file: expected0]
+                            EXPR_RESULT 1 [source_file: expected0]
+                                ASSIGN 1 [source_file: expected0]
+                                    NAME JSCompiler_inline_result$$1 1 [source_file: expected0]
+                                    GETPROP 1 [source_file: expected0]
+                                        NAME self$$inline_2 1 [source_file: expected0]
+                                        STRING domServices_ 1 [source_file: expected0]
+                        VAR 1 [source_file: expected0]
+                            NAME myUrl 1 [source_file: expected0]
+                                NEW 1 [source_file: expected0]
+                                    NAME JSCompiler_temp_const$$0 1 [source_file: expected0]
+                                    GETPROP 1 [source_file: expected0]
+                                        GETPROP 1 [source_file: expected0]
+                                            CALL 1 [source_file: expected0]
+                                                GETPROP 1 [source_file: expected0]
+                                                    CALL 1 [source_file: expected0]
+                                                        GETPROP 1 [source_file: expected0]
+                                                            NAME JSCompiler_inline_result$$1 1 [source_file: expected0]
+                                                            STRING getDomHelper 1 [source_file: expected0]
+                                                    STRING getWindow 1 [source_file: expected0]
+                                            STRING location 1 [source_file: expected0]
+                                        STRING href 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        EXPR_RESULT 13 [source_file: testcode]
+            ASSIGN 13 [source_file: testcode]
+                GETPROP 13 [source_file: testcode]
+                    GETPROP 13 [source_file: testcode]
+                        NAME HangoutStarter 13 [source_file: testcode]
+                        STRING prototype 13 [source_file: testcode]
+                    STRING launchHangout 13 [source_file: testcode]
+                FUNCTION  13 [source_file: testcode]
+                    NAME  13 [source_file: testcode]
+                    PARAM_LIST 13 [source_file: testcode]
+                    BLOCK 13 [source_file: testcode]
+                        VAR 14 [source_file: testcode]
+                            NAME self$$2 14 [source_file: testcode]
+                                GETPROP 14 [source_file: testcode]
+                                    NAME a 14 [source_file: testcode]
+                                    STRING b 14 [source_file: testcode]
+                        VAR 15 [source_file: testcode]
+                            NAME JSCompiler_temp_const$$0 15 [source_file: testcode]
+                                GETPROP 15 [source_file: testcode]
+                                    NAME goog 15 [source_file: testcode]
+                                    STRING Uri 15 [source_file: testcode]
+                        VAR 15 [source_file: testcode]
+                            NAME JSCompiler_inline_result$$1 15 [source_file: testcode]
+                        BLOCK 9 [source_file: testcode]
+                            VAR 10 [source_file: testcode]
+                                NAME JSCompiler_inline_result$$0 10 [source_file: testcode]
+                            BLOCK 1 [source_file: testcode]
+                                VAR 15 [source_file: testcode]
+                                    NAME self$$inline_1 15 [source_file: testcode]
+                                        NAME self$$2 15 [source_file: testcode]
+                                IF 2 [source_file: testcode]
+                                    NOT 2 [source_file: testcode]
+                                        GETPROP 2 [source_file: testcode]
+                                            NAME self$$inline_1 2 [source_file: testcode]
+                                            STRING domServices_ 2 [source_file: testcode]
+                                    BLOCK 2 [source_file: testcode]
+                                        EXPR_RESULT 3 [source_file: testcode]
+                                            ASSIGN 3 [source_file: testcode]
+                                                GETPROP 3 [source_file: testcode]
+                                                    NAME self$$inline_1 3 [source_file: testcode]
+                                                    STRING domServices_ 3 [source_file: testcode]
+                                                CALL 3 [source_file: testcode]
+                                                    GETPROP 3 [source_file: testcode]
+                                                        NAME goog$component$DomServices 3 [source_file: testcode]
+                                                        STRING get 3 [source_file: testcode]
+                                                    GETPROP 3 [source_file: testcode]
+                                                        NAME self$$inline_1 3 [source_file: testcode]
+                                                        STRING appContext_ 3 [source_file: testcode]
+                                EXPR_RESULT 6 [source_file: testcode]
+                                    ASSIGN 6 [source_file: testcode]
+                                        NAME JSCompiler_inline_result$$0 6 [source_file: testcode]
+                                        GETPROP 6 [source_file: testcode]
+                                            NAME self$$inline_1 6 [source_file: testcode]
+                                            STRING domServices_ 6 [source_file: testcode]
+                            EXPR_RESULT 10 [source_file: testcode]
+                                ASSIGN 10 [source_file: testcode]
+                                    NAME JSCompiler_inline_result$$1 10 [source_file: testcode]
+                                    CALL 10 [source_file: testcode]
+                                        GETPROP 10 [source_file: testcode]
+                                            CALL 10 [source_file: testcode]
+                                                GETPROP 10 [source_file: testcode]
+                                                    NAME JSCompiler_inline_result$$0 10 [source_file: testcode]
+                                                    STRING getDomHelper 10 [source_file: testcode]
+                                            STRING getWindow 10 [source_file: testcode]
+                        VAR 15 [source_file: testcode]
+                            NAME myUrl 15 [source_file: testcode]
+                                NEW 15 [source_file: testcode]
+                                    NAME JSCompiler_temp_const$$0 15 [source_file: testcode]
+                                    GETPROP 15 [source_file: testcode]
+                                        GETPROP 15 [source_file: testcode]
+                                            NAME JSCompiler_inline_result$$1 15 [source_file: testcode]
+                                            STRING location 15 [source_file: testcode]
+                                        STRING href 15 [source_file: testcode]
+
+
+Subtree1: NAME self$$inline_2 1 [source_file: expected0]
+    NAME self$$2 1 [source_file: expected0]
+
+
+Subtree2: NAME JSCompiler_inline_result$$0 10 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testBug4944818(InlineFunctionsTest.java:2060)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+com.google.javascript.jscomp.InlineFunctionsTest::testDoubleInlining1
+junit.framework.AssertionFailedError:
+Expected: getWindow(x)
+Result: var foo=function(a){return getWindow(a)};foo(x)
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            CALL 1 [free_call: 1] [source_file: expected0]
+                NAME getWindow 1 [source_file: expected0]
+                NAME x 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        VAR 1 [source_file: testcode]
+            NAME foo 1 [source_file: testcode]
+                FUNCTION  1 [source_file: testcode]
+                    NAME  1 [source_file: testcode]
+                    PARAM_LIST 1 [source_file: testcode]
+                        NAME a 1 [source_file: testcode]
+                    BLOCK 1 [source_file: testcode]
+                        RETURN 1 [source_file: testcode]
+                            CALL 1 [free_call: 1] [source_file: testcode]
+                                NAME getWindow 1 [source_file: testcode]
+                                NAME a 1 [source_file: testcode]
+        EXPR_RESULT 1 [source_file: testcode]
+            CALL 1 [free_call: 1] [source_file: testcode]
+                NAME foo 1 [source_file: testcode]
+                NAME x 1 [source_file: testcode]
+
+
+Subtree1: SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+    EXPR_RESULT 1 [source_file: expected0]
+        CALL 1 [free_call: 1] [source_file: expected0]
+            NAME getWindow 1 [source_file: expected0]
+            NAME x 1 [source_file: expected0]
+
+
+Subtree2: SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+    VAR 1 [source_file: testcode]
+        NAME foo 1 [source_file: testcode]
+            FUNCTION  1 [source_file: testcode]
+                NAME  1 [source_file: testcode]
+                PARAM_LIST 1 [source_file: testcode]
+                    NAME a 1 [source_file: testcode]
+                BLOCK 1 [source_file: testcode]
+                    RETURN 1 [source_file: testcode]
+                        CALL 1 [free_call: 1] [source_file: testcode]
+                            NAME getWindow 1 [source_file: testcode]
+                            NAME a 1 [source_file: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        CALL 1 [free_call: 1] [source_file: testcode]
+            NAME foo 1 [source_file: testcode]
+            NAME x 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testDoubleInlining1(InlineFunctionsTest.java:1099)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.InlineFunctionsTest::testNoInlineIfParametersModified8
+junit.framework.AssertionFailedError:
+Expected: o.x=2
+Result: o.x=2
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            ASSIGN 1 [source_file: expected0]
+                GETPROP 1 [source_file: expected0]
+                    NAME o 1 [source_file: expected0]
+                    STRING x 1 [source_file: expected0]
+                NUMBER 2.0 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        BLOCK 1 [source_file: testcode]
+            EXPR_RESULT 1 [source_file: testcode]
+                ASSIGN 1 [source_file: testcode]
+                    GETPROP 1 [source_file: testcode]
+                        NAME o 1 [source_file: testcode]
+                        STRING x 1 [source_file: testcode]
+                    NUMBER 2.0 1 [source_file: testcode]
+
+
+Subtree1: EXPR_RESULT 1 [source_file: expected0]
+    ASSIGN 1 [source_file: expected0]
+        GETPROP 1 [source_file: expected0]
+            NAME o 1 [source_file: expected0]
+            STRING x 1 [source_file: expected0]
+        NUMBER 2.0 1 [source_file: expected0]
+
+
+Subtree2: BLOCK 1 [source_file: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        ASSIGN 1 [source_file: testcode]
+            GETPROP 1 [source_file: testcode]
+                NAME o 1 [source_file: testcode]
+                STRING x 1 [source_file: testcode]
+            NUMBER 2.0 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testNoInlineIfParametersModified8(InlineFunctionsTest.java:598)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.InlineFunctionsTest::testNoInlineIfParametersModified9
+junit.framework.AssertionFailedError:
+Expected: o[2]=2
+Result: o[2]=2
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            ASSIGN 1 [source_file: expected0]
+                GETELEM 1 [source_file: expected0]
+                    NAME o 1 [source_file: expected0]
+                    NUMBER 2.0 1 [source_file: expected0]
+                NUMBER 2.0 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        BLOCK 1 [source_file: testcode]
+            EXPR_RESULT 1 [source_file: testcode]
+                ASSIGN 1 [source_file: testcode]
+                    GETELEM 1 [source_file: testcode]
+                        NAME o 1 [source_file: testcode]
+                        NUMBER 2.0 1 [source_file: testcode]
+                    NUMBER 2.0 1 [source_file: testcode]
+
+
+Subtree1: EXPR_RESULT 1 [source_file: expected0]
+    ASSIGN 1 [source_file: expected0]
+        GETELEM 1 [source_file: expected0]
+            NAME o 1 [source_file: expected0]
+            NUMBER 2.0 1 [source_file: expected0]
+        NUMBER 2.0 1 [source_file: expected0]
+
+
+Subtree2: BLOCK 1 [source_file: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        ASSIGN 1 [source_file: testcode]
+            GETELEM 1 [source_file: testcode]
+                NAME o 1 [source_file: testcode]
+                NUMBER 2.0 1 [source_file: testcode]
+            NUMBER 2.0 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testNoInlineIfParametersModified9(InlineFunctionsTest.java:603)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.InlineFunctionsTest::testInlineFunctions6
+junit.framework.AssertionFailedError:
+Expected: alert(baz(foo(1+2)))
+Result: var JSCompiler_temp_const$$0=alert;var JSCompiler_inline_result$$1;JSCompiler_inline_result$$1=baz(foo(1+2));JSCompiler_temp_const$$0(JSCompiler_inline_result$$1)
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            CALL 1 [free_call: 1] [source_file: expected0]
+                NAME alert 1 [source_file: expected0]
+                CALL 1 [free_call: 1] [source_file: expected0]
+                    NAME baz 1 [source_file: expected0]
+                    CALL 1 [free_call: 1] [source_file: expected0]
+                        NAME foo 1 [source_file: expected0]
+                        ADD 1 [source_file: expected0]
+                            NUMBER 1.0 1 [source_file: expected0]
+                            NUMBER 2.0 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        VAR 1 [source_file: testcode]
+            NAME JSCompiler_temp_const$$0 1 [source_file: testcode]
+                NAME alert 1 [source_file: testcode]
+        VAR 1 [source_file: testcode]
+            NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+        BLOCK 1 [source_file: testcode]
+            EXPR_RESULT 1 [source_file: testcode]
+                ASSIGN 1 [source_file: testcode]
+                    NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+                    CALL 1 [free_call: 1] [source_file: testcode]
+                        NAME baz 1 [source_file: testcode]
+                        CALL 1 [free_call: 1] [source_file: testcode]
+                            NAME foo 1 [source_file: testcode]
+                            ADD 1 [source_file: testcode]
+                                NUMBER 1.0 1 [source_file: testcode]
+                                NUMBER 2.0 1 [source_file: testcode]
+        EXPR_RESULT 1 [source_file: testcode]
+            CALL 1 [free_call: 1] [source_file: testcode]
+                NAME JSCompiler_temp_const$$0 1 [source_file: testcode]
+                NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+
+
+Subtree1: SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+    EXPR_RESULT 1 [source_file: expected0]
+        CALL 1 [free_call: 1] [source_file: expected0]
+            NAME alert 1 [source_file: expected0]
+            CALL 1 [free_call: 1] [source_file: expected0]
+                NAME baz 1 [source_file: expected0]
+                CALL 1 [free_call: 1] [source_file: expected0]
+                    NAME foo 1 [source_file: expected0]
+                    ADD 1 [source_file: expected0]
+                        NUMBER 1.0 1 [source_file: expected0]
+                        NUMBER 2.0 1 [source_file: expected0]
+
+
+Subtree2: SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+    VAR 1 [source_file: testcode]
+        NAME JSCompiler_temp_const$$0 1 [source_file: testcode]
+            NAME alert 1 [source_file: testcode]
+    VAR 1 [source_file: testcode]
+        NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+    BLOCK 1 [source_file: testcode]
+        EXPR_RESULT 1 [source_file: testcode]
+            ASSIGN 1 [source_file: testcode]
+                NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+                CALL 1 [free_call: 1] [source_file: testcode]
+                    NAME baz 1 [source_file: testcode]
+                    CALL 1 [free_call: 1] [source_file: testcode]
+                        NAME foo 1 [source_file: testcode]
+                        ADD 1 [source_file: testcode]
+                            NUMBER 1.0 1 [source_file: testcode]
+                            NUMBER 2.0 1 [source_file: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        CALL 1 [free_call: 1] [source_file: testcode]
+            NAME JSCompiler_temp_const$$0 1 [source_file: testcode]
+            NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testInlineFunctions6(InlineFunctionsTest.java:152)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+failure assertion code:
+test(
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_4 ==================
+
+source code:
+private CanInlineResult canInlineReferenceDirectly(
+      Node callNode, Node fnNode) {
+    if (!isDirectCallNodeReplacementPossible(fnNode)) {
+      return CanInlineResult.NO;
+    }
+
+    Node block = fnNode.getLastChild();
+
+    boolean hasSideEffects = false;
+    if (block.hasChildren()) {
+      Preconditions.checkState(block.hasOneChild());
+      Node stmt = block.getFirstChild();
+      if (stmt.isReturn()) {
+        hasSideEffects = NodeUtil.mayHaveSideEffects(stmt.getFirstChild(), compiler);
+      }
+    }
+    // CALL NODE: [ NAME, ARG1, ARG2, ... ]
+    Node cArg = callNode.getFirstChild().getNext();
+
+    // Functions called via 'call' and 'apply' have a this-object as
+    // the first parameter, but this is not part of the called function's
+    // parameter list.
+    if (!callNode.getFirstChild().isName()) {
+      if (NodeUtil.isFunctionObjectCall(callNode)) {
+        // TODO(johnlenz): Support replace this with a value.
+        if (cArg == null || !cArg.isThis()) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      } else {
+        // ".apply" call should be filtered before this.
+        Preconditions.checkState(!NodeUtil.isFunctionObjectApply(callNode));
+      }
+    }
+
+    // FUNCTION NODE -> LP NODE: [ ARG1, ARG2, ... ]
+    Node fnParam = NodeUtil.getFunctionParameters(fnNode).getFirstChild();
+    while (cArg != null || fnParam != null) {
+      // For each named parameter check if a mutable argument use more than one.
+      if (fnParam != null) {
+        if (cArg != null) {
+          if (hasSideEffects && NodeUtil.canBeSideEffected(cArg)) {
+            return CanInlineResult.NO;
+          }
+          // Check for arguments that are evaluated more than once.
+          // Note: Unlike block inlining, there it is not possible that a
+          // parameter reference will be in a loop.
+          if (NodeUtil.mayEffectMutableState(cArg, compiler)
+              && NodeUtil.getNameReferenceCount(
+                  block, fnParam.getString()) > 1) {
+            return CanInlineResult.NO;
+          }
+        }
+
+        // Move to the next name.
+        fnParam = fnParam.getNext();
+      }
+
+      // For every call argument check for side-effects, even if there
+      // isn't a named parameter to match.
+      if (cArg != null) {
+        if (NodeUtil.mayHaveSideEffects(cArg, compiler)) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      }
+    }
+
+    return CanInlineResult.YES;
+  }
+
+There is a bug in the above code, please help me locate it.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_5 ==================
+
+source code:
+private CanInlineResult canInlineReferenceDirectly(
+      Node callNode, Node fnNode) {
+    if (!isDirectCallNodeReplacementPossible(fnNode)) {
+      return CanInlineResult.NO;
+    }
+
+    Node block = fnNode.getLastChild();
+
+    boolean hasSideEffects = false;
+    if (block.hasChildren()) {
+      Preconditions.checkState(block.hasOneChild());
+      Node stmt = block.getFirstChild();
+      if (stmt.isReturn()) {
+        hasSideEffects = NodeUtil.mayHaveSideEffects(stmt.getFirstChild(), compiler);
+      }
+    }
+    // CALL NODE: [ NAME, ARG1, ARG2, ... ]
+    Node cArg = callNode.getFirstChild().getNext();
+
+    // Functions called via 'call' and 'apply' have a this-object as
+    // the first parameter, but this is not part of the called function's
+    // parameter list.
+    if (!callNode.getFirstChild().isName()) {
+      if (NodeUtil.isFunctionObjectCall(callNode)) {
+        // TODO(johnlenz): Support replace this with a value.
+        if (cArg == null || !cArg.isThis()) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      } else {
+        // ".apply" call should be filtered before this.
+        Preconditions.checkState(!NodeUtil.isFunctionObjectApply(callNode));
+      }
+    }
+
+    // FUNCTION NODE -> LP NODE: [ ARG1, ARG2, ... ]
+    Node fnParam = NodeUtil.getFunctionParameters(fnNode).getFirstChild();
+    while (cArg != null || fnParam != null) {
+      // For each named parameter check if a mutable argument use more than one.
+      if (fnParam != null) {
+        if (cArg != null) {
+          if (hasSideEffects && NodeUtil.canBeSideEffected(cArg)) {
+            return CanInlineResult.NO;
+          }
+          // Check for arguments that are evaluated more than once.
+          // Note: Unlike block inlining, there it is not possible that a
+          // parameter reference will be in a loop.
+          if (NodeUtil.mayEffectMutableState(cArg, compiler)
+              && NodeUtil.getNameReferenceCount(
+                  block, fnParam.getString()) > 1) {
+            return CanInlineResult.NO;
+          }
+        }
+
+        // Move to the next name.
+        fnParam = fnParam.getNext();
+      }
+
+      // For every call argument check for side-effects, even if there
+      // isn't a named parameter to match.
+      if (cArg != null) {
+        if (NodeUtil.mayHaveSideEffects(cArg, compiler)) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      }
+    }
+
+    return CanInlineResult.YES;
+  }
+
+stack trace:
+com.google.javascript.jscomp.InlineFunctionsTest::testBug4944818
+junit.framework.AssertionFailedError:
+Expected: HangoutStarter.prototype.launchHangout=function(){var self$$2=a.b;var JSCompiler_temp_const$$0=goog.Uri;var JSCompiler_inline_result$$1;var self$$inline_2=self$$2;if(!self$$inline_2.domServices_)self$$inline_2.domServices_=goog$component$DomServices.get(self$$inline_2.appContext_);JSCompiler_inline_result$$1=self$$inline_2.domServices_;var myUrl=new JSCompiler_temp_const$$0(JSCompiler_inline_result$$1.getDomHelper().getWindow().location.href)}
+Result: HangoutStarter.prototype.launchHangout=function(){var self$$2=a.b;var JSCompiler_temp_const$$0=goog.Uri;var JSCompiler_inline_result$$1;var JSCompiler_inline_result$$0;var self$$inline_1=self$$2;if(!self$$inline_1.domServices_)self$$inline_1.domServices_=goog$component$DomServices.get(self$$inline_1.appContext_);JSCompiler_inline_result$$0=self$$inline_1.domServices_;JSCompiler_inline_result$$1=JSCompiler_inline_result$$0.getDomHelper().getWindow();var myUrl=new JSCompiler_temp_const$$0(JSCompiler_inline_result$$1.location.href)}
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            ASSIGN 1 [source_file: expected0]
+                GETPROP 1 [source_file: expected0]
+                    GETPROP 1 [source_file: expected0]
+                        NAME HangoutStarter 1 [source_file: expected0]
+                        STRING prototype 1 [source_file: expected0]
+                    STRING launchHangout 1 [source_file: expected0]
+                FUNCTION  1 [source_file: expected0]
+                    NAME  1 [source_file: expected0]
+                    PARAM_LIST 1 [source_file: expected0]
+                    BLOCK 1 [source_file: expected0]
+                        VAR 1 [source_file: expected0]
+                            NAME self$$2 1 [source_file: expected0]
+                                GETPROP 1 [source_file: expected0]
+                                    NAME a 1 [source_file: expected0]
+                                    STRING b 1 [source_file: expected0]
+                        VAR 1 [source_file: expected0]
+                            NAME JSCompiler_temp_const$$0 1 [source_file: expected0]
+                                GETPROP 1 [source_file: expected0]
+                                    NAME goog 1 [source_file: expected0]
+                                    STRING Uri 1 [source_file: expected0]
+                        VAR 1 [source_file: expected0]
+                            NAME JSCompiler_inline_result$$1 1 [source_file: expected0]
+                        BLOCK 1 [source_file: expected0]
+                            VAR 1 [source_file: expected0]
+                                NAME self$$inline_2 1 [source_file: expected0]
+                                    NAME self$$2 1 [source_file: expected0]
+                            IF 1 [source_file: expected0]
+                                NOT 1 [source_file: expected0]
+                                    GETPROP 1 [source_file: expected0]
+                                        NAME self$$inline_2 1 [source_file: expected0]
+                                        STRING domServices_ 1 [source_file: expected0]
+                                BLOCK 1 [source_file: expected0]
+                                    EXPR_RESULT 1 [source_file: expected0]
+                                        ASSIGN 1 [source_file: expected0]
+                                            GETPROP 1 [source_file: expected0]
+                                                NAME self$$inline_2 1 [source_file: expected0]
+                                                STRING domServices_ 1 [source_file: expected0]
+                                            CALL 1 [source_file: expected0]
+                                                GETPROP 1 [source_file: expected0]
+                                                    NAME goog$component$DomServices 1 [source_file: expected0]
+                                                    STRING get 1 [source_file: expected0]
+                                                GETPROP 1 [source_file: expected0]
+                                                    NAME self$$inline_2 1 [source_file: expected0]
+                                                    STRING appContext_ 1 [source_file: expected0]
+                            EXPR_RESULT 1 [source_file: expected0]
+                                ASSIGN 1 [source_file: expected0]
+                                    NAME JSCompiler_inline_result$$1 1 [source_file: expected0]
+                                    GETPROP 1 [source_file: expected0]
+                                        NAME self$$inline_2 1 [source_file: expected0]
+                                        STRING domServices_ 1 [source_file: expected0]
+                        VAR 1 [source_file: expected0]
+                            NAME myUrl 1 [source_file: expected0]
+                                NEW 1 [source_file: expected0]
+                                    NAME JSCompiler_temp_const$$0 1 [source_file: expected0]
+                                    GETPROP 1 [source_file: expected0]
+                                        GETPROP 1 [source_file: expected0]
+                                            CALL 1 [source_file: expected0]
+                                                GETPROP 1 [source_file: expected0]
+                                                    CALL 1 [source_file: expected0]
+                                                        GETPROP 1 [source_file: expected0]
+                                                            NAME JSCompiler_inline_result$$1 1 [source_file: expected0]
+                                                            STRING getDomHelper 1 [source_file: expected0]
+                                                    STRING getWindow 1 [source_file: expected0]
+                                            STRING location 1 [source_file: expected0]
+                                        STRING href 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        EXPR_RESULT 13 [source_file: testcode]
+            ASSIGN 13 [source_file: testcode]
+                GETPROP 13 [source_file: testcode]
+                    GETPROP 13 [source_file: testcode]
+                        NAME HangoutStarter 13 [source_file: testcode]
+                        STRING prototype 13 [source_file: testcode]
+                    STRING launchHangout 13 [source_file: testcode]
+                FUNCTION  13 [source_file: testcode]
+                    NAME  13 [source_file: testcode]
+                    PARAM_LIST 13 [source_file: testcode]
+                    BLOCK 13 [source_file: testcode]
+                        VAR 14 [source_file: testcode]
+                            NAME self$$2 14 [source_file: testcode]
+                                GETPROP 14 [source_file: testcode]
+                                    NAME a 14 [source_file: testcode]
+                                    STRING b 14 [source_file: testcode]
+                        VAR 15 [source_file: testcode]
+                            NAME JSCompiler_temp_const$$0 15 [source_file: testcode]
+                                GETPROP 15 [source_file: testcode]
+                                    NAME goog 15 [source_file: testcode]
+                                    STRING Uri 15 [source_file: testcode]
+                        VAR 15 [source_file: testcode]
+                            NAME JSCompiler_inline_result$$1 15 [source_file: testcode]
+                        BLOCK 9 [source_file: testcode]
+                            VAR 10 [source_file: testcode]
+                                NAME JSCompiler_inline_result$$0 10 [source_file: testcode]
+                            BLOCK 1 [source_file: testcode]
+                                VAR 15 [source_file: testcode]
+                                    NAME self$$inline_1 15 [source_file: testcode]
+                                        NAME self$$2 15 [source_file: testcode]
+                                IF 2 [source_file: testcode]
+                                    NOT 2 [source_file: testcode]
+                                        GETPROP 2 [source_file: testcode]
+                                            NAME self$$inline_1 2 [source_file: testcode]
+                                            STRING domServices_ 2 [source_file: testcode]
+                                    BLOCK 2 [source_file: testcode]
+                                        EXPR_RESULT 3 [source_file: testcode]
+                                            ASSIGN 3 [source_file: testcode]
+                                                GETPROP 3 [source_file: testcode]
+                                                    NAME self$$inline_1 3 [source_file: testcode]
+                                                    STRING domServices_ 3 [source_file: testcode]
+                                                CALL 3 [source_file: testcode]
+                                                    GETPROP 3 [source_file: testcode]
+                                                        NAME goog$component$DomServices 3 [source_file: testcode]
+                                                        STRING get 3 [source_file: testcode]
+                                                    GETPROP 3 [source_file: testcode]
+                                                        NAME self$$inline_1 3 [source_file: testcode]
+                                                        STRING appContext_ 3 [source_file: testcode]
+                                EXPR_RESULT 6 [source_file: testcode]
+                                    ASSIGN 6 [source_file: testcode]
+                                        NAME JSCompiler_inline_result$$0 6 [source_file: testcode]
+                                        GETPROP 6 [source_file: testcode]
+                                            NAME self$$inline_1 6 [source_file: testcode]
+                                            STRING domServices_ 6 [source_file: testcode]
+                            EXPR_RESULT 10 [source_file: testcode]
+                                ASSIGN 10 [source_file: testcode]
+                                    NAME JSCompiler_inline_result$$1 10 [source_file: testcode]
+                                    CALL 10 [source_file: testcode]
+                                        GETPROP 10 [source_file: testcode]
+                                            CALL 10 [source_file: testcode]
+                                                GETPROP 10 [source_file: testcode]
+                                                    NAME JSCompiler_inline_result$$0 10 [source_file: testcode]
+                                                    STRING getDomHelper 10 [source_file: testcode]
+                                            STRING getWindow 10 [source_file: testcode]
+                        VAR 15 [source_file: testcode]
+                            NAME myUrl 15 [source_file: testcode]
+                                NEW 15 [source_file: testcode]
+                                    NAME JSCompiler_temp_const$$0 15 [source_file: testcode]
+                                    GETPROP 15 [source_file: testcode]
+                                        GETPROP 15 [source_file: testcode]
+                                            NAME JSCompiler_inline_result$$1 15 [source_file: testcode]
+                                            STRING location 15 [source_file: testcode]
+                                        STRING href 15 [source_file: testcode]
+
+
+Subtree1: NAME self$$inline_2 1 [source_file: expected0]
+    NAME self$$2 1 [source_file: expected0]
+
+
+Subtree2: NAME JSCompiler_inline_result$$0 10 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testBug4944818(InlineFunctionsTest.java:2060)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+com.google.javascript.jscomp.InlineFunctionsTest::testDoubleInlining1
+junit.framework.AssertionFailedError:
+Expected: getWindow(x)
+Result: var foo=function(a){return getWindow(a)};foo(x)
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            CALL 1 [free_call: 1] [source_file: expected0]
+                NAME getWindow 1 [source_file: expected0]
+                NAME x 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        VAR 1 [source_file: testcode]
+            NAME foo 1 [source_file: testcode]
+                FUNCTION  1 [source_file: testcode]
+                    NAME  1 [source_file: testcode]
+                    PARAM_LIST 1 [source_file: testcode]
+                        NAME a 1 [source_file: testcode]
+                    BLOCK 1 [source_file: testcode]
+                        RETURN 1 [source_file: testcode]
+                            CALL 1 [free_call: 1] [source_file: testcode]
+                                NAME getWindow 1 [source_file: testcode]
+                                NAME a 1 [source_file: testcode]
+        EXPR_RESULT 1 [source_file: testcode]
+            CALL 1 [free_call: 1] [source_file: testcode]
+                NAME foo 1 [source_file: testcode]
+                NAME x 1 [source_file: testcode]
+
+
+Subtree1: SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+    EXPR_RESULT 1 [source_file: expected0]
+        CALL 1 [free_call: 1] [source_file: expected0]
+            NAME getWindow 1 [source_file: expected0]
+            NAME x 1 [source_file: expected0]
+
+
+Subtree2: SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+    VAR 1 [source_file: testcode]
+        NAME foo 1 [source_file: testcode]
+            FUNCTION  1 [source_file: testcode]
+                NAME  1 [source_file: testcode]
+                PARAM_LIST 1 [source_file: testcode]
+                    NAME a 1 [source_file: testcode]
+                BLOCK 1 [source_file: testcode]
+                    RETURN 1 [source_file: testcode]
+                        CALL 1 [free_call: 1] [source_file: testcode]
+                            NAME getWindow 1 [source_file: testcode]
+                            NAME a 1 [source_file: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        CALL 1 [free_call: 1] [source_file: testcode]
+            NAME foo 1 [source_file: testcode]
+            NAME x 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testDoubleInlining1(InlineFunctionsTest.java:1099)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.InlineFunctionsTest::testNoInlineIfParametersModified8
+junit.framework.AssertionFailedError:
+Expected: o.x=2
+Result: o.x=2
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            ASSIGN 1 [source_file: expected0]
+                GETPROP 1 [source_file: expected0]
+                    NAME o 1 [source_file: expected0]
+                    STRING x 1 [source_file: expected0]
+                NUMBER 2.0 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        BLOCK 1 [source_file: testcode]
+            EXPR_RESULT 1 [source_file: testcode]
+                ASSIGN 1 [source_file: testcode]
+                    GETPROP 1 [source_file: testcode]
+                        NAME o 1 [source_file: testcode]
+                        STRING x 1 [source_file: testcode]
+                    NUMBER 2.0 1 [source_file: testcode]
+
+
+Subtree1: EXPR_RESULT 1 [source_file: expected0]
+    ASSIGN 1 [source_file: expected0]
+        GETPROP 1 [source_file: expected0]
+            NAME o 1 [source_file: expected0]
+            STRING x 1 [source_file: expected0]
+        NUMBER 2.0 1 [source_file: expected0]
+
+
+Subtree2: BLOCK 1 [source_file: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        ASSIGN 1 [source_file: testcode]
+            GETPROP 1 [source_file: testcode]
+                NAME o 1 [source_file: testcode]
+                STRING x 1 [source_file: testcode]
+            NUMBER 2.0 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testNoInlineIfParametersModified8(InlineFunctionsTest.java:598)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.InlineFunctionsTest::testNoInlineIfParametersModified9
+junit.framework.AssertionFailedError:
+Expected: o[2]=2
+Result: o[2]=2
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            ASSIGN 1 [source_file: expected0]
+                GETELEM 1 [source_file: expected0]
+                    NAME o 1 [source_file: expected0]
+                    NUMBER 2.0 1 [source_file: expected0]
+                NUMBER 2.0 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        BLOCK 1 [source_file: testcode]
+            EXPR_RESULT 1 [source_file: testcode]
+                ASSIGN 1 [source_file: testcode]
+                    GETELEM 1 [source_file: testcode]
+                        NAME o 1 [source_file: testcode]
+                        NUMBER 2.0 1 [source_file: testcode]
+                    NUMBER 2.0 1 [source_file: testcode]
+
+
+Subtree1: EXPR_RESULT 1 [source_file: expected0]
+    ASSIGN 1 [source_file: expected0]
+        GETELEM 1 [source_file: expected0]
+            NAME o 1 [source_file: expected0]
+            NUMBER 2.0 1 [source_file: expected0]
+        NUMBER 2.0 1 [source_file: expected0]
+
+
+Subtree2: BLOCK 1 [source_file: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        ASSIGN 1 [source_file: testcode]
+            GETELEM 1 [source_file: testcode]
+                NAME o 1 [source_file: testcode]
+                NUMBER 2.0 1 [source_file: testcode]
+            NUMBER 2.0 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testNoInlineIfParametersModified9(InlineFunctionsTest.java:603)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.InlineFunctionsTest::testInlineFunctions6
+junit.framework.AssertionFailedError:
+Expected: alert(baz(foo(1+2)))
+Result: var JSCompiler_temp_const$$0=alert;var JSCompiler_inline_result$$1;JSCompiler_inline_result$$1=baz(foo(1+2));JSCompiler_temp_const$$0(JSCompiler_inline_result$$1)
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            CALL 1 [free_call: 1] [source_file: expected0]
+                NAME alert 1 [source_file: expected0]
+                CALL 1 [free_call: 1] [source_file: expected0]
+                    NAME baz 1 [source_file: expected0]
+                    CALL 1 [free_call: 1] [source_file: expected0]
+                        NAME foo 1 [source_file: expected0]
+                        ADD 1 [source_file: expected0]
+                            NUMBER 1.0 1 [source_file: expected0]
+                            NUMBER 2.0 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        VAR 1 [source_file: testcode]
+            NAME JSCompiler_temp_const$$0 1 [source_file: testcode]
+                NAME alert 1 [source_file: testcode]
+        VAR 1 [source_file: testcode]
+            NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+        BLOCK 1 [source_file: testcode]
+            EXPR_RESULT 1 [source_file: testcode]
+                ASSIGN 1 [source_file: testcode]
+                    NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+                    CALL 1 [free_call: 1] [source_file: testcode]
+                        NAME baz 1 [source_file: testcode]
+                        CALL 1 [free_call: 1] [source_file: testcode]
+                            NAME foo 1 [source_file: testcode]
+                            ADD 1 [source_file: testcode]
+                                NUMBER 1.0 1 [source_file: testcode]
+                                NUMBER 2.0 1 [source_file: testcode]
+        EXPR_RESULT 1 [source_file: testcode]
+            CALL 1 [free_call: 1] [source_file: testcode]
+                NAME JSCompiler_temp_const$$0 1 [source_file: testcode]
+                NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+
+
+Subtree1: SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+    EXPR_RESULT 1 [source_file: expected0]
+        CALL 1 [free_call: 1] [source_file: expected0]
+            NAME alert 1 [source_file: expected0]
+            CALL 1 [free_call: 1] [source_file: expected0]
+                NAME baz 1 [source_file: expected0]
+                CALL 1 [free_call: 1] [source_file: expected0]
+                    NAME foo 1 [source_file: expected0]
+                    ADD 1 [source_file: expected0]
+                        NUMBER 1.0 1 [source_file: expected0]
+                        NUMBER 2.0 1 [source_file: expected0]
+
+
+Subtree2: SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+    VAR 1 [source_file: testcode]
+        NAME JSCompiler_temp_const$$0 1 [source_file: testcode]
+            NAME alert 1 [source_file: testcode]
+    VAR 1 [source_file: testcode]
+        NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+    BLOCK 1 [source_file: testcode]
+        EXPR_RESULT 1 [source_file: testcode]
+            ASSIGN 1 [source_file: testcode]
+                NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+                CALL 1 [free_call: 1] [source_file: testcode]
+                    NAME baz 1 [source_file: testcode]
+                    CALL 1 [free_call: 1] [source_file: testcode]
+                        NAME foo 1 [source_file: testcode]
+                        ADD 1 [source_file: testcode]
+                            NUMBER 1.0 1 [source_file: testcode]
+                            NUMBER 2.0 1 [source_file: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        CALL 1 [free_call: 1] [source_file: testcode]
+            NAME JSCompiler_temp_const$$0 1 [source_file: testcode]
+            NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testInlineFunctions6(InlineFunctionsTest.java:152)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_6 ==================
+
+source code:
+private CanInlineResult canInlineReferenceDirectly(
+      Node callNode, Node fnNode) {
+    if (!isDirectCallNodeReplacementPossible(fnNode)) {
+      return CanInlineResult.NO;
+    }
+
+    Node block = fnNode.getLastChild();
+
+    boolean hasSideEffects = false;
+    if (block.hasChildren()) {
+      Preconditions.checkState(block.hasOneChild());
+      Node stmt = block.getFirstChild();
+      if (stmt.isReturn()) {
+        hasSideEffects = NodeUtil.mayHaveSideEffects(stmt.getFirstChild(), compiler);
+      }
+    }
+    // CALL NODE: [ NAME, ARG1, ARG2, ... ]
+    Node cArg = callNode.getFirstChild().getNext();
+
+    // Functions called via 'call' and 'apply' have a this-object as
+    // the first parameter, but this is not part of the called function's
+    // parameter list.
+    if (!callNode.getFirstChild().isName()) {
+      if (NodeUtil.isFunctionObjectCall(callNode)) {
+        // TODO(johnlenz): Support replace this with a value.
+        if (cArg == null || !cArg.isThis()) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      } else {
+        // ".apply" call should be filtered before this.
+        Preconditions.checkState(!NodeUtil.isFunctionObjectApply(callNode));
+      }
+    }
+
+    // FUNCTION NODE -> LP NODE: [ ARG1, ARG2, ... ]
+    Node fnParam = NodeUtil.getFunctionParameters(fnNode).getFirstChild();
+    while (cArg != null || fnParam != null) {
+      // For each named parameter check if a mutable argument use more than one.
+      if (fnParam != null) {
+        if (cArg != null) {
+          if (hasSideEffects && NodeUtil.canBeSideEffected(cArg)) {
+            return CanInlineResult.NO;
+          }
+          // Check for arguments that are evaluated more than once.
+          // Note: Unlike block inlining, there it is not possible that a
+          // parameter reference will be in a loop.
+          if (NodeUtil.mayEffectMutableState(cArg, compiler)
+              && NodeUtil.getNameReferenceCount(
+                  block, fnParam.getString()) > 1) {
+            return CanInlineResult.NO;
+          }
+        }
+
+        // Move to the next name.
+        fnParam = fnParam.getNext();
+      }
+
+      // For every call argument check for side-effects, even if there
+      // isn't a named parameter to match.
+      if (cArg != null) {
+        if (NodeUtil.mayHaveSideEffects(cArg, compiler)) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      }
+    }
+
+    return CanInlineResult.YES;
+  }
+
+stack trace:
+com.google.javascript.jscomp.InlineFunctionsTest::testBug4944818
+junit.framework.AssertionFailedError:
+Expected: HangoutStarter.prototype.launchHangout=function(){var self$$2=a.b;var JSCompiler_temp_const$$0=goog.Uri;var JSCompiler_inline_result$$1;var self$$inline_2=self$$2;if(!self$$inline_2.domServices_)self$$inline_2.domServices_=goog$component$DomServices.get(self$$inline_2.appContext_);JSCompiler_inline_result$$1=self$$inline_2.domServices_;var myUrl=new JSCompiler_temp_const$$0(JSCompiler_inline_result$$1.getDomHelper().getWindow().location.href)}
+Result: HangoutStarter.prototype.launchHangout=function(){var self$$2=a.b;var JSCompiler_temp_const$$0=goog.Uri;var JSCompiler_inline_result$$1;var JSCompiler_inline_result$$0;var self$$inline_1=self$$2;if(!self$$inline_1.domServices_)self$$inline_1.domServices_=goog$component$DomServices.get(self$$inline_1.appContext_);JSCompiler_inline_result$$0=self$$inline_1.domServices_;JSCompiler_inline_result$$1=JSCompiler_inline_result$$0.getDomHelper().getWindow();var myUrl=new JSCompiler_temp_const$$0(JSCompiler_inline_result$$1.location.href)}
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            ASSIGN 1 [source_file: expected0]
+                GETPROP 1 [source_file: expected0]
+                    GETPROP 1 [source_file: expected0]
+                        NAME HangoutStarter 1 [source_file: expected0]
+                        STRING prototype 1 [source_file: expected0]
+                    STRING launchHangout 1 [source_file: expected0]
+                FUNCTION  1 [source_file: expected0]
+                    NAME  1 [source_file: expected0]
+                    PARAM_LIST 1 [source_file: expected0]
+                    BLOCK 1 [source_file: expected0]
+                        VAR 1 [source_file: expected0]
+                            NAME self$$2 1 [source_file: expected0]
+                                GETPROP 1 [source_file: expected0]
+                                    NAME a 1 [source_file: expected0]
+                                    STRING b 1 [source_file: expected0]
+                        VAR 1 [source_file: expected0]
+                            NAME JSCompiler_temp_const$$0 1 [source_file: expected0]
+                                GETPROP 1 [source_file: expected0]
+                                    NAME goog 1 [source_file: expected0]
+                                    STRING Uri 1 [source_file: expected0]
+                        VAR 1 [source_file: expected0]
+                            NAME JSCompiler_inline_result$$1 1 [source_file: expected0]
+                        BLOCK 1 [source_file: expected0]
+                            VAR 1 [source_file: expected0]
+                                NAME self$$inline_2 1 [source_file: expected0]
+                                    NAME self$$2 1 [source_file: expected0]
+                            IF 1 [source_file: expected0]
+                                NOT 1 [source_file: expected0]
+                                    GETPROP 1 [source_file: expected0]
+                                        NAME self$$inline_2 1 [source_file: expected0]
+                                        STRING domServices_ 1 [source_file: expected0]
+                                BLOCK 1 [source_file: expected0]
+                                    EXPR_RESULT 1 [source_file: expected0]
+                                        ASSIGN 1 [source_file: expected0]
+                                            GETPROP 1 [source_file: expected0]
+                                                NAME self$$inline_2 1 [source_file: expected0]
+                                                STRING domServices_ 1 [source_file: expected0]
+                                            CALL 1 [source_file: expected0]
+                                                GETPROP 1 [source_file: expected0]
+                                                    NAME goog$component$DomServices 1 [source_file: expected0]
+                                                    STRING get 1 [source_file: expected0]
+                                                GETPROP 1 [source_file: expected0]
+                                                    NAME self$$inline_2 1 [source_file: expected0]
+                                                    STRING appContext_ 1 [source_file: expected0]
+                            EXPR_RESULT 1 [source_file: expected0]
+                                ASSIGN 1 [source_file: expected0]
+                                    NAME JSCompiler_inline_result$$1 1 [source_file: expected0]
+                                    GETPROP 1 [source_file: expected0]
+                                        NAME self$$inline_2 1 [source_file: expected0]
+                                        STRING domServices_ 1 [source_file: expected0]
+                        VAR 1 [source_file: expected0]
+                            NAME myUrl 1 [source_file: expected0]
+                                NEW 1 [source_file: expected0]
+                                    NAME JSCompiler_temp_const$$0 1 [source_file: expected0]
+                                    GETPROP 1 [source_file: expected0]
+                                        GETPROP 1 [source_file: expected0]
+                                            CALL 1 [source_file: expected0]
+                                                GETPROP 1 [source_file: expected0]
+                                                    CALL 1 [source_file: expected0]
+                                                        GETPROP 1 [source_file: expected0]
+                                                            NAME JSCompiler_inline_result$$1 1 [source_file: expected0]
+                                                            STRING getDomHelper 1 [source_file: expected0]
+                                                    STRING getWindow 1 [source_file: expected0]
+                                            STRING location 1 [source_file: expected0]
+                                        STRING href 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        EXPR_RESULT 13 [source_file: testcode]
+            ASSIGN 13 [source_file: testcode]
+                GETPROP 13 [source_file: testcode]
+                    GETPROP 13 [source_file: testcode]
+                        NAME HangoutStarter 13 [source_file: testcode]
+                        STRING prototype 13 [source_file: testcode]
+                    STRING launchHangout 13 [source_file: testcode]
+                FUNCTION  13 [source_file: testcode]
+                    NAME  13 [source_file: testcode]
+                    PARAM_LIST 13 [source_file: testcode]
+                    BLOCK 13 [source_file: testcode]
+                        VAR 14 [source_file: testcode]
+                            NAME self$$2 14 [source_file: testcode]
+                                GETPROP 14 [source_file: testcode]
+                                    NAME a 14 [source_file: testcode]
+                                    STRING b 14 [source_file: testcode]
+                        VAR 15 [source_file: testcode]
+                            NAME JSCompiler_temp_const$$0 15 [source_file: testcode]
+                                GETPROP 15 [source_file: testcode]
+                                    NAME goog 15 [source_file: testcode]
+                                    STRING Uri 15 [source_file: testcode]
+                        VAR 15 [source_file: testcode]
+                            NAME JSCompiler_inline_result$$1 15 [source_file: testcode]
+                        BLOCK 9 [source_file: testcode]
+                            VAR 10 [source_file: testcode]
+                                NAME JSCompiler_inline_result$$0 10 [source_file: testcode]
+                            BLOCK 1 [source_file: testcode]
+                                VAR 15 [source_file: testcode]
+                                    NAME self$$inline_1 15 [source_file: testcode]
+                                        NAME self$$2 15 [source_file: testcode]
+                                IF 2 [source_file: testcode]
+                                    NOT 2 [source_file: testcode]
+                                        GETPROP 2 [source_file: testcode]
+                                            NAME self$$inline_1 2 [source_file: testcode]
+                                            STRING domServices_ 2 [source_file: testcode]
+                                    BLOCK 2 [source_file: testcode]
+                                        EXPR_RESULT 3 [source_file: testcode]
+                                            ASSIGN 3 [source_file: testcode]
+                                                GETPROP 3 [source_file: testcode]
+                                                    NAME self$$inline_1 3 [source_file: testcode]
+                                                    STRING domServices_ 3 [source_file: testcode]
+                                                CALL 3 [source_file: testcode]
+                                                    GETPROP 3 [source_file: testcode]
+                                                        NAME goog$component$DomServices 3 [source_file: testcode]
+                                                        STRING get 3 [source_file: testcode]
+                                                    GETPROP 3 [source_file: testcode]
+                                                        NAME self$$inline_1 3 [source_file: testcode]
+                                                        STRING appContext_ 3 [source_file: testcode]
+                                EXPR_RESULT 6 [source_file: testcode]
+                                    ASSIGN 6 [source_file: testcode]
+                                        NAME JSCompiler_inline_result$$0 6 [source_file: testcode]
+                                        GETPROP 6 [source_file: testcode]
+                                            NAME self$$inline_1 6 [source_file: testcode]
+                                            STRING domServices_ 6 [source_file: testcode]
+                            EXPR_RESULT 10 [source_file: testcode]
+                                ASSIGN 10 [source_file: testcode]
+                                    NAME JSCompiler_inline_result$$1 10 [source_file: testcode]
+                                    CALL 10 [source_file: testcode]
+                                        GETPROP 10 [source_file: testcode]
+                                            CALL 10 [source_file: testcode]
+                                                GETPROP 10 [source_file: testcode]
+                                                    NAME JSCompiler_inline_result$$0 10 [source_file: testcode]
+                                                    STRING getDomHelper 10 [source_file: testcode]
+                                            STRING getWindow 10 [source_file: testcode]
+                        VAR 15 [source_file: testcode]
+                            NAME myUrl 15 [source_file: testcode]
+                                NEW 15 [source_file: testcode]
+                                    NAME JSCompiler_temp_const$$0 15 [source_file: testcode]
+                                    GETPROP 15 [source_file: testcode]
+                                        GETPROP 15 [source_file: testcode]
+                                            NAME JSCompiler_inline_result$$1 15 [source_file: testcode]
+                                            STRING location 15 [source_file: testcode]
+                                        STRING href 15 [source_file: testcode]
+
+
+Subtree1: NAME self$$inline_2 1 [source_file: expected0]
+    NAME self$$2 1 [source_file: expected0]
+
+
+Subtree2: NAME JSCompiler_inline_result$$0 10 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testBug4944818(InlineFunctionsTest.java:2060)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+com.google.javascript.jscomp.InlineFunctionsTest::testDoubleInlining1
+junit.framework.AssertionFailedError:
+Expected: getWindow(x)
+Result: var foo=function(a){return getWindow(a)};foo(x)
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            CALL 1 [free_call: 1] [source_file: expected0]
+                NAME getWindow 1 [source_file: expected0]
+                NAME x 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        VAR 1 [source_file: testcode]
+            NAME foo 1 [source_file: testcode]
+                FUNCTION  1 [source_file: testcode]
+                    NAME  1 [source_file: testcode]
+                    PARAM_LIST 1 [source_file: testcode]
+                        NAME a 1 [source_file: testcode]
+                    BLOCK 1 [source_file: testcode]
+                        RETURN 1 [source_file: testcode]
+                            CALL 1 [free_call: 1] [source_file: testcode]
+                                NAME getWindow 1 [source_file: testcode]
+                                NAME a 1 [source_file: testcode]
+        EXPR_RESULT 1 [source_file: testcode]
+            CALL 1 [free_call: 1] [source_file: testcode]
+                NAME foo 1 [source_file: testcode]
+                NAME x 1 [source_file: testcode]
+
+
+Subtree1: SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+    EXPR_RESULT 1 [source_file: expected0]
+        CALL 1 [free_call: 1] [source_file: expected0]
+            NAME getWindow 1 [source_file: expected0]
+            NAME x 1 [source_file: expected0]
+
+
+Subtree2: SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+    VAR 1 [source_file: testcode]
+        NAME foo 1 [source_file: testcode]
+            FUNCTION  1 [source_file: testcode]
+                NAME  1 [source_file: testcode]
+                PARAM_LIST 1 [source_file: testcode]
+                    NAME a 1 [source_file: testcode]
+                BLOCK 1 [source_file: testcode]
+                    RETURN 1 [source_file: testcode]
+                        CALL 1 [free_call: 1] [source_file: testcode]
+                            NAME getWindow 1 [source_file: testcode]
+                            NAME a 1 [source_file: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        CALL 1 [free_call: 1] [source_file: testcode]
+            NAME foo 1 [source_file: testcode]
+            NAME x 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testDoubleInlining1(InlineFunctionsTest.java:1099)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.InlineFunctionsTest::testNoInlineIfParametersModified8
+junit.framework.AssertionFailedError:
+Expected: o.x=2
+Result: o.x=2
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            ASSIGN 1 [source_file: expected0]
+                GETPROP 1 [source_file: expected0]
+                    NAME o 1 [source_file: expected0]
+                    STRING x 1 [source_file: expected0]
+                NUMBER 2.0 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        BLOCK 1 [source_file: testcode]
+            EXPR_RESULT 1 [source_file: testcode]
+                ASSIGN 1 [source_file: testcode]
+                    GETPROP 1 [source_file: testcode]
+                        NAME o 1 [source_file: testcode]
+                        STRING x 1 [source_file: testcode]
+                    NUMBER 2.0 1 [source_file: testcode]
+
+
+Subtree1: EXPR_RESULT 1 [source_file: expected0]
+    ASSIGN 1 [source_file: expected0]
+        GETPROP 1 [source_file: expected0]
+            NAME o 1 [source_file: expected0]
+            STRING x 1 [source_file: expected0]
+        NUMBER 2.0 1 [source_file: expected0]
+
+
+Subtree2: BLOCK 1 [source_file: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        ASSIGN 1 [source_file: testcode]
+            GETPROP 1 [source_file: testcode]
+                NAME o 1 [source_file: testcode]
+                STRING x 1 [source_file: testcode]
+            NUMBER 2.0 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testNoInlineIfParametersModified8(InlineFunctionsTest.java:598)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.InlineFunctionsTest::testNoInlineIfParametersModified9
+junit.framework.AssertionFailedError:
+Expected: o[2]=2
+Result: o[2]=2
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            ASSIGN 1 [source_file: expected0]
+                GETELEM 1 [source_file: expected0]
+                    NAME o 1 [source_file: expected0]
+                    NUMBER 2.0 1 [source_file: expected0]
+                NUMBER 2.0 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        BLOCK 1 [source_file: testcode]
+            EXPR_RESULT 1 [source_file: testcode]
+                ASSIGN 1 [source_file: testcode]
+                    GETELEM 1 [source_file: testcode]
+                        NAME o 1 [source_file: testcode]
+                        NUMBER 2.0 1 [source_file: testcode]
+                    NUMBER 2.0 1 [source_file: testcode]
+
+
+Subtree1: EXPR_RESULT 1 [source_file: expected0]
+    ASSIGN 1 [source_file: expected0]
+        GETELEM 1 [source_file: expected0]
+            NAME o 1 [source_file: expected0]
+            NUMBER 2.0 1 [source_file: expected0]
+        NUMBER 2.0 1 [source_file: expected0]
+
+
+Subtree2: BLOCK 1 [source_file: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        ASSIGN 1 [source_file: testcode]
+            GETELEM 1 [source_file: testcode]
+                NAME o 1 [source_file: testcode]
+                NUMBER 2.0 1 [source_file: testcode]
+            NUMBER 2.0 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testNoInlineIfParametersModified9(InlineFunctionsTest.java:603)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.InlineFunctionsTest::testInlineFunctions6
+junit.framework.AssertionFailedError:
+Expected: alert(baz(foo(1+2)))
+Result: var JSCompiler_temp_const$$0=alert;var JSCompiler_inline_result$$1;JSCompiler_inline_result$$1=baz(foo(1+2));JSCompiler_temp_const$$0(JSCompiler_inline_result$$1)
+Node tree inequality:
+Tree1:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+        EXPR_RESULT 1 [source_file: expected0]
+            CALL 1 [free_call: 1] [source_file: expected0]
+                NAME alert 1 [source_file: expected0]
+                CALL 1 [free_call: 1] [source_file: expected0]
+                    NAME baz 1 [source_file: expected0]
+                    CALL 1 [free_call: 1] [source_file: expected0]
+                        NAME foo 1 [source_file: expected0]
+                        ADD 1 [source_file: expected0]
+                            NUMBER 1.0 1 [source_file: expected0]
+                            NUMBER 2.0 1 [source_file: expected0]
+
+
+Tree2:
+BLOCK [synthetic: 1]
+    SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+        VAR 1 [source_file: testcode]
+            NAME JSCompiler_temp_const$$0 1 [source_file: testcode]
+                NAME alert 1 [source_file: testcode]
+        VAR 1 [source_file: testcode]
+            NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+        BLOCK 1 [source_file: testcode]
+            EXPR_RESULT 1 [source_file: testcode]
+                ASSIGN 1 [source_file: testcode]
+                    NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+                    CALL 1 [free_call: 1] [source_file: testcode]
+                        NAME baz 1 [source_file: testcode]
+                        CALL 1 [free_call: 1] [source_file: testcode]
+                            NAME foo 1 [source_file: testcode]
+                            ADD 1 [source_file: testcode]
+                                NUMBER 1.0 1 [source_file: testcode]
+                                NUMBER 2.0 1 [source_file: testcode]
+        EXPR_RESULT 1 [source_file: testcode]
+            CALL 1 [free_call: 1] [source_file: testcode]
+                NAME JSCompiler_temp_const$$0 1 [source_file: testcode]
+                NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+
+
+Subtree1: SCRIPT 1 [synthetic: 1] [source_file: expected0] [input_id: InputId: expected0]
+    EXPR_RESULT 1 [source_file: expected0]
+        CALL 1 [free_call: 1] [source_file: expected0]
+            NAME alert 1 [source_file: expected0]
+            CALL 1 [free_call: 1] [source_file: expected0]
+                NAME baz 1 [source_file: expected0]
+                CALL 1 [free_call: 1] [source_file: expected0]
+                    NAME foo 1 [source_file: expected0]
+                    ADD 1 [source_file: expected0]
+                        NUMBER 1.0 1 [source_file: expected0]
+                        NUMBER 2.0 1 [source_file: expected0]
+
+
+Subtree2: SCRIPT 1 [synthetic: 1] [source_file: testcode] [input_id: InputId: testcode]
+    VAR 1 [source_file: testcode]
+        NAME JSCompiler_temp_const$$0 1 [source_file: testcode]
+            NAME alert 1 [source_file: testcode]
+    VAR 1 [source_file: testcode]
+        NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+    BLOCK 1 [source_file: testcode]
+        EXPR_RESULT 1 [source_file: testcode]
+            ASSIGN 1 [source_file: testcode]
+                NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+                CALL 1 [free_call: 1] [source_file: testcode]
+                    NAME baz 1 [source_file: testcode]
+                    CALL 1 [free_call: 1] [source_file: testcode]
+                        NAME foo 1 [source_file: testcode]
+                        ADD 1 [source_file: testcode]
+                            NUMBER 1.0 1 [source_file: testcode]
+                            NUMBER 2.0 1 [source_file: testcode]
+    EXPR_RESULT 1 [source_file: testcode]
+        CALL 1 [free_call: 1] [source_file: testcode]
+            NAME JSCompiler_temp_const$$0 1 [source_file: testcode]
+            NAME JSCompiler_inline_result$$1 1 [source_file: testcode]
+
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNull(Assert.java:277)
+	at junit.framework.TestCase.assertNull(TestCase.java:447)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:957)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:477)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:403)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:372)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:360)
+	at com.google.javascript.jscomp.InlineFunctionsTest.testInlineFunctions6(InlineFunctionsTest.java:152)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+failure assertion code:
+test(
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_1 ==================
+
+private CanInlineResult canInlineReferenceDirectly(
+      Node callNode, Node fnNode) {
+    if (!isDirectCallNodeReplacementPossible(fnNode)) {
+      return CanInlineResult.NO;
+    }
+
+    Node block = fnNode.getLastChild();
+
+    boolean hasSideEffects = false;
+    if (block.hasChildren()) {
+      Preconditions.checkState(block.hasOneChild());
+      Node stmt = block.getFirstChild();
+      if (stmt.isReturn()) {
+        hasSideEffects = NodeUtil.mayHaveSideEffects(stmt.getFirstChild(), compiler);
+      }
+    }
+    // CALL NODE: [ NAME, ARG1, ARG2, ... ]
+    Node cArg = callNode.getFirstChild().getNext();
+
+    // Functions called via 'call' and 'apply' have a this-object as
+    // the first parameter, but this is not part of the called function's
+    // parameter list.
+    if (!callNode.getFirstChild().isName()) {
+      if (NodeUtil.isFunctionObjectCall(callNode)) {
+        // TODO(johnlenz): Support replace this with a value.
+        if (cArg == null || !cArg.isThis()) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      } else {
+        // ".apply" call should be filtered before this.
+        Preconditions.checkState(!NodeUtil.isFunctionObjectApply(callNode));
+      }
+    }
+
+    // FUNCTION NODE -> LP NODE: [ ARG1, ARG2, ... ]
+    Node fnParam = NodeUtil.getFunctionParameters(fnNode).getFirstChild();
+    while (cArg != null || fnParam != null) {
+      // For each named parameter check if a mutable argument use more than one.
+      if (fnParam != null) {
+        if (cArg != null) {
+          if (hasSideEffects && NodeUtil.canBeSideEffected(cArg)) {
+            return CanInlineResult.NO;
+          }
+          // Check for arguments that are evaluated more than once.
+          // Note: Unlike block inlining, there it is not possible that a
+          // parameter reference will be in a loop.
+          if (NodeUtil.mayEffectMutableState(cArg, compiler)
+              && NodeUtil.getNameReferenceCount(
+                  block, fnParam.getString()) > 1) {
+            return CanInlineResult.NO;
+          }
+        }
+
+        // Move to the next name.
+        fnParam = fnParam.getNext();
+      }
+
+      // For every call argument check for side-effects, even if there
+      // isn't a named parameter to match.
+      if (cArg != null) {
+        if (NodeUtil.mayHaveSideEffects(cArg, compiler)) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      }
+    }
+
+    return CanInlineResult.YES;
+  }
+
+There is a bug in line [9, 10, 11, 12, 13, 14, 15, 16, 42, 43, 44] of the code, please help me fix it.
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_2 ==================
+
+private CanInlineResult canInlineReferenceDirectly(
+      Node callNode, Node fnNode) {
+    if (!isDirectCallNodeReplacementPossible(fnNode)) {
+      return CanInlineResult.NO;
+    }
+
+    Node block = fnNode.getLastChild();
+
+    boolean hasSideEffects = false;
+    if (block.hasChildren()) {
+      Preconditions.checkState(block.hasOneChild());
+      Node stmt = block.getFirstChild();
+      if (stmt.isReturn()) {
+        hasSideEffects = NodeUtil.mayHaveSideEffects(stmt.getFirstChild(), compiler);
+      }
+    }
+    // CALL NODE: [ NAME, ARG1, ARG2, ... ]
+    Node cArg = callNode.getFirstChild().getNext();
+
+    // Functions called via 'call' and 'apply' have a this-object as
+    // the first parameter, but this is not part of the called function's
+    // parameter list.
+    if (!callNode.getFirstChild().isName()) {
+      if (NodeUtil.isFunctionObjectCall(callNode)) {
+        // TODO(johnlenz): Support replace this with a value.
+        if (cArg == null || !cArg.isThis()) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      } else {
+        // ".apply" call should be filtered before this.
+        Preconditions.checkState(!NodeUtil.isFunctionObjectApply(callNode));
+      }
+    }
+
+    // FUNCTION NODE -> LP NODE: [ ARG1, ARG2, ... ]
+    Node fnParam = NodeUtil.getFunctionParameters(fnNode).getFirstChild();
+    while (cArg != null || fnParam != null) {
+      // For each named parameter check if a mutable argument use more than one.
+      if (fnParam != null) {
+        if (cArg != null) {
+          if (hasSideEffects && NodeUtil.canBeSideEffected(cArg)) {
+            return CanInlineResult.NO;
+          }
+          // Check for arguments that are evaluated more than once.
+          // Note: Unlike block inlining, there it is not possible that a
+          // parameter reference will be in a loop.
+          if (NodeUtil.mayEffectMutableState(cArg, compiler)
+              && NodeUtil.getNameReferenceCount(
+                  block, fnParam.getString()) > 1) {
+            return CanInlineResult.NO;
+          }
+        }
+
+        // Move to the next name.
+        fnParam = fnParam.getNext();
+      }
+
+      // For every call argument check for side-effects, even if there
+      // isn't a named parameter to match.
+      if (cArg != null) {
+        if (NodeUtil.mayHaveSideEffects(cArg, compiler)) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      }
+    }
+
+    return CanInlineResult.YES;
+  }
+
+There is a bug in ['    boolean hasSideEffects = false;', '    if (block.hasChildren()) {', '      Preconditions.checkState(block.hasOneChild());', '      Node stmt = block.getFirstChild();', '      if (stmt.isReturn()) {', '        hasSideEffects = NodeUtil.mayHaveSideEffects(stmt.getFirstChild(), compiler);', '      }', '    }', '          if (hasSideEffects && NodeUtil.canBeSideEffected(cArg)) {', '            return CanInlineResult.NO;', '          }'] , please help me fix it. 
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_3 ==================
+
+private CanInlineResult canInlineReferenceDirectly(
+      Node callNode, Node fnNode) {
+    if (!isDirectCallNodeReplacementPossible(fnNode)) {
+      return CanInlineResult.NO;
+    }
+
+    Node block = fnNode.getLastChild();
+
+    boolean hasSideEffects = false;
+    if (block.hasChildren()) {
+      Preconditions.checkState(block.hasOneChild());
+      Node stmt = block.getFirstChild();
+      if (stmt.isReturn()) {
+        hasSideEffects = NodeUtil.mayHaveSideEffects(stmt.getFirstChild(), compiler);
+      }
+    }
+    // CALL NODE: [ NAME, ARG1, ARG2, ... ]
+    Node cArg = callNode.getFirstChild().getNext();
+
+    // Functions called via 'call' and 'apply' have a this-object as
+    // the first parameter, but this is not part of the called function's
+    // parameter list.
+    if (!callNode.getFirstChild().isName()) {
+      if (NodeUtil.isFunctionObjectCall(callNode)) {
+        // TODO(johnlenz): Support replace this with a value.
+        if (cArg == null || !cArg.isThis()) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      } else {
+        // ".apply" call should be filtered before this.
+        Preconditions.checkState(!NodeUtil.isFunctionObjectApply(callNode));
+      }
+    }
+
+    // FUNCTION NODE -> LP NODE: [ ARG1, ARG2, ... ]
+    Node fnParam = NodeUtil.getFunctionParameters(fnNode).getFirstChild();
+    while (cArg != null || fnParam != null) {
+      // For each named parameter check if a mutable argument use more than one.
+      if (fnParam != null) {
+        if (cArg != null) {
+          if (hasSideEffects && NodeUtil.canBeSideEffected(cArg)) {
+            return CanInlineResult.NO;
+          }
+
+There is a bug in the last statement, please help me fix it.
+
+Return the code **only from the method declaration to the fixed statement**, without completing or adding additional code. Do not modify anything beyond fixing the bug, and do not complete the `if` statement or other unfinished parts. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_4 ==================
+
+private CanInlineResult canInlineReferenceDirectly(
+      Node callNode, Node fnNode) {
+    if (!isDirectCallNodeReplacementPossible(fnNode)) {
+      return CanInlineResult.NO;
+    }
+
+    Node block = fnNode.getLastChild();
+
+    boolean hasSideEffects = false;
+    if (block.hasChildren()) {
+      Preconditions.checkState(block.hasOneChild());
+      Node stmt = block.getFirstChild();
+      if (stmt.isReturn()) {
+        hasSideEffects = NodeUtil.mayHaveSideEffects(stmt.getFirstChild(), compiler);
+      }
+    }
+    // CALL NODE: [ NAME, ARG1, ARG2, ... ]
+    Node cArg = callNode.getFirstChild().getNext();
+
+    // Functions called via 'call' and 'apply' have a this-object as
+    // the first parameter, but this is not part of the called function's
+    // parameter list.
+    if (!callNode.getFirstChild().isName()) {
+      if (NodeUtil.isFunctionObjectCall(callNode)) {
+        // TODO(johnlenz): Support replace this with a value.
+        if (cArg == null || !cArg.isThis()) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      } else {
+        // ".apply" call should be filtered before this.
+        Preconditions.checkState(!NodeUtil.isFunctionObjectApply(callNode));
+      }
+    }
+
+    // FUNCTION NODE -> LP NODE: [ ARG1, ARG2, ... ]
+    Node fnParam = NodeUtil.getFunctionParameters(fnNode).getFirstChild();
+    while (cArg != null || fnParam != null) {
+      // For each named parameter check if a mutable argument use more than one.
+      if (fnParam != null) {
+        if (cArg != null) {
+          if (hasSideEffects && NodeUtil.canBeSideEffected(cArg)) {
+            return CanInlineResult.NO;
+          }
+          // Check for arguments that are evaluated more than once.
+          // Note: Unlike block inlining, there it is not possible that a
+          // parameter reference will be in a loop.
+          if (NodeUtil.mayEffectMutableState(cArg, compiler)
+              && NodeUtil.getNameReferenceCount(
+                  block, fnParam.getString()) > 1) {
+            return CanInlineResult.NO;
+          }
+        }
+
+        // Move to the next name.
+        fnParam = fnParam.getNext();
+      }
+
+      // For every call argument check for side-effects, even if there
+      // isn't a named parameter to match.
+      if (cArg != null) {
+        if (NodeUtil.mayHaveSideEffects(cArg, compiler)) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      }
+    }
+
+    return CanInlineResult.YES;
+  }
+
+There is a bug in line [9, 10, 11, 12, 13, 14, 15, 16, 42, 43, 44] of the code, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_5 ==================
+
+private CanInlineResult canInlineReferenceDirectly(
+      Node callNode, Node fnNode) {
+    if (!isDirectCallNodeReplacementPossible(fnNode)) {
+      return CanInlineResult.NO;
+    }
+
+    Node block = fnNode.getLastChild();
+
+    boolean hasSideEffects = false;
+    if (block.hasChildren()) {
+      Preconditions.checkState(block.hasOneChild());
+      Node stmt = block.getFirstChild();
+      if (stmt.isReturn()) {
+        hasSideEffects = NodeUtil.mayHaveSideEffects(stmt.getFirstChild(), compiler);
+      }
+    }
+    // CALL NODE: [ NAME, ARG1, ARG2, ... ]
+    Node cArg = callNode.getFirstChild().getNext();
+
+    // Functions called via 'call' and 'apply' have a this-object as
+    // the first parameter, but this is not part of the called function's
+    // parameter list.
+    if (!callNode.getFirstChild().isName()) {
+      if (NodeUtil.isFunctionObjectCall(callNode)) {
+        // TODO(johnlenz): Support replace this with a value.
+        if (cArg == null || !cArg.isThis()) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      } else {
+        // ".apply" call should be filtered before this.
+        Preconditions.checkState(!NodeUtil.isFunctionObjectApply(callNode));
+      }
+    }
+
+    // FUNCTION NODE -> LP NODE: [ ARG1, ARG2, ... ]
+    Node fnParam = NodeUtil.getFunctionParameters(fnNode).getFirstChild();
+    while (cArg != null || fnParam != null) {
+      // For each named parameter check if a mutable argument use more than one.
+      if (fnParam != null) {
+        if (cArg != null) {
+          if (hasSideEffects && NodeUtil.canBeSideEffected(cArg)) {
+            return CanInlineResult.NO;
+          }
+          // Check for arguments that are evaluated more than once.
+          // Note: Unlike block inlining, there it is not possible that a
+          // parameter reference will be in a loop.
+          if (NodeUtil.mayEffectMutableState(cArg, compiler)
+              && NodeUtil.getNameReferenceCount(
+                  block, fnParam.getString()) > 1) {
+            return CanInlineResult.NO;
+          }
+        }
+
+        // Move to the next name.
+        fnParam = fnParam.getNext();
+      }
+
+      // For every call argument check for side-effects, even if there
+      // isn't a named parameter to match.
+      if (cArg != null) {
+        if (NodeUtil.mayHaveSideEffects(cArg, compiler)) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      }
+    }
+
+    return CanInlineResult.YES;
+  }
+
+There is a bug in ['    boolean hasSideEffects = false;', '    if (block.hasChildren()) {', '      Preconditions.checkState(block.hasOneChild());', '      Node stmt = block.getFirstChild();', '      if (stmt.isReturn()) {', '        hasSideEffects = NodeUtil.mayHaveSideEffects(stmt.getFirstChild(), compiler);', '      }', '    }', '          if (hasSideEffects && NodeUtil.canBeSideEffected(cArg)) {', '            return CanInlineResult.NO;', '          }'] , please help me fix it. 
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_6 ==================
+
+private CanInlineResult canInlineReferenceDirectly(
+      Node callNode, Node fnNode) {
+    if (!isDirectCallNodeReplacementPossible(fnNode)) {
+      return CanInlineResult.NO;
+    }
+
+    Node block = fnNode.getLastChild();
+
+    boolean hasSideEffects = false;
+    if (block.hasChildren()) {
+      Preconditions.checkState(block.hasOneChild());
+      Node stmt = block.getFirstChild();
+      if (stmt.isReturn()) {
+        hasSideEffects = NodeUtil.mayHaveSideEffects(stmt.getFirstChild(), compiler);
+      }
+    }
+    // CALL NODE: [ NAME, ARG1, ARG2, ... ]
+    Node cArg = callNode.getFirstChild().getNext();
+
+    // Functions called via 'call' and 'apply' have a this-object as
+    // the first parameter, but this is not part of the called function's
+    // parameter list.
+    if (!callNode.getFirstChild().isName()) {
+      if (NodeUtil.isFunctionObjectCall(callNode)) {
+        // TODO(johnlenz): Support replace this with a value.
+        if (cArg == null || !cArg.isThis()) {
+          return CanInlineResult.NO;
+        }
+        cArg = cArg.getNext();
+      } else {
+        // ".apply" call should be filtered before this.
+        Preconditions.checkState(!NodeUtil.isFunctionObjectApply(callNode));
+      }
+    }
+
+    // FUNCTION NODE -> LP NODE: [ ARG1, ARG2, ... ]
+    Node fnParam = NodeUtil.getFunctionParameters(fnNode).getFirstChild();
+    while (cArg != null || fnParam != null) {
+      // For each named parameter check if a mutable argument use more than one.
+      if (fnParam != null) {
+        if (cArg != null) {
+          if (hasSideEffects && NodeUtil.canBeSideEffected(cArg)) {
+            return CanInlineResult.NO;
+          }
+
+There is a bug in the last statement, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.

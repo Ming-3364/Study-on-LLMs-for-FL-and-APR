@@ -1,0 +1,226 @@
+
+================== buggy_file ==================
+src/main/java/org/jsoup/parser/HtmlTreeBuilderState.java
+================== buggy_method ==================
+{'method_name': 'process', 'method_body': 'boolean process(Token t, HtmlTreeBuilder tb) {\n            if (t.isCharacter()) {\n                tb.newPendingTableCharacters();\n                tb.markInsertionMode();\n                tb.transition(InTableText);\n                return tb.process(t);\n            } else if (t.isComment()) {\n                tb.insert(t.asComment());\n                return true;\n            } else if (t.isDoctype()) {\n                tb.error(this);\n                return false;\n            } else if (t.isStartTag()) {\n                Token.StartTag startTag = t.asStartTag();\n                String name = startTag.normalName();\n                if (name.equals("caption")) {\n                    tb.clearStackToTableContext();\n                    tb.insertMarkerToFormattingElements();\n                    tb.insert(startTag);\n                    tb.transition(InCaption);\n                } else if (name.equals("colgroup")) {\n                    tb.clearStackToTableContext();\n                    tb.insert(startTag);\n                    tb.transition(InColumnGroup);\n                } else if (name.equals("col")) {\n                    tb.processStartTag("colgroup");\n                    return tb.process(t);\n                } else if (StringUtil.in(name, "tbody", "tfoot", "thead")) {\n                    tb.clearStackToTableContext();\n                    tb.insert(startTag);\n                    tb.transition(InTableBody);\n                } else if (StringUtil.in(name, "td", "th", "tr")) {\n                    tb.processStartTag("tbody");\n                    return tb.process(t);\n                } else if (name.equals("table")) {\n                    tb.error(this);\n                    boolean processed = tb.processEndTag("table");\n                    if (processed) // only ignored if in fragment\n                        return tb.process(t);\n                } else if (StringUtil.in(name, "style", "script")) {\n                    return tb.process(t, InHead);\n                } else if (name.equals("input")) {\n                    if (!startTag.attributes.get("type").equalsIgnoreCase("hidden")) {\n                        return anythingElse(t, tb);\n                    } else {\n                        tb.insertEmpty(startTag);\n                    }\n                } else if (name.equals("form")) {\n                    tb.error(this);\n                    if (tb.getFormElement() != null)\n                        return false;\n                    else {\n                        tb.insertForm(startTag, false);\n                    }\n                } else {\n                    return anythingElse(t, tb);\n                }\n                return true; // todo: check if should return processed http://www.whatwg.org/specs/web-apps/current-work/multipage/tree-construction.html#parsing-main-intable\n            } else if (t.isEndTag()) {\n                Token.EndTag endTag = t.asEndTag();\n                String name = endTag.normalName();\n\n                if (name.equals("table")) {\n                    if (!tb.inTableScope(name)) {\n                        tb.error(this);\n                        return false;\n                    } else {\n                        tb.popStackToClose("table");\n                    }\n                    tb.resetInsertionMode();\n                } else if (StringUtil.in(name,\n                        "body", "caption", "col", "colgroup", "html", "tbody", "td", "tfoot", "th", "thead", "tr")) {\n                    tb.error(this);\n                    return false;\n                } else {\n                    return anythingElse(t, tb);\n                }\n                return true; // todo: as above todo\n            } else if (t.isEOF()) {\n                if (tb.currentElement().nodeName().equals("html"))\n                    tb.error(this);\n                return true; // stops parsing\n            }\n            return anythingElse(t, tb);\n        }', 'start_line': 808, 'end_line': 892, 'buggy_lines': [887]}
+================== buggy_method_src ==================
+boolean process(Token t, HtmlTreeBuilder tb) {
+            if (t.isCharacter()) {
+                tb.newPendingTableCharacters();
+                tb.markInsertionMode();
+                tb.transition(InTableText);
+                return tb.process(t);
+            } else if (t.isComment()) {
+                tb.insert(t.asComment());
+                return true;
+            } else if (t.isDoctype()) {
+                tb.error(this);
+                return false;
+            } else if (t.isStartTag()) {
+                Token.StartTag startTag = t.asStartTag();
+                String name = startTag.normalName();
+                if (name.equals("caption")) {
+                    tb.clearStackToTableContext();
+                    tb.insertMarkerToFormattingElements();
+                    tb.insert(startTag);
+                    tb.transition(InCaption);
+                } else if (name.equals("colgroup")) {
+                    tb.clearStackToTableContext();
+                    tb.insert(startTag);
+                    tb.transition(InColumnGroup);
+                } else if (name.equals("col")) {
+                    tb.processStartTag("colgroup");
+                    return tb.process(t);
+                } else if (StringUtil.in(name, "tbody", "tfoot", "thead")) {
+                    tb.clearStackToTableContext();
+                    tb.insert(startTag);
+                    tb.transition(InTableBody);
+                } else if (StringUtil.in(name, "td", "th", "tr")) {
+                    tb.processStartTag("tbody");
+                    return tb.process(t);
+                } else if (name.equals("table")) {
+                    tb.error(this);
+                    boolean processed = tb.processEndTag("table");
+                    if (processed) // only ignored if in fragment
+                        return tb.process(t);
+                } else if (StringUtil.in(name, "style", "script")) {
+                    return tb.process(t, InHead);
+                } else if (name.equals("input")) {
+                    if (!startTag.attributes.get("type").equalsIgnoreCase("hidden")) {
+                        return anythingElse(t, tb);
+                    } else {
+                        tb.insertEmpty(startTag);
+                    }
+                } else if (name.equals("form")) {
+                    tb.error(this);
+                    if (tb.getFormElement() != null)
+                        return false;
+                    else {
+                        tb.insertForm(startTag, false);
+                    }
+                } else {
+                    return anythingElse(t, tb);
+                }
+                return true; // todo: check if should return processed http://www.whatwg.org/specs/web-apps/current-work/multipage/tree-construction.html#parsing-main-intable
+            } else if (t.isEndTag()) {
+                Token.EndTag endTag = t.asEndTag();
+                String name = endTag.normalName();
+
+                if (name.equals("table")) {
+                    if (!tb.inTableScope(name)) {
+                        tb.error(this);
+                        return false;
+                    } else {
+                        tb.popStackToClose("table");
+                    }
+                    tb.resetInsertionMode();
+                } else if (StringUtil.in(name,
+                        "body", "caption", "col", "colgroup", "html", "tbody", "td", "tfoot", "th", "thead", "tr")) {
+                    tb.error(this);
+                    return false;
+                } else {
+                    return anythingElse(t, tb);
+                }
+                return true; // todo: as above todo
+            } else if (t.isEOF()) {
+                if (tb.currentElement().nodeName().equals("html"))
+                    tb.error(this);
+                return true; // stops parsing
+            }
+            return anythingElse(t, tb);
+        }
+================== test_stack ==================
+org.jsoup.parser.HtmlParserTest::preservedCaseLinksCantNest
+junit.framework.AssertionFailedError: expected:<<A> ONE <[/A> <A> Two] </A>> but was:<<A> ONE <[A> Two </A>] </A>>
+	at org.junit.Assert.assertEquals(Assert.java:115)
+	at org.junit.Assert.assertEquals(Assert.java:144)
+	at org.jsoup.parser.HtmlParserTest.preservedCaseLinksCantNest(HtmlParserTest.java:1135)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals("<A> ONE </A> <A> Two </A>", StringUtil.normaliseWhitespace(doc.body().html()));
+
+================== buggy_lines_in_method ==================
+[80]
+================== buggy_statements ==================
+['                if (tb.currentElement().nodeName().equals("html"))']
+================== buggy_method_src_endswith_buggy_statement ==================
+boolean process(Token t, HtmlTreeBuilder tb) {
+            if (t.isCharacter()) {
+                tb.newPendingTableCharacters();
+                tb.markInsertionMode();
+                tb.transition(InTableText);
+                return tb.process(t);
+            } else if (t.isComment()) {
+                tb.insert(t.asComment());
+                return true;
+            } else if (t.isDoctype()) {
+                tb.error(this);
+                return false;
+            } else if (t.isStartTag()) {
+                Token.StartTag startTag = t.asStartTag();
+                String name = startTag.normalName();
+                if (name.equals("caption")) {
+                    tb.clearStackToTableContext();
+                    tb.insertMarkerToFormattingElements();
+                    tb.insert(startTag);
+                    tb.transition(InCaption);
+                } else if (name.equals("colgroup")) {
+                    tb.clearStackToTableContext();
+                    tb.insert(startTag);
+                    tb.transition(InColumnGroup);
+                } else if (name.equals("col")) {
+                    tb.processStartTag("colgroup");
+                    return tb.process(t);
+                } else if (StringUtil.in(name, "tbody", "tfoot", "thead")) {
+                    tb.clearStackToTableContext();
+                    tb.insert(startTag);
+                    tb.transition(InTableBody);
+                } else if (StringUtil.in(name, "td", "th", "tr")) {
+                    tb.processStartTag("tbody");
+                    return tb.process(t);
+                } else if (name.equals("table")) {
+                    tb.error(this);
+                    boolean processed = tb.processEndTag("table");
+                    if (processed) // only ignored if in fragment
+                        return tb.process(t);
+                } else if (StringUtil.in(name, "style", "script")) {
+                    return tb.process(t, InHead);
+                } else if (name.equals("input")) {
+                    if (!startTag.attributes.get("type").equalsIgnoreCase("hidden")) {
+                        return anythingElse(t, tb);
+                    } else {
+                        tb.insertEmpty(startTag);
+                    }
+                } else if (name.equals("form")) {
+                    tb.error(this);
+                    if (tb.getFormElement() != null)
+                        return false;
+                    else {
+                        tb.insertForm(startTag, false);
+                    }
+                } else {
+                    return anythingElse(t, tb);
+                }
+                return true; // todo: check if should return processed http://www.whatwg.org/specs/web-apps/current-work/multipage/tree-construction.html#parsing-main-intable
+            } else if (t.isEndTag()) {
+                Token.EndTag endTag = t.asEndTag();
+                String name = endTag.normalName();
+
+                if (name.equals("table")) {
+                    if (!tb.inTableScope(name)) {
+                        tb.error(this);
+                        return false;
+                    } else {
+                        tb.popStackToClose("table");
+                    }
+                    tb.resetInsertionMode();
+                } else if (StringUtil.in(name,
+                        "body", "caption", "col", "colgroup", "html", "tbody", "td", "tfoot", "th", "thead", "tr")) {
+                    tb.error(this);
+                    return false;
+                } else {
+                    return anythingElse(t, tb);
+                }
+                return true; // todo: as above todo
+            } else if (t.isEOF()) {
+                if (tb.currentElement().nodeName().equals("html"))

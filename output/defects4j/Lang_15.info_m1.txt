@@ -1,0 +1,168 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/lang3/reflect/TypeUtils.java
+================== buggy_method ==================
+{'method_name': 'getTypeArguments', 'method_body': "private static Map<TypeVariable<?>, Type> getTypeArguments(Class<?> cls, Class<?> toClass,\n            Map<TypeVariable<?>, Type> subtypeVarAssigns) {\n        // make sure they're assignable\n        if (!isAssignable(cls, toClass)) {\n            return null;\n        }\n\n        // can't work with primitives\n        if (cls.isPrimitive()) {\n            // both classes are primitives?\n            if (toClass.isPrimitive()) {\n                // dealing with widening here. No type arguments to be\n                // harvested with these two types.\n                return new HashMap<TypeVariable<?>, Type>();\n            }\n\n            // work with wrapper the wrapper class instead of the primitive\n            cls = ClassUtils.primitiveToWrapper(cls);\n        }\n\n        // create a copy of the incoming map, or an empty one if it's null\n        HashMap<TypeVariable<?>, Type> typeVarAssigns = subtypeVarAssigns == null ? new HashMap<TypeVariable<?>, Type>()\n                : new HashMap<TypeVariable<?>, Type>(subtypeVarAssigns);\n\n        // has target class been reached?\n        if (cls.getTypeParameters().length > 0 || toClass.equals(cls)) {\n            return typeVarAssigns;\n        }\n\n        // walk the inheritance hierarchy until the target class is reached\n        return getTypeArguments(getClosestParentType(cls, toClass), toClass, typeVarAssigns);\n    }", 'start_line': 650, 'end_line': 681, 'buggy_lines': [675]}
+================== buggy_method_src ==================
+private static Map<TypeVariable<?>, Type> getTypeArguments(Class<?> cls, Class<?> toClass,
+            Map<TypeVariable<?>, Type> subtypeVarAssigns) {
+        // make sure they're assignable
+        if (!isAssignable(cls, toClass)) {
+            return null;
+        }
+
+        // can't work with primitives
+        if (cls.isPrimitive()) {
+            // both classes are primitives?
+            if (toClass.isPrimitive()) {
+                // dealing with widening here. No type arguments to be
+                // harvested with these two types.
+                return new HashMap<TypeVariable<?>, Type>();
+            }
+
+            // work with wrapper the wrapper class instead of the primitive
+            cls = ClassUtils.primitiveToWrapper(cls);
+        }
+
+        // create a copy of the incoming map, or an empty one if it's null
+        HashMap<TypeVariable<?>, Type> typeVarAssigns = subtypeVarAssigns == null ? new HashMap<TypeVariable<?>, Type>()
+                : new HashMap<TypeVariable<?>, Type>(subtypeVarAssigns);
+
+        // has target class been reached?
+        if (cls.getTypeParameters().length > 0 || toClass.equals(cls)) {
+            return typeVarAssigns;
+        }
+
+        // walk the inheritance hierarchy until the target class is reached
+        return getTypeArguments(getClosestParentType(cls, toClass), toClass, typeVarAssigns);
+    }
+================== test_stack ==================
+org.apache.commons.lang3.reflect.TypeUtilsTest::testGetTypeArguments
+junit.framework.AssertionFailedError: expected:<2> but was:<0>
+	at org.junit.Assert.fail(Assert.java:88)
+	at org.junit.Assert.failNotEquals(Assert.java:743)
+	at org.junit.Assert.assertEquals(Assert.java:118)
+	at org.junit.Assert.assertEquals(Assert.java:555)
+	at org.junit.Assert.assertEquals(Assert.java:542)
+	at org.apache.commons.lang3.reflect.TypeUtilsTest.testGetTypeArguments(TypeUtilsTest.java:505)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.apache.commons.lang3.reflect.TypeUtilsTest::testIsAssignable
+junit.framework.AssertionFailedError: type class org.apache.commons.lang3.reflect.TypeUtilsTest$Thing not assignable to org.apache.commons.lang3.reflect.TypeUtilsTest$This<java.lang.String, java.lang.String>!
+	at org.junit.Assert.fail(Assert.java:88)
+	at org.junit.Assert.assertTrue(Assert.java:41)
+	at org.junit.Assert.assertFalse(Assert.java:64)
+	at org.apache.commons.lang3.reflect.TypeUtilsTest.testIsAssignable(TypeUtilsTest.java:344)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+Assert.assertEquals(2, typeVarAssigns.size());
+
+================== buggy_lines_in_method ==================
+[26]
+================== buggy_statements ==================
+['        if (cls.getTypeParameters().length > 0 || toClass.equals(cls)) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+private static Map<TypeVariable<?>, Type> getTypeArguments(Class<?> cls, Class<?> toClass,
+            Map<TypeVariable<?>, Type> subtypeVarAssigns) {
+        // make sure they're assignable
+        if (!isAssignable(cls, toClass)) {
+            return null;
+        }
+
+        // can't work with primitives
+        if (cls.isPrimitive()) {
+            // both classes are primitives?
+            if (toClass.isPrimitive()) {
+                // dealing with widening here. No type arguments to be
+                // harvested with these two types.
+                return new HashMap<TypeVariable<?>, Type>();
+            }
+
+            // work with wrapper the wrapper class instead of the primitive
+            cls = ClassUtils.primitiveToWrapper(cls);
+        }
+
+        // create a copy of the incoming map, or an empty one if it's null
+        HashMap<TypeVariable<?>, Type> typeVarAssigns = subtypeVarAssigns == null ? new HashMap<TypeVariable<?>, Type>()
+                : new HashMap<TypeVariable<?>, Type>(subtypeVarAssigns);
+
+        // has target class been reached?
+        if (cls.getTypeParameters().length > 0 || toClass.equals(cls)) {

@@ -1,0 +1,1104 @@
+
+================== prompt_fl_1 ==================
+
+source code:
+private Integer getPivotRow(SimplexTableau tableau, final int col) {
+        // create a list of all the rows that tie for the lowest score in the minimum ratio test
+        List<Integer> minRatioPositions = new ArrayList<Integer>();
+        double minRatio = Double.MAX_VALUE;
+        for (int i = tableau.getNumObjectiveFunctions(); i < tableau.getHeight(); i++) {
+            final double rhs = tableau.getEntry(i, tableau.getWidth() - 1);
+            final double entry = tableau.getEntry(i, col);
+
+            if (Precision.compareTo(entry, 0d, maxUlps) > 0) {
+                final double ratio = rhs / entry;
+                // check if the entry is strictly equal to the current min ratio
+                // do not use a ulp/epsilon check
+                final int cmp = Double.compare(ratio, minRatio);
+                if (cmp == 0) {
+                    minRatioPositions.add(i);
+                } else if (cmp < 0) {
+                    minRatio = ratio;
+                    minRatioPositions = new ArrayList<Integer>();
+                    minRatioPositions.add(i);
+                }
+            }
+        }
+
+        if (minRatioPositions.size() == 0) {
+            return null;
+        } else if (minRatioPositions.size() > 1) {
+            // there's a degeneracy as indicated by a tie in the minimum ratio test
+
+            // 1. check if there's an artificial variable that can be forced out of the basis
+                for (Integer row : minRatioPositions) {
+                    for (int i = 0; i < tableau.getNumArtificialVariables(); i++) {
+                        int column = i + tableau.getArtificialVariableOffset();
+                        final double entry = tableau.getEntry(row, column);
+                        if (Precision.equals(entry, 1d, maxUlps) && row.equals(tableau.getBasicRow(column))) {
+                            return row;
+                        }
+                    }
+                }
+
+            // 2. apply Bland's rule to prevent cycling:
+            //    take the row for which the corresponding basic variable has the smallest index
+            //
+            // see http://www.stanford.edu/class/msande310/blandrule.pdf
+            // see http://en.wikipedia.org/wiki/Bland%27s_rule (not equivalent to the above paper)
+            //
+            // Additional heuristic: if we did not get a solution after half of maxIterations
+            //                       revert to the simple case of just returning the top-most row
+            // This heuristic is based on empirical data gathered while investigating MATH-828.
+                Integer minRow = null;
+                int minIndex = tableau.getWidth();
+                for (Integer row : minRatioPositions) {
+                    int i = tableau.getNumObjectiveFunctions();
+                    for (; i < tableau.getWidth() - 1 && minRow != row; i++) {
+                        if (row == tableau.getBasicRow(i)) {
+                            if (i < minIndex) {
+                                minIndex = i;
+                                minRow = row;
+                            }
+                        }
+                    }
+                }
+                return minRow;
+        }
+        return minRatioPositions.get(0);
+    }
+
+There is a bug in the above code, please help me locate it.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_2 ==================
+
+source code:
+private Integer getPivotRow(SimplexTableau tableau, final int col) {
+        // create a list of all the rows that tie for the lowest score in the minimum ratio test
+        List<Integer> minRatioPositions = new ArrayList<Integer>();
+        double minRatio = Double.MAX_VALUE;
+        for (int i = tableau.getNumObjectiveFunctions(); i < tableau.getHeight(); i++) {
+            final double rhs = tableau.getEntry(i, tableau.getWidth() - 1);
+            final double entry = tableau.getEntry(i, col);
+
+            if (Precision.compareTo(entry, 0d, maxUlps) > 0) {
+                final double ratio = rhs / entry;
+                // check if the entry is strictly equal to the current min ratio
+                // do not use a ulp/epsilon check
+                final int cmp = Double.compare(ratio, minRatio);
+                if (cmp == 0) {
+                    minRatioPositions.add(i);
+                } else if (cmp < 0) {
+                    minRatio = ratio;
+                    minRatioPositions = new ArrayList<Integer>();
+                    minRatioPositions.add(i);
+                }
+            }
+        }
+
+        if (minRatioPositions.size() == 0) {
+            return null;
+        } else if (minRatioPositions.size() > 1) {
+            // there's a degeneracy as indicated by a tie in the minimum ratio test
+
+            // 1. check if there's an artificial variable that can be forced out of the basis
+                for (Integer row : minRatioPositions) {
+                    for (int i = 0; i < tableau.getNumArtificialVariables(); i++) {
+                        int column = i + tableau.getArtificialVariableOffset();
+                        final double entry = tableau.getEntry(row, column);
+                        if (Precision.equals(entry, 1d, maxUlps) && row.equals(tableau.getBasicRow(column))) {
+                            return row;
+                        }
+                    }
+                }
+
+            // 2. apply Bland's rule to prevent cycling:
+            //    take the row for which the corresponding basic variable has the smallest index
+            //
+            // see http://www.stanford.edu/class/msande310/blandrule.pdf
+            // see http://en.wikipedia.org/wiki/Bland%27s_rule (not equivalent to the above paper)
+            //
+            // Additional heuristic: if we did not get a solution after half of maxIterations
+            //                       revert to the simple case of just returning the top-most row
+            // This heuristic is based on empirical data gathered while investigating MATH-828.
+                Integer minRow = null;
+                int minIndex = tableau.getWidth();
+                for (Integer row : minRatioPositions) {
+                    int i = tableau.getNumObjectiveFunctions();
+                    for (; i < tableau.getWidth() - 1 && minRow != row; i++) {
+                        if (row == tableau.getBasicRow(i)) {
+                            if (i < minIndex) {
+                                minIndex = i;
+                                minRow = row;
+                            }
+                        }
+                    }
+                }
+                return minRow;
+        }
+        return minRatioPositions.get(0);
+    }
+
+stack trace:
+org.apache.commons.math3.optimization.linear.SimplexSolverTest::testMath828Cycle
+org.apache.commons.math3.exception.MaxCountExceededException: illegal state: maximal count (100) exceeded
+	at org.apache.commons.math3.optimization.linear.AbstractLinearOptimizer.incrementIterationsCounter(AbstractLinearOptimizer.java:128)
+	at org.apache.commons.math3.optimization.linear.SimplexSolver.doIteration(SimplexSolver.java:165)
+	at org.apache.commons.math3.optimization.linear.SimplexSolver.doOptimize(SimplexSolver.java:227)
+	at org.apache.commons.math3.optimization.linear.AbstractLinearOptimizer.optimize(AbstractLinearOptimizer.java:147)
+	at org.apache.commons.math3.optimization.linear.SimplexSolverTest.testMath828Cycle(SimplexSolverTest.java:70)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_3 ==================
+
+source code:
+private Integer getPivotRow(SimplexTableau tableau, final int col) {
+        // create a list of all the rows that tie for the lowest score in the minimum ratio test
+        List<Integer> minRatioPositions = new ArrayList<Integer>();
+        double minRatio = Double.MAX_VALUE;
+        for (int i = tableau.getNumObjectiveFunctions(); i < tableau.getHeight(); i++) {
+            final double rhs = tableau.getEntry(i, tableau.getWidth() - 1);
+            final double entry = tableau.getEntry(i, col);
+
+            if (Precision.compareTo(entry, 0d, maxUlps) > 0) {
+                final double ratio = rhs / entry;
+                // check if the entry is strictly equal to the current min ratio
+                // do not use a ulp/epsilon check
+                final int cmp = Double.compare(ratio, minRatio);
+                if (cmp == 0) {
+                    minRatioPositions.add(i);
+                } else if (cmp < 0) {
+                    minRatio = ratio;
+                    minRatioPositions = new ArrayList<Integer>();
+                    minRatioPositions.add(i);
+                }
+            }
+        }
+
+        if (minRatioPositions.size() == 0) {
+            return null;
+        } else if (minRatioPositions.size() > 1) {
+            // there's a degeneracy as indicated by a tie in the minimum ratio test
+
+            // 1. check if there's an artificial variable that can be forced out of the basis
+                for (Integer row : minRatioPositions) {
+                    for (int i = 0; i < tableau.getNumArtificialVariables(); i++) {
+                        int column = i + tableau.getArtificialVariableOffset();
+                        final double entry = tableau.getEntry(row, column);
+                        if (Precision.equals(entry, 1d, maxUlps) && row.equals(tableau.getBasicRow(column))) {
+                            return row;
+                        }
+                    }
+                }
+
+            // 2. apply Bland's rule to prevent cycling:
+            //    take the row for which the corresponding basic variable has the smallest index
+            //
+            // see http://www.stanford.edu/class/msande310/blandrule.pdf
+            // see http://en.wikipedia.org/wiki/Bland%27s_rule (not equivalent to the above paper)
+            //
+            // Additional heuristic: if we did not get a solution after half of maxIterations
+            //                       revert to the simple case of just returning the top-most row
+            // This heuristic is based on empirical data gathered while investigating MATH-828.
+                Integer minRow = null;
+                int minIndex = tableau.getWidth();
+                for (Integer row : minRatioPositions) {
+                    int i = tableau.getNumObjectiveFunctions();
+                    for (; i < tableau.getWidth() - 1 && minRow != row; i++) {
+                        if (row == tableau.getBasicRow(i)) {
+                            if (i < minIndex) {
+                                minIndex = i;
+                                minRow = row;
+                            }
+                        }
+                    }
+                }
+                return minRow;
+        }
+        return minRatioPositions.get(0);
+    }
+
+stack trace:
+org.apache.commons.math3.optimization.linear.SimplexSolverTest::testMath828Cycle
+org.apache.commons.math3.exception.MaxCountExceededException: illegal state: maximal count (100) exceeded
+	at org.apache.commons.math3.optimization.linear.AbstractLinearOptimizer.incrementIterationsCounter(AbstractLinearOptimizer.java:128)
+	at org.apache.commons.math3.optimization.linear.SimplexSolver.doIteration(SimplexSolver.java:165)
+	at org.apache.commons.math3.optimization.linear.SimplexSolver.doOptimize(SimplexSolver.java:227)
+	at org.apache.commons.math3.optimization.linear.AbstractLinearOptimizer.optimize(AbstractLinearOptimizer.java:147)
+	at org.apache.commons.math3.optimization.linear.SimplexSolverTest.testMath828Cycle(SimplexSolverTest.java:70)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+failure assertion code:
+PointValuePair solution = new SimplexSolver().optimize(f, constraints, GoalType.MINIMIZE, true);
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_4 ==================
+
+source code:
+private Integer getPivotRow(SimplexTableau tableau, final int col) {
+        // create a list of all the rows that tie for the lowest score in the minimum ratio test
+        List<Integer> minRatioPositions = new ArrayList<Integer>();
+        double minRatio = Double.MAX_VALUE;
+        for (int i = tableau.getNumObjectiveFunctions(); i < tableau.getHeight(); i++) {
+            final double rhs = tableau.getEntry(i, tableau.getWidth() - 1);
+            final double entry = tableau.getEntry(i, col);
+
+            if (Precision.compareTo(entry, 0d, maxUlps) > 0) {
+                final double ratio = rhs / entry;
+                // check if the entry is strictly equal to the current min ratio
+                // do not use a ulp/epsilon check
+                final int cmp = Double.compare(ratio, minRatio);
+                if (cmp == 0) {
+                    minRatioPositions.add(i);
+                } else if (cmp < 0) {
+                    minRatio = ratio;
+                    minRatioPositions = new ArrayList<Integer>();
+                    minRatioPositions.add(i);
+                }
+            }
+        }
+
+        if (minRatioPositions.size() == 0) {
+            return null;
+        } else if (minRatioPositions.size() > 1) {
+            // there's a degeneracy as indicated by a tie in the minimum ratio test
+
+            // 1. check if there's an artificial variable that can be forced out of the basis
+                for (Integer row : minRatioPositions) {
+                    for (int i = 0; i < tableau.getNumArtificialVariables(); i++) {
+                        int column = i + tableau.getArtificialVariableOffset();
+                        final double entry = tableau.getEntry(row, column);
+                        if (Precision.equals(entry, 1d, maxUlps) && row.equals(tableau.getBasicRow(column))) {
+                            return row;
+                        }
+                    }
+                }
+
+            // 2. apply Bland's rule to prevent cycling:
+            //    take the row for which the corresponding basic variable has the smallest index
+            //
+            // see http://www.stanford.edu/class/msande310/blandrule.pdf
+            // see http://en.wikipedia.org/wiki/Bland%27s_rule (not equivalent to the above paper)
+            //
+            // Additional heuristic: if we did not get a solution after half of maxIterations
+            //                       revert to the simple case of just returning the top-most row
+            // This heuristic is based on empirical data gathered while investigating MATH-828.
+                Integer minRow = null;
+                int minIndex = tableau.getWidth();
+                for (Integer row : minRatioPositions) {
+                    int i = tableau.getNumObjectiveFunctions();
+                    for (; i < tableau.getWidth() - 1 && minRow != row; i++) {
+                        if (row == tableau.getBasicRow(i)) {
+                            if (i < minIndex) {
+                                minIndex = i;
+                                minRow = row;
+                            }
+                        }
+                    }
+                }
+                return minRow;
+        }
+        return minRatioPositions.get(0);
+    }
+
+There is a bug in the above code, please help me locate it.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_5 ==================
+
+source code:
+private Integer getPivotRow(SimplexTableau tableau, final int col) {
+        // create a list of all the rows that tie for the lowest score in the minimum ratio test
+        List<Integer> minRatioPositions = new ArrayList<Integer>();
+        double minRatio = Double.MAX_VALUE;
+        for (int i = tableau.getNumObjectiveFunctions(); i < tableau.getHeight(); i++) {
+            final double rhs = tableau.getEntry(i, tableau.getWidth() - 1);
+            final double entry = tableau.getEntry(i, col);
+
+            if (Precision.compareTo(entry, 0d, maxUlps) > 0) {
+                final double ratio = rhs / entry;
+                // check if the entry is strictly equal to the current min ratio
+                // do not use a ulp/epsilon check
+                final int cmp = Double.compare(ratio, minRatio);
+                if (cmp == 0) {
+                    minRatioPositions.add(i);
+                } else if (cmp < 0) {
+                    minRatio = ratio;
+                    minRatioPositions = new ArrayList<Integer>();
+                    minRatioPositions.add(i);
+                }
+            }
+        }
+
+        if (minRatioPositions.size() == 0) {
+            return null;
+        } else if (minRatioPositions.size() > 1) {
+            // there's a degeneracy as indicated by a tie in the minimum ratio test
+
+            // 1. check if there's an artificial variable that can be forced out of the basis
+                for (Integer row : minRatioPositions) {
+                    for (int i = 0; i < tableau.getNumArtificialVariables(); i++) {
+                        int column = i + tableau.getArtificialVariableOffset();
+                        final double entry = tableau.getEntry(row, column);
+                        if (Precision.equals(entry, 1d, maxUlps) && row.equals(tableau.getBasicRow(column))) {
+                            return row;
+                        }
+                    }
+                }
+
+            // 2. apply Bland's rule to prevent cycling:
+            //    take the row for which the corresponding basic variable has the smallest index
+            //
+            // see http://www.stanford.edu/class/msande310/blandrule.pdf
+            // see http://en.wikipedia.org/wiki/Bland%27s_rule (not equivalent to the above paper)
+            //
+            // Additional heuristic: if we did not get a solution after half of maxIterations
+            //                       revert to the simple case of just returning the top-most row
+            // This heuristic is based on empirical data gathered while investigating MATH-828.
+                Integer minRow = null;
+                int minIndex = tableau.getWidth();
+                for (Integer row : minRatioPositions) {
+                    int i = tableau.getNumObjectiveFunctions();
+                    for (; i < tableau.getWidth() - 1 && minRow != row; i++) {
+                        if (row == tableau.getBasicRow(i)) {
+                            if (i < minIndex) {
+                                minIndex = i;
+                                minRow = row;
+                            }
+                        }
+                    }
+                }
+                return minRow;
+        }
+        return minRatioPositions.get(0);
+    }
+
+stack trace:
+org.apache.commons.math3.optimization.linear.SimplexSolverTest::testMath828Cycle
+org.apache.commons.math3.exception.MaxCountExceededException: illegal state: maximal count (100) exceeded
+	at org.apache.commons.math3.optimization.linear.AbstractLinearOptimizer.incrementIterationsCounter(AbstractLinearOptimizer.java:128)
+	at org.apache.commons.math3.optimization.linear.SimplexSolver.doIteration(SimplexSolver.java:165)
+	at org.apache.commons.math3.optimization.linear.SimplexSolver.doOptimize(SimplexSolver.java:227)
+	at org.apache.commons.math3.optimization.linear.AbstractLinearOptimizer.optimize(AbstractLinearOptimizer.java:147)
+	at org.apache.commons.math3.optimization.linear.SimplexSolverTest.testMath828Cycle(SimplexSolverTest.java:70)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_6 ==================
+
+source code:
+private Integer getPivotRow(SimplexTableau tableau, final int col) {
+        // create a list of all the rows that tie for the lowest score in the minimum ratio test
+        List<Integer> minRatioPositions = new ArrayList<Integer>();
+        double minRatio = Double.MAX_VALUE;
+        for (int i = tableau.getNumObjectiveFunctions(); i < tableau.getHeight(); i++) {
+            final double rhs = tableau.getEntry(i, tableau.getWidth() - 1);
+            final double entry = tableau.getEntry(i, col);
+
+            if (Precision.compareTo(entry, 0d, maxUlps) > 0) {
+                final double ratio = rhs / entry;
+                // check if the entry is strictly equal to the current min ratio
+                // do not use a ulp/epsilon check
+                final int cmp = Double.compare(ratio, minRatio);
+                if (cmp == 0) {
+                    minRatioPositions.add(i);
+                } else if (cmp < 0) {
+                    minRatio = ratio;
+                    minRatioPositions = new ArrayList<Integer>();
+                    minRatioPositions.add(i);
+                }
+            }
+        }
+
+        if (minRatioPositions.size() == 0) {
+            return null;
+        } else if (minRatioPositions.size() > 1) {
+            // there's a degeneracy as indicated by a tie in the minimum ratio test
+
+            // 1. check if there's an artificial variable that can be forced out of the basis
+                for (Integer row : minRatioPositions) {
+                    for (int i = 0; i < tableau.getNumArtificialVariables(); i++) {
+                        int column = i + tableau.getArtificialVariableOffset();
+                        final double entry = tableau.getEntry(row, column);
+                        if (Precision.equals(entry, 1d, maxUlps) && row.equals(tableau.getBasicRow(column))) {
+                            return row;
+                        }
+                    }
+                }
+
+            // 2. apply Bland's rule to prevent cycling:
+            //    take the row for which the corresponding basic variable has the smallest index
+            //
+            // see http://www.stanford.edu/class/msande310/blandrule.pdf
+            // see http://en.wikipedia.org/wiki/Bland%27s_rule (not equivalent to the above paper)
+            //
+            // Additional heuristic: if we did not get a solution after half of maxIterations
+            //                       revert to the simple case of just returning the top-most row
+            // This heuristic is based on empirical data gathered while investigating MATH-828.
+                Integer minRow = null;
+                int minIndex = tableau.getWidth();
+                for (Integer row : minRatioPositions) {
+                    int i = tableau.getNumObjectiveFunctions();
+                    for (; i < tableau.getWidth() - 1 && minRow != row; i++) {
+                        if (row == tableau.getBasicRow(i)) {
+                            if (i < minIndex) {
+                                minIndex = i;
+                                minRow = row;
+                            }
+                        }
+                    }
+                }
+                return minRow;
+        }
+        return minRatioPositions.get(0);
+    }
+
+stack trace:
+org.apache.commons.math3.optimization.linear.SimplexSolverTest::testMath828Cycle
+org.apache.commons.math3.exception.MaxCountExceededException: illegal state: maximal count (100) exceeded
+	at org.apache.commons.math3.optimization.linear.AbstractLinearOptimizer.incrementIterationsCounter(AbstractLinearOptimizer.java:128)
+	at org.apache.commons.math3.optimization.linear.SimplexSolver.doIteration(SimplexSolver.java:165)
+	at org.apache.commons.math3.optimization.linear.SimplexSolver.doOptimize(SimplexSolver.java:227)
+	at org.apache.commons.math3.optimization.linear.AbstractLinearOptimizer.optimize(AbstractLinearOptimizer.java:147)
+	at org.apache.commons.math3.optimization.linear.SimplexSolverTest.testMath828Cycle(SimplexSolverTest.java:70)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+failure assertion code:
+PointValuePair solution = new SimplexSolver().optimize(f, constraints, GoalType.MINIMIZE, true);
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_1 ==================
+
+private Integer getPivotRow(SimplexTableau tableau, final int col) {
+        // create a list of all the rows that tie for the lowest score in the minimum ratio test
+        List<Integer> minRatioPositions = new ArrayList<Integer>();
+        double minRatio = Double.MAX_VALUE;
+        for (int i = tableau.getNumObjectiveFunctions(); i < tableau.getHeight(); i++) {
+            final double rhs = tableau.getEntry(i, tableau.getWidth() - 1);
+            final double entry = tableau.getEntry(i, col);
+
+            if (Precision.compareTo(entry, 0d, maxUlps) > 0) {
+                final double ratio = rhs / entry;
+                // check if the entry is strictly equal to the current min ratio
+                // do not use a ulp/epsilon check
+                final int cmp = Double.compare(ratio, minRatio);
+                if (cmp == 0) {
+                    minRatioPositions.add(i);
+                } else if (cmp < 0) {
+                    minRatio = ratio;
+                    minRatioPositions = new ArrayList<Integer>();
+                    minRatioPositions.add(i);
+                }
+            }
+        }
+
+        if (minRatioPositions.size() == 0) {
+            return null;
+        } else if (minRatioPositions.size() > 1) {
+            // there's a degeneracy as indicated by a tie in the minimum ratio test
+
+            // 1. check if there's an artificial variable that can be forced out of the basis
+                for (Integer row : minRatioPositions) {
+                    for (int i = 0; i < tableau.getNumArtificialVariables(); i++) {
+                        int column = i + tableau.getArtificialVariableOffset();
+                        final double entry = tableau.getEntry(row, column);
+                        if (Precision.equals(entry, 1d, maxUlps) && row.equals(tableau.getBasicRow(column))) {
+                            return row;
+                        }
+                    }
+                }
+
+            // 2. apply Bland's rule to prevent cycling:
+            //    take the row for which the corresponding basic variable has the smallest index
+            //
+            // see http://www.stanford.edu/class/msande310/blandrule.pdf
+            // see http://en.wikipedia.org/wiki/Bland%27s_rule (not equivalent to the above paper)
+            //
+            // Additional heuristic: if we did not get a solution after half of maxIterations
+            //                       revert to the simple case of just returning the top-most row
+            // This heuristic is based on empirical data gathered while investigating MATH-828.
+                Integer minRow = null;
+                int minIndex = tableau.getWidth();
+                for (Integer row : minRatioPositions) {
+                    int i = tableau.getNumObjectiveFunctions();
+                    for (; i < tableau.getWidth() - 1 && minRow != row; i++) {
+                        if (row == tableau.getBasicRow(i)) {
+                            if (i < minIndex) {
+                                minIndex = i;
+                                minRow = row;
+                            }
+                        }
+                    }
+                }
+                return minRow;
+        }
+        return minRatioPositions.get(0);
+    }
+
+There is a bug in line [30, 40, 51] of the code, please help me fix it.
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_2 ==================
+
+private Integer getPivotRow(SimplexTableau tableau, final int col) {
+        // create a list of all the rows that tie for the lowest score in the minimum ratio test
+        List<Integer> minRatioPositions = new ArrayList<Integer>();
+        double minRatio = Double.MAX_VALUE;
+        for (int i = tableau.getNumObjectiveFunctions(); i < tableau.getHeight(); i++) {
+            final double rhs = tableau.getEntry(i, tableau.getWidth() - 1);
+            final double entry = tableau.getEntry(i, col);
+
+            if (Precision.compareTo(entry, 0d, maxUlps) > 0) {
+                final double ratio = rhs / entry;
+                // check if the entry is strictly equal to the current min ratio
+                // do not use a ulp/epsilon check
+                final int cmp = Double.compare(ratio, minRatio);
+                if (cmp == 0) {
+                    minRatioPositions.add(i);
+                } else if (cmp < 0) {
+                    minRatio = ratio;
+                    minRatioPositions = new ArrayList<Integer>();
+                    minRatioPositions.add(i);
+                }
+            }
+        }
+
+        if (minRatioPositions.size() == 0) {
+            return null;
+        } else if (minRatioPositions.size() > 1) {
+            // there's a degeneracy as indicated by a tie in the minimum ratio test
+
+            // 1. check if there's an artificial variable that can be forced out of the basis
+                for (Integer row : minRatioPositions) {
+                    for (int i = 0; i < tableau.getNumArtificialVariables(); i++) {
+                        int column = i + tableau.getArtificialVariableOffset();
+                        final double entry = tableau.getEntry(row, column);
+                        if (Precision.equals(entry, 1d, maxUlps) && row.equals(tableau.getBasicRow(column))) {
+                            return row;
+                        }
+                    }
+                }
+
+            // 2. apply Bland's rule to prevent cycling:
+            //    take the row for which the corresponding basic variable has the smallest index
+            //
+            // see http://www.stanford.edu/class/msande310/blandrule.pdf
+            // see http://en.wikipedia.org/wiki/Bland%27s_rule (not equivalent to the above paper)
+            //
+            // Additional heuristic: if we did not get a solution after half of maxIterations
+            //                       revert to the simple case of just returning the top-most row
+            // This heuristic is based on empirical data gathered while investigating MATH-828.
+                Integer minRow = null;
+                int minIndex = tableau.getWidth();
+                for (Integer row : minRatioPositions) {
+                    int i = tableau.getNumObjectiveFunctions();
+                    for (; i < tableau.getWidth() - 1 && minRow != row; i++) {
+                        if (row == tableau.getBasicRow(i)) {
+                            if (i < minIndex) {
+                                minIndex = i;
+                                minRow = row;
+                            }
+                        }
+                    }
+                }
+                return minRow;
+        }
+        return minRatioPositions.get(0);
+    }
+
+There is a bug in ['                for (Integer row : minRatioPositions) {', "            // 2. apply Bland's rule to prevent cycling:", '                for (Integer row : minRatioPositions) {'] , please help me fix it. 
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_3 ==================
+
+private Integer getPivotRow(SimplexTableau tableau, final int col) {
+        // create a list of all the rows that tie for the lowest score in the minimum ratio test
+        List<Integer> minRatioPositions = new ArrayList<Integer>();
+        double minRatio = Double.MAX_VALUE;
+        for (int i = tableau.getNumObjectiveFunctions(); i < tableau.getHeight(); i++) {
+            final double rhs = tableau.getEntry(i, tableau.getWidth() - 1);
+            final double entry = tableau.getEntry(i, col);
+
+            if (Precision.compareTo(entry, 0d, maxUlps) > 0) {
+                final double ratio = rhs / entry;
+                // check if the entry is strictly equal to the current min ratio
+                // do not use a ulp/epsilon check
+                final int cmp = Double.compare(ratio, minRatio);
+                if (cmp == 0) {
+                    minRatioPositions.add(i);
+                } else if (cmp < 0) {
+                    minRatio = ratio;
+                    minRatioPositions = new ArrayList<Integer>();
+                    minRatioPositions.add(i);
+                }
+            }
+        }
+
+        if (minRatioPositions.size() == 0) {
+            return null;
+        } else if (minRatioPositions.size() > 1) {
+            // there's a degeneracy as indicated by a tie in the minimum ratio test
+
+            // 1. check if there's an artificial variable that can be forced out of the basis
+                for (Integer row : minRatioPositions) {
+                    for (int i = 0; i < tableau.getNumArtificialVariables(); i++) {
+                        int column = i + tableau.getArtificialVariableOffset();
+                        final double entry = tableau.getEntry(row, column);
+                        if (Precision.equals(entry, 1d, maxUlps) && row.equals(tableau.getBasicRow(column))) {
+                            return row;
+                        }
+                    }
+                }
+
+            // 2. apply Bland's rule to prevent cycling:
+            //    take the row for which the corresponding basic variable has the smallest index
+            //
+            // see http://www.stanford.edu/class/msande310/blandrule.pdf
+            // see http://en.wikipedia.org/wiki/Bland%27s_rule (not equivalent to the above paper)
+            //
+            // Additional heuristic: if we did not get a solution after half of maxIterations
+            //                       revert to the simple case of just returning the top-most row
+            // This heuristic is based on empirical data gathered while investigating MATH-828.
+                Integer minRow = null;
+                int minIndex = tableau.getWidth();
+                for (Integer row : minRatioPositions) {
+
+There is a bug in the last statement, please help me fix it.
+
+Return the code **only from the method declaration to the fixed statement**, without completing or adding additional code. Do not modify anything beyond fixing the bug, and do not complete the `if` statement or other unfinished parts. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_4 ==================
+
+private Integer getPivotRow(SimplexTableau tableau, final int col) {
+        // create a list of all the rows that tie for the lowest score in the minimum ratio test
+        List<Integer> minRatioPositions = new ArrayList<Integer>();
+        double minRatio = Double.MAX_VALUE;
+        for (int i = tableau.getNumObjectiveFunctions(); i < tableau.getHeight(); i++) {
+            final double rhs = tableau.getEntry(i, tableau.getWidth() - 1);
+            final double entry = tableau.getEntry(i, col);
+
+            if (Precision.compareTo(entry, 0d, maxUlps) > 0) {
+                final double ratio = rhs / entry;
+                // check if the entry is strictly equal to the current min ratio
+                // do not use a ulp/epsilon check
+                final int cmp = Double.compare(ratio, minRatio);
+                if (cmp == 0) {
+                    minRatioPositions.add(i);
+                } else if (cmp < 0) {
+                    minRatio = ratio;
+                    minRatioPositions = new ArrayList<Integer>();
+                    minRatioPositions.add(i);
+                }
+            }
+        }
+
+        if (minRatioPositions.size() == 0) {
+            return null;
+        } else if (minRatioPositions.size() > 1) {
+            // there's a degeneracy as indicated by a tie in the minimum ratio test
+
+            // 1. check if there's an artificial variable that can be forced out of the basis
+                for (Integer row : minRatioPositions) {
+                    for (int i = 0; i < tableau.getNumArtificialVariables(); i++) {
+                        int column = i + tableau.getArtificialVariableOffset();
+                        final double entry = tableau.getEntry(row, column);
+                        if (Precision.equals(entry, 1d, maxUlps) && row.equals(tableau.getBasicRow(column))) {
+                            return row;
+                        }
+                    }
+                }
+
+            // 2. apply Bland's rule to prevent cycling:
+            //    take the row for which the corresponding basic variable has the smallest index
+            //
+            // see http://www.stanford.edu/class/msande310/blandrule.pdf
+            // see http://en.wikipedia.org/wiki/Bland%27s_rule (not equivalent to the above paper)
+            //
+            // Additional heuristic: if we did not get a solution after half of maxIterations
+            //                       revert to the simple case of just returning the top-most row
+            // This heuristic is based on empirical data gathered while investigating MATH-828.
+                Integer minRow = null;
+                int minIndex = tableau.getWidth();
+                for (Integer row : minRatioPositions) {
+                    int i = tableau.getNumObjectiveFunctions();
+                    for (; i < tableau.getWidth() - 1 && minRow != row; i++) {
+                        if (row == tableau.getBasicRow(i)) {
+                            if (i < minIndex) {
+                                minIndex = i;
+                                minRow = row;
+                            }
+                        }
+                    }
+                }
+                return minRow;
+        }
+        return minRatioPositions.get(0);
+    }
+
+There is a bug in line [30, 40, 51] of the code, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_5 ==================
+
+private Integer getPivotRow(SimplexTableau tableau, final int col) {
+        // create a list of all the rows that tie for the lowest score in the minimum ratio test
+        List<Integer> minRatioPositions = new ArrayList<Integer>();
+        double minRatio = Double.MAX_VALUE;
+        for (int i = tableau.getNumObjectiveFunctions(); i < tableau.getHeight(); i++) {
+            final double rhs = tableau.getEntry(i, tableau.getWidth() - 1);
+            final double entry = tableau.getEntry(i, col);
+
+            if (Precision.compareTo(entry, 0d, maxUlps) > 0) {
+                final double ratio = rhs / entry;
+                // check if the entry is strictly equal to the current min ratio
+                // do not use a ulp/epsilon check
+                final int cmp = Double.compare(ratio, minRatio);
+                if (cmp == 0) {
+                    minRatioPositions.add(i);
+                } else if (cmp < 0) {
+                    minRatio = ratio;
+                    minRatioPositions = new ArrayList<Integer>();
+                    minRatioPositions.add(i);
+                }
+            }
+        }
+
+        if (minRatioPositions.size() == 0) {
+            return null;
+        } else if (minRatioPositions.size() > 1) {
+            // there's a degeneracy as indicated by a tie in the minimum ratio test
+
+            // 1. check if there's an artificial variable that can be forced out of the basis
+                for (Integer row : minRatioPositions) {
+                    for (int i = 0; i < tableau.getNumArtificialVariables(); i++) {
+                        int column = i + tableau.getArtificialVariableOffset();
+                        final double entry = tableau.getEntry(row, column);
+                        if (Precision.equals(entry, 1d, maxUlps) && row.equals(tableau.getBasicRow(column))) {
+                            return row;
+                        }
+                    }
+                }
+
+            // 2. apply Bland's rule to prevent cycling:
+            //    take the row for which the corresponding basic variable has the smallest index
+            //
+            // see http://www.stanford.edu/class/msande310/blandrule.pdf
+            // see http://en.wikipedia.org/wiki/Bland%27s_rule (not equivalent to the above paper)
+            //
+            // Additional heuristic: if we did not get a solution after half of maxIterations
+            //                       revert to the simple case of just returning the top-most row
+            // This heuristic is based on empirical data gathered while investigating MATH-828.
+                Integer minRow = null;
+                int minIndex = tableau.getWidth();
+                for (Integer row : minRatioPositions) {
+                    int i = tableau.getNumObjectiveFunctions();
+                    for (; i < tableau.getWidth() - 1 && minRow != row; i++) {
+                        if (row == tableau.getBasicRow(i)) {
+                            if (i < minIndex) {
+                                minIndex = i;
+                                minRow = row;
+                            }
+                        }
+                    }
+                }
+                return minRow;
+        }
+        return minRatioPositions.get(0);
+    }
+
+There is a bug in ['                for (Integer row : minRatioPositions) {', "            // 2. apply Bland's rule to prevent cycling:", '                for (Integer row : minRatioPositions) {'] , please help me fix it. 
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_6 ==================
+
+private Integer getPivotRow(SimplexTableau tableau, final int col) {
+        // create a list of all the rows that tie for the lowest score in the minimum ratio test
+        List<Integer> minRatioPositions = new ArrayList<Integer>();
+        double minRatio = Double.MAX_VALUE;
+        for (int i = tableau.getNumObjectiveFunctions(); i < tableau.getHeight(); i++) {
+            final double rhs = tableau.getEntry(i, tableau.getWidth() - 1);
+            final double entry = tableau.getEntry(i, col);
+
+            if (Precision.compareTo(entry, 0d, maxUlps) > 0) {
+                final double ratio = rhs / entry;
+                // check if the entry is strictly equal to the current min ratio
+                // do not use a ulp/epsilon check
+                final int cmp = Double.compare(ratio, minRatio);
+                if (cmp == 0) {
+                    minRatioPositions.add(i);
+                } else if (cmp < 0) {
+                    minRatio = ratio;
+                    minRatioPositions = new ArrayList<Integer>();
+                    minRatioPositions.add(i);
+                }
+            }
+        }
+
+        if (minRatioPositions.size() == 0) {
+            return null;
+        } else if (minRatioPositions.size() > 1) {
+            // there's a degeneracy as indicated by a tie in the minimum ratio test
+
+            // 1. check if there's an artificial variable that can be forced out of the basis
+                for (Integer row : minRatioPositions) {
+                    for (int i = 0; i < tableau.getNumArtificialVariables(); i++) {
+                        int column = i + tableau.getArtificialVariableOffset();
+                        final double entry = tableau.getEntry(row, column);
+                        if (Precision.equals(entry, 1d, maxUlps) && row.equals(tableau.getBasicRow(column))) {
+                            return row;
+                        }
+                    }
+                }
+
+            // 2. apply Bland's rule to prevent cycling:
+            //    take the row for which the corresponding basic variable has the smallest index
+            //
+            // see http://www.stanford.edu/class/msande310/blandrule.pdf
+            // see http://en.wikipedia.org/wiki/Bland%27s_rule (not equivalent to the above paper)
+            //
+            // Additional heuristic: if we did not get a solution after half of maxIterations
+            //                       revert to the simple case of just returning the top-most row
+            // This heuristic is based on empirical data gathered while investigating MATH-828.
+                Integer minRow = null;
+                int minIndex = tableau.getWidth();
+                for (Integer row : minRatioPositions) {
+
+There is a bug in the last statement, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.

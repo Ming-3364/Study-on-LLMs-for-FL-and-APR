@@ -1,0 +1,118 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/type/ChainableReverseAbstractInterpreter.java
+================== buggy_method ==================
+{'method_name': 'caseObjectType', 'method_body': '@Override\n    public JSType caseObjectType(ObjectType type) {\n      if (value.equals("function")) {\n        JSType ctorType = getNativeType(U2U_CONSTRUCTOR_TYPE);\n        return resultEqualsValue && ctorType.isSubtype(type) ? ctorType : null;\n          // Objects are restricted to "Function", subtypes are left\n          // Only filter out subtypes of "function"\n      }\n      return matchesExpectation("object") ? type : null;\n    }', 'start_line': 609, 'end_line': 618, 'buggy_lines': [613]}
+================== buggy_method_src ==================
+@Override
+    public JSType caseObjectType(ObjectType type) {
+      if (value.equals("function")) {
+        JSType ctorType = getNativeType(U2U_CONSTRUCTOR_TYPE);
+        return resultEqualsValue && ctorType.isSubtype(type) ? ctorType : null;
+          // Objects are restricted to "Function", subtypes are left
+          // Only filter out subtypes of "function"
+      }
+      return matchesExpectation("object") ? type : null;
+    }
+================== test_stack ==================
+com.google.javascript.jscomp.ClosureReverseAbstractInterpreterTest::testGoogIsFunction2
+junit.framework.AssertionFailedError: Expected: (Object|boolean|number|string)
+Actual  : (boolean|number|string)
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at com.google.javascript.rhino.testing.Asserts.assertTypeEquals(Asserts.java:106)
+	at com.google.javascript.rhino.testing.Asserts.assertTypeEquals(Asserts.java:96)
+	at com.google.javascript.jscomp.ClosureReverseAbstractInterpreterTest.testClosureFunction(ClosureReverseAbstractInterpreterTest.java:187)
+	at com.google.javascript.jscomp.ClosureReverseAbstractInterpreterTest.testGoogIsFunction2(ClosureReverseAbstractInterpreterTest.java:121)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.SemanticReverseAbstractInterpreterTest::testTypeof3
+junit.framework.AssertionFailedError: Expected: (Object|boolean|number|string)
+Actual  : (boolean|number|string)
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at com.google.javascript.rhino.testing.Asserts.assertTypeEquals(Asserts.java:106)
+	at com.google.javascript.rhino.testing.Asserts.assertTypeEquals(Asserts.java:96)
+	at com.google.javascript.rhino.testing.BaseJSTypeTestCase.assertTypeEquals(BaseJSTypeTestCase.java:577)
+	at com.google.javascript.jscomp.SemanticReverseAbstractInterpreterTest.testBinop(SemanticReverseAbstractInterpreterTest.java:568)
+	at com.google.javascript.jscomp.SemanticReverseAbstractInterpreterTest.testTypeof3(SemanticReverseAbstractInterpreterTest.java:465)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+testClosureFunction("goog.isFunction",
+
+================== buggy_lines_in_method ==================
+[5]
+================== buggy_statements ==================
+['        return resultEqualsValue && ctorType.isSubtype(type) ? ctorType : null;']
+================== buggy_method_src_endswith_buggy_statement ==================
+@Override
+    public JSType caseObjectType(ObjectType type) {
+      if (value.equals("function")) {
+        JSType ctorType = getNativeType(U2U_CONSTRUCTOR_TYPE);
+        return resultEqualsValue && ctorType.isSubtype(type) ? ctorType : null;

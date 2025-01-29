@@ -1,0 +1,241 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/ser/std/BeanSerializerBase.java
+================== buggy_method ==================
+{'method_name': 'createContextual', 'method_body': '@SuppressWarnings("incomplete-switch")\n    @Override\n    public JsonSerializer<?> createContextual(SerializerProvider provider,\n            BeanProperty property)\n        throws JsonMappingException\n    {\n        final AnnotationIntrospector intr = provider.getAnnotationIntrospector();\n        final AnnotatedMember accessor = (property == null || intr == null)\n                ? null : property.getMember();\n        final SerializationConfig config = provider.getConfig();\n        \n        // Let\'s start with one big transmutation: Enums that are annotated\n        // to serialize as Objects may want to revert\n        JsonFormat.Shape shape = null;\n        if (accessor != null) {\n            JsonFormat.Value format = intr.findFormat((Annotated) accessor);\n\n            if (format != null) {\n                shape = format.getShape();\n                // or, alternatively, asked to revert "back to" other representations...\n                if (shape != _serializationShape) {\n                    if (_handledType.isEnum()) {\n                        switch (shape) {\n                        case STRING:\n                        case NUMBER:\n                        case NUMBER_INT:\n                            // 12-Oct-2014, tatu: May need to introspect full annotations... but\n                            //   for now, just do class ones\n                            BeanDescription desc = config.introspectClassAnnotations(_handledType);\n                            JsonSerializer<?> ser = EnumSerializer.construct(_handledType,\n                                    provider.getConfig(), desc, format);\n                            return provider.handlePrimaryContextualization(ser, property);\n                        }\n                    }\n                }\n            }\n        }\n\n        ObjectIdWriter oiw = _objectIdWriter;\n        String[] ignorals = null;\n        Object newFilterId = null;\n        \n        // Then we may have an override for Object Id\n        if (accessor != null) {\n            ignorals = intr.findPropertiesToIgnore(accessor, true);\n            ObjectIdInfo objectIdInfo = intr.findObjectIdInfo(accessor);\n            if (objectIdInfo == null) {\n                // no ObjectId override, but maybe ObjectIdRef?\n                if (oiw != null) {\n                    objectIdInfo = intr.findObjectReferenceInfo(accessor,\n                            new ObjectIdInfo(NAME_FOR_OBJECT_REF, null, null, null));\n                        oiw = _objectIdWriter.withAlwaysAsId(objectIdInfo.getAlwaysAsId());\n                }\n            } else {\n                // Ugh: mostly copied from BeanDeserializerBase: but can\'t easily change it\n                // to be able to move to SerializerProvider (where it really belongs)\n                \n                // 2.1: allow modifications by "id ref" annotations as well:\n                objectIdInfo = intr.findObjectReferenceInfo(accessor, objectIdInfo);\n                ObjectIdGenerator<?> gen;\n                Class<?> implClass = objectIdInfo.getGeneratorType();\n                JavaType type = provider.constructType(implClass);\n                JavaType idType = provider.getTypeFactory().findTypeParameters(type, ObjectIdGenerator.class)[0];\n                // Property-based generator is trickier\n                if (implClass == ObjectIdGenerators.PropertyGenerator.class) { // most special one, needs extra work\n                    String propName = objectIdInfo.getPropertyName().getSimpleName();\n                    BeanPropertyWriter idProp = null;\n\n                    for (int i = 0, len = _props.length ;; ++i) {\n                        if (i == len) {\n                            throw new IllegalArgumentException("Invalid Object Id definition for "+_handledType.getName()\n                                    +": can not find property with name \'"+propName+"\'");\n                        }\n                        BeanPropertyWriter prop = _props[i];\n                        if (propName.equals(prop.getName())) {\n                            idProp = prop;\n                            /* Let\'s force it to be the first property to output\n                             * (although it may still get rearranged etc)\n                             */\n                            if (i > 0) { // note: must shuffle both regular properties and filtered\n                                System.arraycopy(_props, 0, _props, 1, i);\n                                _props[0] = idProp;\n                                if (_filteredProps != null) {\n                                    BeanPropertyWriter fp = _filteredProps[i];\n                                    System.arraycopy(_filteredProps, 0, _filteredProps, 1, i);\n                                    _filteredProps[0] = fp;\n                                }\n                            }\n                            break;\n                        }\n                    }\n                    idType = idProp.getType();\n                    gen = new PropertyBasedObjectIdGenerator(objectIdInfo, idProp);\n                    oiw = ObjectIdWriter.construct(idType, (PropertyName) null, gen, objectIdInfo.getAlwaysAsId());\n                } else { // other types need to be simpler\n                    gen = provider.objectIdGeneratorInstance(accessor, objectIdInfo);\n                    oiw = ObjectIdWriter.construct(idType, objectIdInfo.getPropertyName(), gen,\n                            objectIdInfo.getAlwaysAsId());\n                }\n            }\n            \n            // Or change Filter Id in use?\n            Object filterId = intr.findFilterId(accessor);\n            if (filterId != null) {\n                // but only consider case of adding a new filter id (no removal via annotation)\n                if (_propertyFilterId == null || !filterId.equals(_propertyFilterId)) {\n                    newFilterId = filterId;\n                }\n            }\n        }\n        // either way, need to resolve serializer:\n        BeanSerializerBase contextual = this;\n        if (oiw != null) {\n            JsonSerializer<?> ser = provider.findValueSerializer(oiw.idType, property);\n            oiw = oiw.withSerializer(ser);\n            if (oiw != _objectIdWriter) {\n                contextual = contextual.withObjectIdWriter(oiw);\n            }\n        }\n        // And possibly add more properties to ignore\n        if (ignorals != null && ignorals.length != 0) {\n            contextual = contextual.withIgnorals(ignorals);\n        }\n        if (newFilterId != null) {\n            contextual = contextual.withFilterId(newFilterId);\n        }\n        if (shape == null) {\n            shape = _serializationShape;\n        }\n        if (shape == JsonFormat.Shape.ARRAY) {\n            return contextual.asArraySerializer();\n        }\n        return contextual;\n    }', 'start_line': 383, 'end_line': 516, 'buggy_lines': [432, 433]}
+================== buggy_method_src ==================
+@SuppressWarnings("incomplete-switch")
+    @Override
+    public JsonSerializer<?> createContextual(SerializerProvider provider,
+            BeanProperty property)
+        throws JsonMappingException
+    {
+        final AnnotationIntrospector intr = provider.getAnnotationIntrospector();
+        final AnnotatedMember accessor = (property == null || intr == null)
+                ? null : property.getMember();
+        final SerializationConfig config = provider.getConfig();
+        
+        // Let's start with one big transmutation: Enums that are annotated
+        // to serialize as Objects may want to revert
+        JsonFormat.Shape shape = null;
+        if (accessor != null) {
+            JsonFormat.Value format = intr.findFormat((Annotated) accessor);
+
+            if (format != null) {
+                shape = format.getShape();
+                // or, alternatively, asked to revert "back to" other representations...
+                if (shape != _serializationShape) {
+                    if (_handledType.isEnum()) {
+                        switch (shape) {
+                        case STRING:
+                        case NUMBER:
+                        case NUMBER_INT:
+                            // 12-Oct-2014, tatu: May need to introspect full annotations... but
+                            //   for now, just do class ones
+                            BeanDescription desc = config.introspectClassAnnotations(_handledType);
+                            JsonSerializer<?> ser = EnumSerializer.construct(_handledType,
+                                    provider.getConfig(), desc, format);
+                            return provider.handlePrimaryContextualization(ser, property);
+                        }
+                    }
+                }
+            }
+        }
+
+        ObjectIdWriter oiw = _objectIdWriter;
+        String[] ignorals = null;
+        Object newFilterId = null;
+        
+        // Then we may have an override for Object Id
+        if (accessor != null) {
+            ignorals = intr.findPropertiesToIgnore(accessor, true);
+            ObjectIdInfo objectIdInfo = intr.findObjectIdInfo(accessor);
+            if (objectIdInfo == null) {
+                // no ObjectId override, but maybe ObjectIdRef?
+                if (oiw != null) {
+                    objectIdInfo = intr.findObjectReferenceInfo(accessor,
+                            new ObjectIdInfo(NAME_FOR_OBJECT_REF, null, null, null));
+                        oiw = _objectIdWriter.withAlwaysAsId(objectIdInfo.getAlwaysAsId());
+                }
+            } else {
+                // Ugh: mostly copied from BeanDeserializerBase: but can't easily change it
+                // to be able to move to SerializerProvider (where it really belongs)
+                
+                // 2.1: allow modifications by "id ref" annotations as well:
+                objectIdInfo = intr.findObjectReferenceInfo(accessor, objectIdInfo);
+                ObjectIdGenerator<?> gen;
+                Class<?> implClass = objectIdInfo.getGeneratorType();
+                JavaType type = provider.constructType(implClass);
+                JavaType idType = provider.getTypeFactory().findTypeParameters(type, ObjectIdGenerator.class)[0];
+                // Property-based generator is trickier
+                if (implClass == ObjectIdGenerators.PropertyGenerator.class) { // most special one, needs extra work
+                    String propName = objectIdInfo.getPropertyName().getSimpleName();
+                    BeanPropertyWriter idProp = null;
+
+                    for (int i = 0, len = _props.length ;; ++i) {
+                        if (i == len) {
+                            throw new IllegalArgumentException("Invalid Object Id definition for "+_handledType.getName()
+                                    +": can not find property with name '"+propName+"'");
+                        }
+                        BeanPropertyWriter prop = _props[i];
+                        if (propName.equals(prop.getName())) {
+                            idProp = prop;
+                            /* Let's force it to be the first property to output
+                             * (although it may still get rearranged etc)
+                             */
+                            if (i > 0) { // note: must shuffle both regular properties and filtered
+                                System.arraycopy(_props, 0, _props, 1, i);
+                                _props[0] = idProp;
+                                if (_filteredProps != null) {
+                                    BeanPropertyWriter fp = _filteredProps[i];
+                                    System.arraycopy(_filteredProps, 0, _filteredProps, 1, i);
+                                    _filteredProps[0] = fp;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                    idType = idProp.getType();
+                    gen = new PropertyBasedObjectIdGenerator(objectIdInfo, idProp);
+                    oiw = ObjectIdWriter.construct(idType, (PropertyName) null, gen, objectIdInfo.getAlwaysAsId());
+                } else { // other types need to be simpler
+                    gen = provider.objectIdGeneratorInstance(accessor, objectIdInfo);
+                    oiw = ObjectIdWriter.construct(idType, objectIdInfo.getPropertyName(), gen,
+                            objectIdInfo.getAlwaysAsId());
+                }
+            }
+            
+            // Or change Filter Id in use?
+            Object filterId = intr.findFilterId(accessor);
+            if (filterId != null) {
+                // but only consider case of adding a new filter id (no removal via annotation)
+                if (_propertyFilterId == null || !filterId.equals(_propertyFilterId)) {
+                    newFilterId = filterId;
+                }
+            }
+        }
+        // either way, need to resolve serializer:
+        BeanSerializerBase contextual = this;
+        if (oiw != null) {
+            JsonSerializer<?> ser = provider.findValueSerializer(oiw.idType, property);
+            oiw = oiw.withSerializer(ser);
+            if (oiw != _objectIdWriter) {
+                contextual = contextual.withObjectIdWriter(oiw);
+            }
+        }
+        // And possibly add more properties to ignore
+        if (ignorals != null && ignorals.length != 0) {
+            contextual = contextual.withIgnorals(ignorals);
+        }
+        if (newFilterId != null) {
+            contextual = contextual.withFilterId(newFilterId);
+        }
+        if (shape == null) {
+            shape = _serializationShape;
+        }
+        if (shape == JsonFormat.Shape.ARRAY) {
+            return contextual.asArraySerializer();
+        }
+        return contextual;
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.objectid.AlwaysAsReferenceFirstTest::testIssue1607
+junit.framework.ComparisonFailure: expected:<{"alwaysClass":[1],"alwaysProp":2}> but was:<{"alwaysClass":[{"id":1,"value":13}],"alwaysProp":2}>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.Assert.assertEquals(Assert.java:107)
+	at junit.framework.TestCase.assertEquals(TestCase.java:269)
+	at com.fasterxml.jackson.databind.objectid.AlwaysAsReferenceFirstTest.testIssue1607(AlwaysAsReferenceFirstTest.java:82)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals(aposToQuotes("{'alwaysClass':1,'alwaysProp':2}"), json);
+
+================== buggy_lines_in_method ==================
+[50, 51]
+================== buggy_statements ==================
+['                    objectIdInfo = intr.findObjectReferenceInfo(accessor,', '                            new ObjectIdInfo(NAME_FOR_OBJECT_REF, null, null, null));']
+================== buggy_method_src_endswith_buggy_statement ==================
+@SuppressWarnings("incomplete-switch")
+    @Override
+    public JsonSerializer<?> createContextual(SerializerProvider provider,
+            BeanProperty property)
+        throws JsonMappingException
+    {
+        final AnnotationIntrospector intr = provider.getAnnotationIntrospector();
+        final AnnotatedMember accessor = (property == null || intr == null)
+                ? null : property.getMember();
+        final SerializationConfig config = provider.getConfig();
+        
+        // Let's start with one big transmutation: Enums that are annotated
+        // to serialize as Objects may want to revert
+        JsonFormat.Shape shape = null;
+        if (accessor != null) {
+            JsonFormat.Value format = intr.findFormat((Annotated) accessor);
+
+            if (format != null) {
+                shape = format.getShape();
+                // or, alternatively, asked to revert "back to" other representations...
+                if (shape != _serializationShape) {
+                    if (_handledType.isEnum()) {
+                        switch (shape) {
+                        case STRING:
+                        case NUMBER:
+                        case NUMBER_INT:
+                            // 12-Oct-2014, tatu: May need to introspect full annotations... but
+                            //   for now, just do class ones
+                            BeanDescription desc = config.introspectClassAnnotations(_handledType);
+                            JsonSerializer<?> ser = EnumSerializer.construct(_handledType,
+                                    provider.getConfig(), desc, format);
+                            return provider.handlePrimaryContextualization(ser, property);
+                        }
+                    }
+                }
+            }
+        }
+
+        ObjectIdWriter oiw = _objectIdWriter;
+        String[] ignorals = null;
+        Object newFilterId = null;
+        
+        // Then we may have an override for Object Id
+        if (accessor != null) {
+            ignorals = intr.findPropertiesToIgnore(accessor, true);
+            ObjectIdInfo objectIdInfo = intr.findObjectIdInfo(accessor);
+            if (objectIdInfo == null) {
+                // no ObjectId override, but maybe ObjectIdRef?
+                if (oiw != null) {
+                    objectIdInfo = intr.findObjectReferenceInfo(accessor,
+                            new ObjectIdInfo(NAME_FOR_OBJECT_REF, null, null, null));

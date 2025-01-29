@@ -1,0 +1,174 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "3",
+            "ernie-3.5-128k": "**3**",
+            "qwen-turbo": "3",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "3"
+        },
+        "prompt_fl_2": {
+            "qwen-turbo": "864",
+            "ernie-3.5-128k": "864",
+            "doubao-pro-4k": "1",
+            "gpt-4o-mini": "864",
+            "deepseek-chat": "1"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "864",
+            "ernie-3.5-128k": "864",
+            "deepseek-chat": "864",
+            "gpt-4o-mini": "864"
+        },
+        "prompt_fl_4": {
+            "doubao-pro-4k": "start.nameAttr(name, attrs);",
+            "qwen-turbo": "start.nameAttr(name, attrs);",
+            "ernie-3.5-128k": "start.nameAttr(name, attrs);",
+            "deepseek-chat": "start.reset();",
+            "gpt-4o-mini": "start.reset();"
+        },
+        "prompt_fl_5": {
+            "doubao-pro-4k": "start.nameAttr(name, attrs);",
+            "qwen-turbo": "start.nameAttr(name, attrs);",
+            "ernie-3.5-128k": "start.nameAttr(name, attrs);",
+            "deepseek-chat": "return process(start);",
+            "gpt-4o-mini": "start.reset();"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "assertTrue(\"Search text did not come after comment\", guarantee > endOfEmail);",
+            "ernie-3.5-128k": "assertTrue(\"Search text did not come after comment\", guarantee > endOfEmail);",
+            "deepseek-chat": "assertTrue(\"Search text did not come after comment\", guarantee > endOfEmail);",
+            "doubao-pro-4k": "assertTrue(\"Search text did not come after comment\", guarantee > endOfEmail);",
+            "gpt-4o-mini": "guarantee > endOfEmail"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "Certainly, without seeing the rest of the code and knowing exactly what the `start` object is and what methods it contains, I will make an educated guess based on common issues. It seems like there might be an issue with how the `start` object is being reset or used. Here's a possible correction:\n\n```java\npublic boolean processStartTag(String name, Attributes attrs) {\n    start.reset(); // Ensure this method exists and properly resets the state\n    start.nameAttr(name, attrs); // Ensure this method correctly sets the attributes\n    return process(start); // Ensure that the process method correctly handles the start object\n}\n```\n\nIf the `reset` method is not defined or if `nameAttr` is supposed to do something different, you may need to adjust those parts. If `start` is a mutable object (like a StringBuilder or some custom class), ensure all necessary fields are reset properly in the `reset` method.\n\nHere\u2019s an example assuming `start` is a custom class with appropriate methods:\n\n```java\npublic boolean processStartTag(String name, Attributes attrs) {\n    start.reset(); // Ensure this method exists and properly resets the state\n    start.nameAttr(name, attrs); // Ensure this method correctly sets the attributes\n    return process(start); // Ensure that the process method correctly handles the start object\n}\n```\n\nIf `start` needs to be reinitialized, you might want to replace `reset()` with `start = new StartClass();` depending on your class structure. Please adapt the code according to your specific implementation details.",
+            "gpt-4o-mini": "public boolean processStartTag(String name, Attributes attrs) {\n    if (start == null) {\n        // Ensure 'start' is properly initialized before calling methods on it\n        start = new SomeClass();  // Replace SomeClass with the appropriate class type for 'start'\n    }\n    start.reset();\n    start.nameAttr(name, attrs);\n    return process(start);\n}",
+            "deepseek-chat": "The bug in the code is likely related to the `start.reset()` method call. If `start` is an object that needs to be reset before processing a new start tag, the method should ensure that the reset operation is performed correctly. Here is the corrected method:\n\n```java\npublic boolean processStartTag(String name, Attributes attrs) {\n    if (start != null) {\n        start.reset();\n    }\n    start.nameAttr(name, attrs);\n    return process(start);\n}\n```\n\nThis version of the method checks if `start` is not null before calling `reset()`, which prevents a potential `NullPointerException` if `start` is not initialized. If `start` is null, the method will proceed to call `nameAttr` and `process` without resetting, which might be the intended behavior depending on the context. If `start` should always be initialized before this method is called, you might want to add additional checks or initialization logic.",
+            "doubao-pro-4k": "public boolean processStartTag(String name, Attributes attrs) {\n    start.reset();\n    start.nameAttr(name, attrs);\n    return process(start);\n}",
+            "ernie-3.5-128k": "To provide a complete and corrected method, I need to make an assumption about the context and types involved, since the code snippet you provided is somewhat isolated. Based on the provided code, it seems like `start` is an object that has a `reset()` method and a `nameAttr(String, Attributes)` method, and `process(someType)` is another method being called.\n\nHere's a possible correction, assuming `start` is of a type that is appropriately defined and `process` takes the correct type of argument:\n\n```java\npublic boolean processStartTag(String name, Attributes attrs) {\n    // Assuming 'start' is an instance of a class that has 'reset()' and 'nameAttr(String, Attributes)' methods\n    // and assuming 'process' is a method that takes the type of object 'start' is reset to or modified into.\n    start.reset();\n    start.nameAttr(name, attrs);\n    // Ensure 'process' is correctly receiving the type of object 'start' is\n    return process(start);\n}\n```\n\n**Key Points to Consider**:\n1. **Ensure `start` is Correctly Initialized**: Make sure `start` is initialized before this method is called. If `start` is a local variable or not properly initialized elsewhere, you will need to handle that.\n2. **Correct Type for `process` Method**: Ensure that the `process` method can accept the type of object that `start` is. If `start` is of a specific class, then `process` should accept that class type as a parameter.\n3. **Imports and Class Definitions**: Make sure all necessary imports and class definitions are in place. For example, `Attributes` should be imported from the appropriate package, usually `org.xml.sax.Attributes`.\n\nHere's a more contextually complete example, assuming some typical use cases:\n\n```java\nimport org.xml.sax.Attributes;\n\n// Assuming some class definitions\nclass StartTagProcessor {\n    // Assuming 'start' is an instance of some class, let's call it TagBuilder\n    private TagBuilder start;\n\n    // Constructor to initialize 'start'\n    public StartTagProcessor() {\n        this.start = new TagBuilder();\n    }\n\n    public boolean processStartTag(String name, Attributes attrs) {\n        start.reset();\n        start.nameAttr(name, attrs);\n        return process(start);\n    }\n\n    // Method to process the TagBuilder instance\n    private boolean process(TagBuilder tag) {\n        // Implement the processing logic here\n        // For example, print out the tag name and attributes\n        System.out.println(\"Tag Name: \" + tag.getName());\n        // Assume TagBuilder has a method to get attributes and print them\n        tag.getAttributes().forEach((key, value) -> System.out.println(key + \" = \" + value));\n        // Return true or false based on processing result\n        return true; // Placeholder for actual logic\n    }\n}\n\n// Assuming TagBuilder class\nclass TagBuilder {\n    private String name;\n    private Map<String, String> attributes;\n\n    public TagBuilder() {\n        this.attributes = new HashMap<>();\n    }\n\n    public void reset() {\n        this.name = null;\n        this.attributes.clear();\n    }\n\n    public void nameAttr(String name, Attributes attrs) {\n        this.name = name;\n        // Convert SAX Attributes to a simple Map\n        for (int i = 0; i < attrs.getLength(); i++) {\n            this.attributes.put(attrs.getLocalName(i), attrs.getValue(i));\n        }\n    }\n\n    public String getName() {\n        return name;\n    }\n\n    public Map<String, String> getAttributes() {\n        return attributes;\n    }\n}\n```\n\nIn this example, `StartTagProcessor` handles the processing of start tags, and `TagBuilder` is a helper class to build and hold the tag information. The `process` method in `StartTagProcessor` processes the `TagBuilder` instance. Adjust the class names and methods as per your actual implementation details."
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\npublic boolean processStartTag(String name, Attributes attrs) {\n    start.reset();\n    start.nameAttr(name, attrs);\n    return process(start);\n}\n```\n\nThe provided code snippet does not contain an apparent bug. The method `processStartTag` appears to correctly reset an object `start`, set some attributes using `nameAttr`, and then process `start`. If there is a specific issue or error message you're encountering, please provide more details so I can address that particular problem.",
+            "doubao-pro-4k": "public boolean processStartTag(String name, Attributes attrs) {\n        start.reset();\n        start.nameAttr(name, attrs);\n        return process(start);\n    }",
+            "deepseek-chat": "public boolean processStartTag(String name, Attributes attrs) {\n    start.reset();\n    start.nameAttr(name, attrs);\n    return process(start);\n}",
+            "gpt-4o-mini": "public boolean processStartTag(String name, Attributes attrs) {\n    start.reset();\n    start.nameAttr(name, attrs);\n    return process(start);\n}",
+            "ernie-3.5-128k": "Sure, it seems like the issue you're pointing out is the incorrect placement of the closing brace `}` for the method. Here is the complete corrected method:\n\npublic boolean processStartTag(String name, Attributes attrs) {\n    start.reset();\n    start.nameAttr(name, attrs);\n    return process(start);\n}"
+        },
+        "prompt_apr_3": {
+            "doubao-pro-4k": "Please provide the specific code that needs to be fixed so that I can assist you.",
+            "qwen-turbo": "```java\npublic void processList(List<Integer> numbers) {\n    for (Integer number : numbers) {\n        if (number % 2 == 0) {\n            System.out.println(number + \" is even\");\n        } else {\n            System.out.println(number + \" is odd\");\n        }\n    }\n}\n```",
+            "ernie-3.5-128k": "Sure, here's the corrected code snippet based on your instructions:\n\npublic void someMethod() {\n    // Some code here\n\n    if (someCondition) {\n        // Some logic here\n    } else {\n        // Fixed statement\n        return;\n    }\n}",
+            "gpt-4o-mini": "public void someMethod() {\n    if (someCondition) {\n        // some code\n    } else if (otherCondition) {\n        // some other code\n    } else {\n        return; // Fixed statement: Ensure 'return' is valid in the method context\n    }\n}",
+            "deepseek-chat": "```java\npublic void processData(List<String> data) {\n    if (data == null || data.isEmpty()) {\n        throw new IllegalArgumentException(\"Data cannot be null or empty\");\n    }\n    \n    for (String item : data) {\n        if (item == null) {\n            throw new IllegalArgumentException(\"Item in data list cannot be null\");\n        }\n        // Process the item\n    }\n    \n    // Buggy statement\n    System.out.println(\"Processing completed for \" + data.size() + \" items.\");\n}\n```"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"        start = new StringBuilder();\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 0,\n        \"fixed_statement\": \"start.reset(); start.nameAttr(name, attrs); return process(start);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 0,\n        \"fixed_statement\": \"public boolean processStartTag(String name, Attributes attrs) throws SAXException {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 0,\n        \"fixed_statement\": \"public boolean processStartTag(String name, Attributes attrs) {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 0,\n        \"fixed_statement\": \"start = new StartTag()\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"}\"\n    }\n]",
+            "qwen-turbo": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"        start.reset();\"\n    },\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"        start.nameAttr(name, attrs);\"\n    },\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"        return process(start);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"    }\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"public boolean processStartTag(String name, Attributes attrs) {\"\n    },\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"        start.reset();\"\n    },\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"        start.nameAttr(name, attrs);\"\n    },\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"        return process(start);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"return process(start);\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"result = result + num\"\n    }\n]",
+            "doubao-pro-4k": "Please provide the buggy code so that I can fix it and return the JSON array as required.",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": <BUGGY_LINE_NUMBER>,\n        \"fixed_statement\": \"<CORRECTED_STATEMENT>\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"result = 10 / 2\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"def calculate_sum(a, b):\"\n    },\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"    return a + b\"\n    },\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"result = calculate_sum(5, 10)\"\n    },\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"print(result)\"\n    }\n]"
+        }
+    },
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "3",
+            "qwen-turbo": "2",
+            "ernie-3.5-128k": "**3**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "6"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "864",
+            "ernie-3.5-128k": "864",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "864"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "864",
+            "ernie-3.5-128k": "864",
+            "deepseek-chat": "864",
+            "gpt-4o-mini": "864"
+        },
+        "prompt_fl_4": {
+            "doubao-pro-4k": "return process(end.reset().name(name));",
+            "qwen-turbo": "return process(end.reset().name(name));",
+            "deepseek-chat": "return process(end.reset().name(name));",
+            "ernie-3.5-128k": "protected boolean processEndTag(String name) { return process(end.reset().name(name)); }",
+            "gpt-4o-mini": "return process(end.reset().name(name));"
+        },
+        "prompt_fl_5": {
+            "doubao-pro-4k": "process(end.reset().name(name));",
+            "qwen-turbo": "processEndTag(\"comment\")",
+            "ernie-3.5-128k": "protected boolean processEndTag(String name) {",
+            "deepseek-chat": "protected boolean processEndTag(String name) {\n        return process(end.reset().name(name));\n    }",
+            "gpt-4o-mini": "assertTrue(Assert.java:41)"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "assertTrue(\"Search text did not come after comment\", guarantee > endOfEmail);",
+            "doubao-pro-4k": "assertTrue(\"Search text did not come after comment\", guarantee > endOfEmail);",
+            "ernie-3.5-128k": "assertTrue(\"Search text did not come after comment\", guarantee > endOfEmail);",
+            "deepseek-chat": "assertTrue(\"Search text did not come after comment\", guarantee > endOfEmail);",
+            "gpt-4o-mini": "assertTrue(\"Search text did not come after comment\", guarantee < endOfEmail);"
+        },
+        "prompt_apr_1": {
+            "doubao-pro-4k": "protected boolean processEndTag(String name) {\n    return process(end.reset().name(name));\n}",
+            "qwen-turbo": "```java\nprotected boolean processEndTag(String name) {\n    return process(end.reset().name(name).build());\n}\n```\n\nIn this correction, I've added `.build()` to the `end.reset().name(name)` chain assuming that `end` is some kind of builder or mutable object that requires building to finalize the operation. This is necessary if `end.reset().name(name)` does not return a fully formed object that can be processed by the `process` method. If `end` is already an immutable object or does not require building, you would need to adjust according to the actual implementation details of `end`.",
+            "gpt-4o-mini": "protected boolean processEndTag(String name) {\n    return process(end().reset().name(name));\n}",
+            "deepseek-chat": "The bug in the code is likely related to the `reset()` method being called on the `end` object. If `end` is a mutable object, calling `reset()` might not be the intended behavior, or it might not be necessary. Assuming `end` is an instance of a class that has a `name(String)` method and a `reset()` method, the corrected method should ensure that the `end` object is properly reset before setting the name.\n\nHere is the complete corrected method:\n\nprotected boolean processEndTag(String name) {\n    end.reset(); // Reset the end object first\n    end.name(name); // Set the name\n    return process(end); // Process the end object\n}\n\nThis ensures that the `end` object is reset and then the name is set before passing it to the `process` method.",
+            "ernie-3.5-128k": "Sure, here is the corrected method. The issue seems to be that the `end` object is being used without being properly initialized or defined. Assuming `end` is an instance of some class that has a `reset()` and `name(String)` method, we should ensure that `end` is defined and properly initialized before using it. Since the context of `end` is not fully provided, I'll assume it's an instance variable of the same class where this method is defined. Here's the corrected method:\n\nprotected boolean processEndTag(String name) {\n    // Assuming end is an instance variable of the class and it's of a type that supports reset() and name(String) methods.\n    // If end is not initialized, initialize it here or in the constructor of the class.\n    // For example: private SomeType end = new SomeType();\n    \n    return process(end.reset().name(name));\n}\n\nMake sure that the class where this method is defined has a properly initialized `end` object. If `end` is supposed to be initialized elsewhere, ensure that happens before this method is called."
+        },
+        "prompt_apr_2": {
+            "doubao-pro-4k": "protected boolean processEndTag(String name) {\n    return process(end.reset().name(name));\n}",
+            "qwen-turbo": "```java\nprotected boolean processEndTag(String name) {\n    return process(end.reset().name(name).build());\n}\n```\n\nIn the original code, the `end` object likely needs to be built after setting its properties. The addition of `.build()` ensures that the end tag configuration is properly finalized and ready for processing.",
+            "gpt-4o-mini": "protected boolean processEndTag(String name) {\n    if (name == null || name.isEmpty()) {\n        throw new IllegalArgumentException(\"Tag name cannot be null or empty\");\n    }\n    return process(end.reset().name(name));\n}",
+            "deepseek-chat": "The bug in the method `processEndTag(String name)` is likely related to the improper handling of the `end` object or the `reset()` method. Assuming `end` is an instance of a class that has a `reset()` method and a `name(String)` method, the corrected method should ensure that the `end` object is properly reset and configured before processing. Here is the complete corrected method:\n\nprotected boolean processEndTag(String name) {\n    if (end == null) {\n        throw new IllegalStateException(\"End tag processor is not initialized.\");\n    }\n    end.reset();\n    end.name(name);\n    return process(end);\n}\n\nThis corrected method ensures that the `end` object is not null, resets it, sets the name, and then processes it. This should fix any issues related to improper state handling.",
+            "ernie-3.5-128k": "Certainly! To help you fix the bug in the method `processEndTag(String name)`, I need to make a few assumptions based on the provided snippet. It seems like you are using a `Matcher` object named `end` and calling its `reset()` and `name(String)` methods. However, the `Matcher` class in Java does not have a `name(String)` method. I'll assume you want to match a specific end tag and you're using a `Pattern` object to create the `Matcher`.\n\nHere's a corrected version of the method. I'll assume you have a `Pattern` object named `endPattern` that you use to create the `Matcher` and check if the input `name` matches:\n\n```java\nprotected boolean processEndTag(String name) {\n    // Assuming endPattern is a Pattern object that matches the end tag pattern\n    Matcher matcher = endPattern.matcher(\"</\" + name + \">\");\n    return process(matcher.find());\n}\n\n// Assuming process is defined somewhere as:\n// protected boolean process(boolean matchResult) {\n//     // Your implementation here\n// }\n\n// And endPattern is defined somewhere as:\n// private static final Pattern endPattern = Pattern.compile(\"</([a-zA-Z]+)>\");\n```\n\nIn this corrected version:\n1. We create a `Matcher` object using `endPattern.matcher(\"</\" + name + \">\")` to form the correct end tag string.\n2. We call `matcher.find()` to check if the pattern matches the constructed end tag string.\n3. We return the result of `process(matcher.find())`, assuming `process` is a method that takes a boolean and returns a boolean.\n\nMake sure you have the `endPattern` defined correctly and the `process` method implemented according to your needs. If the `process` method takes a `Matcher` instead of a boolean, you should adjust the code accordingly."
+        },
+        "prompt_apr_3": {
+            "ernie-3.5-128k": "protected boolean processEndTag(String name) {",
+            "doubao-pro-4k": "protected boolean processEndTag(String name) {\n    // Buggy code here\n    return false; \n}",
+            "qwen-turbo": "```java\nprotected boolean processEndTag(String name) {\n    if (currentElement != null && currentElement.getName().equals(name)) {\n        currentElement = currentElement.getParent();\n        return true;\n    }\n```",
+            "deepseek-chat": "protected boolean processEndTag(String name) {\n    if (name == null) {\n        return false;\n    }\n    // Other logic here...\n    return true;\n}",
+            "gpt-4o-mini": "protected boolean processEndTag(String name) {\n    if (name == null || name.isEmpty()) {\n        return false;\n    }\n    // Fix the bug in the following line\n    if (name.equalsIgnoreCase(\"someTag\")) {\n        return true;\n    }\n    return false;\n}"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"return process(end.reset().name(name).build());\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"protected boolean processEndTag(String name) { return process(end.reset().name(name)); }\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"protected boolean processEndTag(String name) { return process(end.reset().name(name).end()); }\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"protected boolean processEndTag(String name) { return process(new EndTag().reset().name(name)); }\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"return process(end.reset().name(name));\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"protected boolean processEndTag(String name) {\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"protected boolean processEndTag(String name) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"protected boolean processEndTag(String name) {\\n        EndTag endTag = new EndTag();\\n        return process(endTag.reset().name(name));\\n    }\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"protected boolean processEndTag(String name) { return process(end.reset().name(name)); }\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"protected boolean processEndTag(String name) {\"\n    },\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"    return process(end.reset().name(name));\"\n    },\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"}\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"if (name == null) { return false; }\"\n    },\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return true;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"protected boolean processEndTag(String name) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"protected boolean processEndTag(String name) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"protected boolean processEndTag(String name) { return false; }\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"protected boolean processEndTag(String name) {\"\n    }\n]"
+        }
+    }
+]

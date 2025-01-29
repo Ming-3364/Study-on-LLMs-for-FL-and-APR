@@ -1,0 +1,179 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/core/json/UTF8StreamJsonParser.java
+================== buggy_method ==================
+{'method_name': '_skipWSOrEnd', 'method_body': "private int _skipWSOrEnd() throws IOException\n    {\n        final int[] codes = _icWS;\n        while ((_inputPtr < _inputEnd) || loadMore()) {\n            final int i = _inputBuffer[_inputPtr++] & 0xFF;\n            switch (codes[i]) {\n            case 0: // done!\n                return i;\n            case 1: // skip\n                continue;\n            case 2: // 2-byte UTF\n                _skipUtf8_2(i);\n                break;\n            case 3: // 3-byte UTF\n                _skipUtf8_3(i);\n                break;\n            case 4: // 4-byte UTF\n                _skipUtf8_4(i);\n                break;\n            case INT_LF:\n                ++_currInputRow;\n                _currInputRowStart = _inputPtr;\n                break;\n            case INT_CR:\n                _skipCR();\n                break;\n            case '/':\n                _skipComment();\n                break;\n            case '#':\n                if (!_skipYAMLComment()) {\n                    return i;\n                }\n                break;\n            default: // e.g. -1\n                if (i < 32) {\n                    _throwInvalidSpace(i);\n                }\n                _reportInvalidChar(i);\n            }\n        }\n        // We ran out of input...\n        _handleEOF();\n        return -1;\n    }", 'start_line': 2540, 'end_line': 2584, 'buggy_lines': [2575, 2576, 2577]}
+================== buggy_method_src ==================
+private int _skipWSOrEnd() throws IOException
+    {
+        final int[] codes = _icWS;
+        while ((_inputPtr < _inputEnd) || loadMore()) {
+            final int i = _inputBuffer[_inputPtr++] & 0xFF;
+            switch (codes[i]) {
+            case 0: // done!
+                return i;
+            case 1: // skip
+                continue;
+            case 2: // 2-byte UTF
+                _skipUtf8_2(i);
+                break;
+            case 3: // 3-byte UTF
+                _skipUtf8_3(i);
+                break;
+            case 4: // 4-byte UTF
+                _skipUtf8_4(i);
+                break;
+            case INT_LF:
+                ++_currInputRow;
+                _currInputRowStart = _inputPtr;
+                break;
+            case INT_CR:
+                _skipCR();
+                break;
+            case '/':
+                _skipComment();
+                break;
+            case '#':
+                if (!_skipYAMLComment()) {
+                    return i;
+                }
+                break;
+            default: // e.g. -1
+                if (i < 32) {
+                    _throwInvalidSpace(i);
+                }
+                _reportInvalidChar(i);
+            }
+        }
+        // We ran out of input...
+        _handleEOF();
+        return -1;
+    }
+================== test_stack ==================
+com.fasterxml.jackson.core.json.TestParserErrorHandling::testMangledNumbersBytes
+junit.framework.AssertionFailedError: Should have gotten an exception; instead got token: VALUE_NUMBER_INT
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.TestCase.fail(TestCase.java:227)
+	at com.fasterxml.jackson.core.json.TestParserErrorHandling._testMangledNumbers(TestParserErrorHandling.java:93)
+	at com.fasterxml.jackson.core.json.TestParserErrorHandling.testMangledNumbersBytes(TestParserErrorHandling.java:22)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.core.json.TestParserErrorHandling::testMangledNumbersChars
+junit.framework.AssertionFailedError: Should have gotten an exception; instead got token: VALUE_NUMBER_INT
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.TestCase.fail(TestCase.java:227)
+	at com.fasterxml.jackson.core.json.TestParserErrorHandling._testMangledNumbers(TestParserErrorHandling.java:93)
+	at com.fasterxml.jackson.core.json.TestParserErrorHandling.testMangledNumbersChars(TestParserErrorHandling.java:26)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+_testMangledNumbers(true);
+
+================== buggy_lines_in_method ==================
+[36, 37, 38]
+================== buggy_statements ==================
+['                if (i < 32) {', '                    _throwInvalidSpace(i);', '                }']
+================== buggy_method_src_endswith_buggy_statement ==================
+private int _skipWSOrEnd() throws IOException
+    {
+        final int[] codes = _icWS;
+        while ((_inputPtr < _inputEnd) || loadMore()) {
+            final int i = _inputBuffer[_inputPtr++] & 0xFF;
+            switch (codes[i]) {
+            case 0: // done!
+                return i;
+            case 1: // skip
+                continue;
+            case 2: // 2-byte UTF
+                _skipUtf8_2(i);
+                break;
+            case 3: // 3-byte UTF
+                _skipUtf8_3(i);
+                break;
+            case 4: // 4-byte UTF
+                _skipUtf8_4(i);
+                break;
+            case INT_LF:
+                ++_currInputRow;
+                _currInputRowStart = _inputPtr;
+                break;
+            case INT_CR:
+                _skipCR();
+                break;
+            case '/':
+                _skipComment();
+                break;
+            case '#':
+                if (!_skipYAMLComment()) {
+                    return i;
+                }
+                break;
+            default: // e.g. -1
+                if (i < 32) {
+                    _throwInvalidSpace(i);
+                }

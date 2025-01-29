@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "11",
+            "qwen-turbo": "4",
+            "deepseek-chat": "8",
+            "gpt-4o-mini": "18",
+            "ernie-3.5-128k": "**10**"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "97",
+            "qwen-turbo": "100",
+            "deepseek-chat": "100",
+            "ernie-3.5-128k": "**100**",
+            "gpt-4o-mini": "100"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "99",
+            "qwen-turbo": "100",
+            "ernie-3.5-128k": "**100**",
+            "deepseek-chat": "100",
+            "gpt-4o-mini": "100"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "throw new AssertionError();",
+            "doubao-pro-4k": "throw new AssertionError();",
+            "ernie-3.5-128k": "throw new AssertionError();",
+            "deepseek-chat": "Date date = deserializeToDate(in.nextString());",
+            "gpt-4o-mini": "if (dateType == Date.class) {"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "in.peek() != JsonToken.STRING",
+            "doubao-pro-4k": "if (in.peek()!= JsonToken.STRING) {",
+            "deepseek-chat": "if (in.peek() != JsonToken.STRING) {\n    throw new JsonParseException(\"The date should be a string value\");\n}",
+            "ernie-3.5-128k": "if (in.peek() != JsonToken.STRING) {",
+            "gpt-4o-mini": "if (in.peek() != JsonToken.STRING) {"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "adapter.fromJson(\"{}\");",
+            "doubao-pro-4k": "adapter.fromJson(\"{}\");",
+            "ernie-3.5-128k": "adapter.fromJson(\"{}\");",
+            "deepseek-chat": "adapter.fromJson(\"{}\");",
+            "gpt-4o-mini": "if (in.peek() != JsonToken.STRING) {"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "Sure, here is the corrected version of your method:\n\n```java\n@Override\npublic Date read(JsonReader in) throws IOException {\n    if (in.peek() != JsonToken.STRING) {\n        throw new JsonParseException(\"The date should be a string value\");\n    }\n    Date date = deserializeToDate(in.nextString());\n    if (dateType.equals(Date.class)) {\n        return date;\n    } else if (dateType.equals(Timestamp.class)) {\n        return new Timestamp(date.getTime());\n    } else if (dateType.equals(java.sql.Date.class)) {\n        return new java.sql.Date(date.getTime());\n    } else {\n        // This must never happen: dateType is guarded in the primary constructor\n        throw new AssertionError();\n    }\n}\n```\n\nChanges made:\n1. Replaced `==` with `.equals()` for comparing `Class` objects to ensure proper type comparison.",
+            "gpt-4o-mini": "@Override\n  public Date read(JsonReader in) throws IOException {\n    if (in.peek() != JsonToken.STRING) {\n      throw new JsonParseException(\"The date should be a string value\");\n    }\n    String dateString = in.nextString(); // Capture the date string\n    Date date = deserializeToDate(dateString); // Deserialize the date using the string\n    if (dateType == Date.class) {\n      return date;\n    } else if (dateType == Timestamp.class) {\n      return new Timestamp(date.getTime());\n    } else if (dateType == java.sql.Date.class) {\n      return new java.sql.Date(date.getTime());\n    } else {\n      // This must never happen: dateType is guarded in the primary constructor\n      throw new AssertionError();\n    }\n  }",
+            "deepseek-chat": "@Override\n  public Date read(JsonReader in) throws IOException {\n    if (in.peek() != JsonToken.STRING) {\n      throw new JsonParseException(\"The date should be a string value\");\n    }\n    String dateString = in.nextString();\n    Date date = deserializeToDate(dateString);\n    if (dateType == Date.class) {\n      return date;\n    } else if (dateType == Timestamp.class) {\n      return new Timestamp(date.getTime());\n    } else if (dateType == java.sql.Date.class) {\n      return new java.sql.Date(date.getTime());\n    } else {\n      // This must never happen: dateType is guarded in the primary constructor\n      throw new AssertionError();\n    }\n  }\n\nThe bug in lines [3, 4] was that the `in.nextString()` method was being called directly within the `deserializeToDate` method call. This could lead to issues if `deserializeToDate` throws an exception, as the string value would already be consumed from the `JsonReader`. The fix involves first storing the string value in a variable (`dateString`) and then passing that variable to `deserializeToDate`. This ensures that the string value is safely stored before any potential exceptions are thrown.",
+            "doubao-pro-4k": "@Override\npublic Date read(JsonReader in) throws IOException {\n    if (in.peek() == JsonToken.STRING) {\n        Date date = deserializeToDate(in.nextString());\n        if (dateType == Date.class) {\n            return date;\n        } else if (dateType == Timestamp.class) {\n            return new Timestamp(date.getTime());\n        } else if (dateType == java.sql.Date.class) {\n            return new java.sql.Date(date.getTime());\n        } else {\n            // This must never happen: dateType is guarded in the primary constructor\n            throw new AssertionError();\n        }\n    } else {\n        throw new JsonParseException(\"The date should be a string value\");\n    }\n}",
+            "ernie-3.5-128k": "Sure, here is the corrected method with the bug fixed:\n\npublic Date read(JsonReader in) throws IOException {\n    JsonToken token = in.peek();\n    if (token != JsonToken.STRING && token != JsonToken.NULL) {\n      throw new JsonParseException(\"The date should be a string value\");\n    }\n    if (token == JsonToken.NULL) {\n      return null; // Handle null case if needed, based on your requirement\n    }\n    String dateStr = in.nextString();\n    Date date = deserializeToDate(dateStr);\n    if (dateType == Date.class) {\n      return date;\n    } else if (dateType == Timestamp.class) {\n      return new Timestamp(date.getTime());\n    } else if (dateType == java.sql.Date.class) {\n      return new java.sql.Date(date.getTime());\n    } else {\n      // This must never happen: dateType is guarded in the primary constructor\n      throw new AssertionError();\n    }\n  }\n\nIn this corrected version, I've added a check for `JsonToken.NULL` to properly handle null values in JSON input. The previous code would throw an exception if it encountered a null value instead of a string. Depending on your requirements, you might want to handle the null case differently (e.g., by returning `null` or throwing a different type of exception)."
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "Certainly, here is the corrected method:\n\n```java\n@Override\npublic Date read(JsonReader in) throws IOException {\n    if (in.peek() != JsonToken.STRING) {\n        throw new JsonParseException(\"The date should be a string value\");\n    }\n    Date date = deserializeToDate(in.nextString());\n    if (dateType == Date.class) {\n        return date;\n    } else if (dateType == Timestamp.class) {\n        return new Timestamp(date.getTime());\n    } else if (dateType == java.sql.Date.class) {\n        return new java.sql.Date(date.getTime());\n    } else {\n        // This must never happen: dateType is guarded in the primary constructor\n        throw new AssertionError();\n    }\n}\n```\n\nThe provided code snippet appears to be correct and does not contain an evident bug in the mentioned lines. The check for `JsonToken.STRING` and the subsequent exception handling seem appropriate for ensuring that the input is a string. If you have specific concerns or additional context about the issue, please let me know so I can address them accordingly.",
+            "deepseek-chat": "@Override\n  public Date read(JsonReader in) throws IOException {\n    if (in.peek() == JsonToken.NULL) {\n      in.nextNull();\n      return null;\n    }\n    if (in.peek() != JsonToken.STRING) {\n      throw new JsonParseException(\"The date should be a string value\");\n    }\n    Date date = deserializeToDate(in.nextString());\n    if (dateType == Date.class) {\n      return date;\n    } else if (dateType == Timestamp.class) {\n      return new Timestamp(date.getTime());\n    } else if (dateType == java.sql.Date.class) {\n      return new java.sql.Date(date.getTime());\n    } else {\n      // This must never happen: dateType is guarded in the primary constructor\n      throw new AssertionError();\n    }\n  }",
+            "gpt-4o-mini": "@Override\n  public Date read(JsonReader in) throws IOException {\n    // Ensure the token is a string or a number (for ISO 8601 formats)\n    JsonToken token = in.peek();\n    if (token != JsonToken.STRING && token != JsonToken.NUMBER) {\n      throw new JsonParseException(\"The date should be a string or number value\");\n    }\n\n    String dateString = in.nextString();\n    Date date = deserializeToDate(dateString);\n\n    if (dateType == Date.class) {\n      return date;\n    } else if (dateType == Timestamp.class) {\n      return new Timestamp(date.getTime());\n    } else if (dateType == java.sql.Date.class) {\n      return new java.sql.Date(date.getTime());\n    } else {\n      // This must never happen: dateType is guarded in the primary constructor\n      throw new AssertionError();\n    }\n  }",
+            "doubao-pro-4k": "@Override\npublic Date read(JsonReader in) throws IOException {\n    if (in.peek()!= JsonToken.STRING && in.peek()!= JsonToken.NULL) {\n        throw new JsonParseException(\"The date should be a string value or null\");\n    }\n    Date date = null;\n    if (in.peek() == JsonToken.STRING) {\n        date = deserializeToDate(in.nextString());\n    }\n    if (dateType == Date.class) {\n        return date;\n    } else if (dateType == Timestamp.class) {\n        return new Timestamp(date.getTime());\n    } else if (dateType == java.sql.Date.class) {\n        return new java.sql.Date(date.getTime());\n    } else {\n        // This must never happen: dateType is guarded in the primary constructor\n        throw new AssertionError();\n    }\n}",
+            "ernie-3.5-128k": "Sure, here is the corrected method. The issue with the original code is that it doesn't properly handle the case where the JSON input might be `null`. The `JsonReader` class's `peek()` method will throw an `IllegalStateException` if the JSON input is at the end (i.e., there is no more data to read). We need to add a check for this before calling `peek()`.\n\nHere's the corrected method:\n\npublic Date read(JsonReader in) throws IOException {\n    if (in.peek() == JsonToken.NULL) {\n        in.nextNull();\n        return null;\n    }\n\n    if (in.peek() != JsonToken.STRING) {\n        throw new JsonParseException(in, \"The date should be a string value\");\n    }\n\n    Date date = deserializeToDate(in.nextString());\n    if (dateType == Date.class) {\n        return date;\n    } else if (dateType == Timestamp.class) {\n        return new Timestamp(date.getTime());\n    } else if (dateType == java.sql.Date.class) {\n        return new java.sql.Date(date.getTime());\n    } else {\n        // This must never happen: dateType is guarded in the primary constructor\n        throw new AssertionError();\n    }\n}"
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\n@Override\npublic Date read(JsonReader in) throws IOException {\n    if (in.peek() != JsonToken.STRING) {\n        throw new JsonParseException(\"The date should be a string value.\");\n```",
+            "deepseek-chat": "```java\n@Override\npublic Date read(JsonReader in) throws IOException {\n    if (in.peek() != JsonToken.STRING) {\n        throw new JsonParseException(\"The date should be a string value\");\n    }\n```",
+            "ernie-3.5-128k": "public Date read(JsonReader in) throws IOException {\n    if (in.peek() != JsonToken.STRING) {\n      throw new JsonSyntaxException(in, \"The date should be a string value\");",
+            "doubao-pro-4k": "@Override\npublic Date read(JsonReader in) throws IOException {\n    if (in.peek()!= JsonToken.STRING) {\n      throw new IOException(\"The date should be a string value\");\n    }\n}",
+            "gpt-4o-mini": "@Override\n  public Date read(JsonReader in) throws IOException {\n    if (in.peek() != JsonToken.STRING) {\n      throw new JsonParseException(\"The date should be a string value\");\n    }"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"if (in.peek() != JsonToken.VALUE_STRING) {\"\n    },\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"throw new MalformedJsonException(\\\"The date should be a string value\\\");\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"if (in.peek() == JsonToken.NULL) { return null; } else if (in.peek() != JsonToken.STRING) {\"\n    },\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"  throw new JsonParseException(\\\"The date should be a string value\\\"); }\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"if (in.peek() != JsonToken.STRING && in.peek() != JsonToken.NULL) {\"\n    },\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"throw new JsonParseException(\\\"The date should be a string or null value\\\");\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"if (in.peek() != JsonToken.STRING) {\"\n    },\n    {\n        \"line_number\": 4,\n            \"fixed_statement\": \"    throw new JsonSyntaxException(in, \\\"The date should be a string value\\\");\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"if (in.peek() == JsonToken.STRING)\"\n    },\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"throw new JsonParseException(\\\"The date should be a string value\\\");\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (!JsonToken.STRING.equals(in.peek())) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"    if (in.peek() != JsonToken.STRING && in.peek() != JsonToken.NULL) {\"\n    },\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"      throw new JsonParseException(\\\"The date should be a string value or null\\\");\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"if (in.peek() == JsonToken.VALUE_NULL || in.peek()!= JsonToken.STRING) {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (in.peek() != JsonToken.STRING && in.peek() != JsonToken.NULL) {\"\n    },\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"throw new JsonParseException(\\\"The date should be a string or null value\\\");\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"if (in.peek() == JsonToken.NULL) { in.nextNull(); return null; } else if (in.peek() != JsonToken.STRING) { throw new JsonParseException(\\\"The date should be a string value\\\"); }\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"      throw new JsonParseException(\\\"The date should be a string value.\\\");\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"throw new JsonSyntaxException(in, \\\"The date should be a string value\\\");\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"throw new JsonParseException(\\\"The date should be a string value\\\");\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"if (in.peek()!= JsonToken.STRING) throw new IOException(\\\"The date should be a string value\\\");\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"throw new JsonParseException(\\\"Expected a string value for the date, but found \\\" + in.peek());\"\n    }\n]"
+        }
+    }
+]

@@ -1,0 +1,115 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/math/linear/BigMatrixImpl.java
+================== buggy_method ==================
+{'method_name': 'operate', 'method_body': 'public BigDecimal[] operate(BigDecimal[] v) throws IllegalArgumentException {\n        if (v.length != this.getColumnDimension()) {\n            throw new IllegalArgumentException("vector has wrong length");\n        }\n        final int nRows = this.getRowDimension();\n        final int nCols = this.getColumnDimension();\n        final BigDecimal[] out = new BigDecimal[v.length];\n        for (int row = 0; row < nRows; row++) {\n            BigDecimal sum = ZERO;\n            for (int i = 0; i < nCols; i++) {\n                sum = sum.add(data[row][i].multiply(v[i]));\n            }\n            out[row] = sum;\n        }\n        return out;\n    }', 'start_line': 985, 'end_line': 1000, 'buggy_lines': [991]}
+================== buggy_method_src ==================
+public BigDecimal[] operate(BigDecimal[] v) throws IllegalArgumentException {
+        if (v.length != this.getColumnDimension()) {
+            throw new IllegalArgumentException("vector has wrong length");
+        }
+        final int nRows = this.getRowDimension();
+        final int nCols = this.getColumnDimension();
+        final BigDecimal[] out = new BigDecimal[v.length];
+        for (int row = 0; row < nRows; row++) {
+            BigDecimal sum = ZERO;
+            for (int i = 0; i < nCols; i++) {
+                sum = sum.add(data[row][i].multiply(v[i]));
+            }
+            out[row] = sum;
+        }
+        return out;
+    }
+================== test_stack ==================
+org.apache.commons.math.linear.BigMatrixImplTest::testMath209
+java.lang.ArrayIndexOutOfBoundsException: 2
+	at org.apache.commons.math.linear.BigMatrixImpl.operate(BigMatrixImpl.java:997)
+	at org.apache.commons.math.linear.BigMatrixImplTest.testMath209(BigMatrixImplTest.java:446)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+org.apache.commons.math.linear.RealMatrixImplTest::testMath209
+java.lang.ArrayIndexOutOfBoundsException: 2
+	at org.apache.commons.math.linear.RealMatrixImpl.operate(RealMatrixImpl.java:786)
+	at org.apache.commons.math.linear.RealMatrixImplTest.testMath209(RealMatrixImplTest.java:351)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+BigDecimal[] b = a.operate(new BigDecimal[] { new BigDecimal(1), new BigDecimal(1) });
+
+================== buggy_lines_in_method ==================
+[7]
+================== buggy_statements ==================
+['        final BigDecimal[] out = new BigDecimal[v.length];']
+================== buggy_method_src_endswith_buggy_statement ==================
+public BigDecimal[] operate(BigDecimal[] v) throws IllegalArgumentException {
+        if (v.length != this.getColumnDimension()) {
+            throw new IllegalArgumentException("vector has wrong length");
+        }
+        final int nRows = this.getRowDimension();
+        final int nCols = this.getColumnDimension();
+        final BigDecimal[] out = new BigDecimal[v.length];

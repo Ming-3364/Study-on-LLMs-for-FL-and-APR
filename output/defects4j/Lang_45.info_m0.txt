@@ -1,0 +1,107 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/lang/WordUtils.java
+================== buggy_method ==================
+{'method_name': 'abbreviate', 'method_body': 'public static String abbreviate(String str, int lower, int upper, String appendToEnd) {\n        // initial parameter checks\n        if (str == null) {\n            return null;\n        }\n        if (str.length() == 0) {\n            return StringUtils.EMPTY;\n        }\n\n        // if the lower value is greater than the length of the string,\n        // set to the length of the string\n        // if the upper value is -1 (i.e. no limit) or is greater\n        // than the length of the string, set to the length of the string\n        if (upper == -1 || upper > str.length()) {\n            upper = str.length();\n        }\n        // if upper is less than lower, raise it to lower\n        if (upper < lower) {\n            upper = lower;\n        }\n\n        StringBuffer result = new StringBuffer();\n        int index = StringUtils.indexOf(str, " ", lower);\n        if (index == -1) {\n            result.append(str.substring(0, upper));\n            // only if abbreviation has occured do we append the appendToEnd value\n            if (upper != str.length()) {\n                result.append(StringUtils.defaultString(appendToEnd));\n            }\n        } else if (index > upper) {\n            result.append(str.substring(0, upper));\n            result.append(StringUtils.defaultString(appendToEnd));\n        } else {\n            result.append(str.substring(0, index));\n            result.append(StringUtils.defaultString(appendToEnd));\n        }\n        return result.toString();\n    }', 'start_line': 605, 'end_line': 642, 'buggy_lines': [618]}
+================== buggy_method_src ==================
+public static String abbreviate(String str, int lower, int upper, String appendToEnd) {
+        // initial parameter checks
+        if (str == null) {
+            return null;
+        }
+        if (str.length() == 0) {
+            return StringUtils.EMPTY;
+        }
+
+        // if the lower value is greater than the length of the string,
+        // set to the length of the string
+        // if the upper value is -1 (i.e. no limit) or is greater
+        // than the length of the string, set to the length of the string
+        if (upper == -1 || upper > str.length()) {
+            upper = str.length();
+        }
+        // if upper is less than lower, raise it to lower
+        if (upper < lower) {
+            upper = lower;
+        }
+
+        StringBuffer result = new StringBuffer();
+        int index = StringUtils.indexOf(str, " ", lower);
+        if (index == -1) {
+            result.append(str.substring(0, upper));
+            // only if abbreviation has occured do we append the appendToEnd value
+            if (upper != str.length()) {
+                result.append(StringUtils.defaultString(appendToEnd));
+            }
+        } else if (index > upper) {
+            result.append(str.substring(0, upper));
+            result.append(StringUtils.defaultString(appendToEnd));
+        } else {
+            result.append(str.substring(0, index));
+            result.append(StringUtils.defaultString(appendToEnd));
+        }
+        return result.toString();
+    }
+================== test_stack ==================
+org.apache.commons.lang.WordUtilsTest::testAbbreviate
+java.lang.StringIndexOutOfBoundsException: String index out of range: 15
+	at java.lang.String.substring(String.java:1963)
+	at org.apache.commons.lang.WordUtils.abbreviate(WordUtils.java:629)
+	at org.apache.commons.lang.WordUtilsTest.testAbbreviate(WordUtilsTest.java:390)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals("0123456789", WordUtils.abbreviate("0123456789", 15, 20, null));
+
+================== buggy_lines_in_method ==================
+[14]
+================== buggy_statements ==================
+['        if (upper == -1 || upper > str.length()) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+public static String abbreviate(String str, int lower, int upper, String appendToEnd) {
+        // initial parameter checks
+        if (str == null) {
+            return null;
+        }
+        if (str.length() == 0) {
+            return StringUtils.EMPTY;
+        }
+
+        // if the lower value is greater than the length of the string,
+        // set to the length of the string
+        // if the upper value is -1 (i.e. no limit) or is greater
+        // than the length of the string, set to the length of the string
+        if (upper == -1 || upper > str.length()) {

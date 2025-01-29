@@ -1,0 +1,110 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/compress/archivers/zip/ZipFile.java
+================== buggy_method ==================
+{'method_name': 'resolveLocalFileHeaderData', 'method_body': 'private void resolveLocalFileHeaderData(Map<ZipArchiveEntry, NameAndComment>\n                                            entriesWithoutUTF8Flag)\n        throws IOException {\n        // changing the name of a ZipArchiveEntry is going to change\n        // the hashcode - see COMPRESS-164\n        // Map needs to be reconstructed in order to keep central\n        // directory order\n        for (ZipArchiveEntry ze : entries.keySet()) {\n            OffsetEntry offsetEntry = entries.get(ze);\n            long offset = offsetEntry.headerOffset;\n            archive.seek(offset + LFH_OFFSET_FOR_FILENAME_LENGTH);\n            byte[] b = new byte[SHORT];\n            archive.readFully(b);\n            int fileNameLen = ZipShort.getValue(b);\n            archive.readFully(b);\n            int extraFieldLen = ZipShort.getValue(b);\n            int lenToSkip = fileNameLen;\n            while (lenToSkip > 0) {\n                int skipped = archive.skipBytes(lenToSkip);\n                if (skipped <= 0) {\n                    throw new RuntimeException("failed to skip file name in"\n                                               + " local file header");\n                }\n                lenToSkip -= skipped;\n            }\n            byte[] localExtraData = new byte[extraFieldLen];\n            archive.readFully(localExtraData);\n            ze.setExtra(localExtraData);\n            offsetEntry.dataOffset = offset + LFH_OFFSET_FOR_FILENAME_LENGTH\n                + SHORT + SHORT + fileNameLen + extraFieldLen;\n\n            if (entriesWithoutUTF8Flag.containsKey(ze)) {\n                String orig = ze.getName();\n                NameAndComment nc = entriesWithoutUTF8Flag.get(ze);\n                ZipUtil.setNameAndCommentFromExtraFields(ze, nc.name,\n                                                         nc.comment);\n                if (!orig.equals(ze.getName())) {\n                    nameMap.remove(orig);\n                    nameMap.put(ze.getName(), ze);\n                }\n            }\n        }\n    }', 'start_line': 801, 'end_line': 843, 'buggy_lines': [808, 809]}
+================== buggy_method_src ==================
+private void resolveLocalFileHeaderData(Map<ZipArchiveEntry, NameAndComment>
+                                            entriesWithoutUTF8Flag)
+        throws IOException {
+        // changing the name of a ZipArchiveEntry is going to change
+        // the hashcode - see COMPRESS-164
+        // Map needs to be reconstructed in order to keep central
+        // directory order
+        for (ZipArchiveEntry ze : entries.keySet()) {
+            OffsetEntry offsetEntry = entries.get(ze);
+            long offset = offsetEntry.headerOffset;
+            archive.seek(offset + LFH_OFFSET_FOR_FILENAME_LENGTH);
+            byte[] b = new byte[SHORT];
+            archive.readFully(b);
+            int fileNameLen = ZipShort.getValue(b);
+            archive.readFully(b);
+            int extraFieldLen = ZipShort.getValue(b);
+            int lenToSkip = fileNameLen;
+            while (lenToSkip > 0) {
+                int skipped = archive.skipBytes(lenToSkip);
+                if (skipped <= 0) {
+                    throw new RuntimeException("failed to skip file name in"
+                                               + " local file header");
+                }
+                lenToSkip -= skipped;
+            }
+            byte[] localExtraData = new byte[extraFieldLen];
+            archive.readFully(localExtraData);
+            ze.setExtra(localExtraData);
+            offsetEntry.dataOffset = offset + LFH_OFFSET_FOR_FILENAME_LENGTH
+                + SHORT + SHORT + fileNameLen + extraFieldLen;
+
+            if (entriesWithoutUTF8Flag.containsKey(ze)) {
+                String orig = ze.getName();
+                NameAndComment nc = entriesWithoutUTF8Flag.get(ze);
+                ZipUtil.setNameAndCommentFromExtraFields(ze, nc.name,
+                                                         nc.comment);
+                if (!orig.equals(ze.getName())) {
+                    nameMap.remove(orig);
+                    nameMap.put(ze.getName(), ze);
+                }
+            }
+        }
+    }
+================== test_stack ==================
+org.apache.commons.compress.archivers.zip.UTF8ZipFilesTest::testReadWinZipArchive
+junit.framework.AssertionFailedError: InputStream is null
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertNotNull(Assert.java:256)
+	at junit.framework.TestCase.assertNotNull(TestCase.java:426)
+	at org.apache.commons.compress.archivers.zip.UTF8ZipFilesTest.assertCanRead(UTF8ZipFilesTest.java:144)
+	at org.apache.commons.compress.archivers.zip.UTF8ZipFilesTest.testReadWinZipArchive(UTF8ZipFilesTest.java:133)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertCanRead(zf, EURO_FOR_DOLLAR_TXT);
+
+================== buggy_lines_in_method ==================
+[8, 9]
+================== buggy_statements ==================
+['        for (ZipArchiveEntry ze : entries.keySet()) {', '            OffsetEntry offsetEntry = entries.get(ze);']
+================== buggy_method_src_endswith_buggy_statement ==================
+private void resolveLocalFileHeaderData(Map<ZipArchiveEntry, NameAndComment>
+                                            entriesWithoutUTF8Flag)
+        throws IOException {
+        // changing the name of a ZipArchiveEntry is going to change
+        // the hashcode - see COMPRESS-164
+        // Map needs to be reconstructed in order to keep central
+        // directory order
+        for (ZipArchiveEntry ze : entries.keySet()) {
+            OffsetEntry offsetEntry = entries.get(ze);

@@ -1,0 +1,140 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/codec/binary/Base64InputStream.java
+================== buggy_method ==================
+{'method_name': 'read', 'method_body': 'public int read(byte b[], int offset, int len) throws IOException {\n        if (b == null) {\n            throw new NullPointerException();\n        } else if (offset < 0 || len < 0) {\n            throw new IndexOutOfBoundsException();\n        } else if (offset > b.length || offset + len > b.length) {\n            throw new IndexOutOfBoundsException();\n        } else if (len == 0) {\n            return 0;\n        } else {\n            /*\n             Rationale for while-loop on (readLen == 0):\n             -----\n             Base64.readResults() usually returns > 0 or EOF (-1).  In the\n             rare case where it returns 0, we just keep trying.\n\n             This is essentially an undocumented contract for InputStream\n             implementors that want their code to work properly with\n             java.io.InputStreamReader, since the latter hates it when\n             InputStream.read(byte[]) returns a zero.  Unfortunately our\n             readResults() call must return 0 if a large amount of the data\n             being decoded was non-base64, so this while-loop enables proper\n             interop with InputStreamReader for that scenario.\n             -----\n             This is a fix for CODEC-101\n            */\n                if (!base64.hasData()) {\n                    byte[] buf = new byte[doEncode ? 4096 : 8192];\n                    int c = in.read(buf);\n                    // A little optimization to avoid System.arraycopy()\n                    // when possible.\n                    if (c > 0 && b.length == len) {\n                        base64.setInitialBuffer(b, offset, len);\n                    }\n                    if (doEncode) {\n                        base64.encode(buf, 0, c);\n                    } else {\n                        base64.decode(buf, 0, c);\n                    }\n                }\n            return base64.readResults(b, offset, len);\n        }\n    }', 'start_line': 138, 'end_line': 180, 'buggy_lines': [178]}
+================== buggy_method_src ==================
+public int read(byte b[], int offset, int len) throws IOException {
+        if (b == null) {
+            throw new NullPointerException();
+        } else if (offset < 0 || len < 0) {
+            throw new IndexOutOfBoundsException();
+        } else if (offset > b.length || offset + len > b.length) {
+            throw new IndexOutOfBoundsException();
+        } else if (len == 0) {
+            return 0;
+        } else {
+            /*
+             Rationale for while-loop on (readLen == 0):
+             -----
+             Base64.readResults() usually returns > 0 or EOF (-1).  In the
+             rare case where it returns 0, we just keep trying.
+
+             This is essentially an undocumented contract for InputStream
+             implementors that want their code to work properly with
+             java.io.InputStreamReader, since the latter hates it when
+             InputStream.read(byte[]) returns a zero.  Unfortunately our
+             readResults() call must return 0 if a large amount of the data
+             being decoded was non-base64, so this while-loop enables proper
+             interop with InputStreamReader for that scenario.
+             -----
+             This is a fix for CODEC-101
+            */
+                if (!base64.hasData()) {
+                    byte[] buf = new byte[doEncode ? 4096 : 8192];
+                    int c = in.read(buf);
+                    // A little optimization to avoid System.arraycopy()
+                    // when possible.
+                    if (c > 0 && b.length == len) {
+                        base64.setInitialBuffer(b, offset, len);
+                    }
+                    if (doEncode) {
+                        base64.encode(buf, 0, c);
+                    } else {
+                        base64.decode(buf, 0, c);
+                    }
+                }
+            return base64.readResults(b, offset, len);
+        }
+    }
+================== test_stack ==================
+org.apache.commons.codec.binary.Base64InputStreamTest::testCodec101
+junit.framework.AssertionFailedError: Codec101: First read successful [c=0]
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.TestCase.assertTrue(TestCase.java:192)
+	at org.apache.commons.codec.binary.Base64InputStreamTest.testCodec101(Base64InputStreamTest.java:61)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertTrue("Codec101: First read successful [c=" + c + "]", c > 0);
+
+================== buggy_lines_in_method ==================
+[41]
+================== buggy_statements ==================
+['            return base64.readResults(b, offset, len);']
+================== buggy_method_src_endswith_buggy_statement ==================
+public int read(byte b[], int offset, int len) throws IOException {
+        if (b == null) {
+            throw new NullPointerException();
+        } else if (offset < 0 || len < 0) {
+            throw new IndexOutOfBoundsException();
+        } else if (offset > b.length || offset + len > b.length) {
+            throw new IndexOutOfBoundsException();
+        } else if (len == 0) {
+            return 0;
+        } else {
+            /*
+             Rationale for while-loop on (readLen == 0):
+             -----
+             Base64.readResults() usually returns > 0 or EOF (-1).  In the
+             rare case where it returns 0, we just keep trying.
+
+             This is essentially an undocumented contract for InputStream
+             implementors that want their code to work properly with
+             java.io.InputStreamReader, since the latter hates it when
+             InputStream.read(byte[]) returns a zero.  Unfortunately our
+             readResults() call must return 0 if a large amount of the data
+             being decoded was non-base64, so this while-loop enables proper
+             interop with InputStreamReader for that scenario.
+             -----
+             This is a fix for CODEC-101
+            */
+                if (!base64.hasData()) {
+                    byte[] buf = new byte[doEncode ? 4096 : 8192];
+                    int c = in.read(buf);
+                    // A little optimization to avoid System.arraycopy()
+                    // when possible.
+                    if (c > 0 && b.length == len) {
+                        base64.setInitialBuffer(b, offset, len);
+                    }
+                    if (doEncode) {
+                        base64.encode(buf, 0, c);
+                    } else {
+                        base64.decode(buf, 0, c);
+                    }
+                }
+            return base64.readResults(b, offset, len);

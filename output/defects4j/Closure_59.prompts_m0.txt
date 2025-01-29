@@ -1,0 +1,1050 @@
+
+================== prompt_fl_1 ==================
+
+source code:
+public void initOptions(CompilerOptions options) {
+    this.options = options;
+    if (errorManager == null) {
+      if (outStream == null) {
+        setErrorManager(
+            new LoggerErrorManager(createMessageFormatter(), logger));
+      } else {
+        PrintStreamErrorManager printer =
+            new PrintStreamErrorManager(createMessageFormatter(), outStream);
+        printer.setSummaryDetailLevel(options.summaryDetailLevel);
+        setErrorManager(printer);
+      }
+    }
+
+    // DiagnosticGroups override the plain checkTypes option.
+    if (options.enables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = true;
+    } else if (options.disables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = false;
+    } else if (!options.checkTypes) {
+      // If DiagnosticGroups did not override the plain checkTypes
+      // option, and checkTypes is enabled, then turn off the
+      // parser type warnings.
+      options.setWarningLevel(
+          DiagnosticGroup.forType(
+              RhinoErrorReporter.TYPE_PARSE_ERROR),
+          CheckLevel.OFF);
+    }
+
+    if (options.checkGlobalThisLevel.isOn()) {
+      options.setWarningLevel(
+          DiagnosticGroups.GLOBAL_THIS,
+          options.checkGlobalThisLevel);
+    }
+
+    if (options.getLanguageIn() == LanguageMode.ECMASCRIPT5_STRICT) {
+      options.setWarningLevel(
+          DiagnosticGroups.ES5_STRICT,
+          CheckLevel.ERROR);
+    }
+
+    // Initialize the warnings guard.
+    List<WarningsGuard> guards = Lists.newArrayList();
+    guards.add(
+        new SuppressDocWarningsGuard(
+            getDiagnosticGroups().getRegisteredGroups()));
+    guards.add(options.getWarningsGuard());
+
+    ComposeWarningsGuard composedGuards = new ComposeWarningsGuard(guards);
+
+    // All passes must run the variable check. This synthesizes
+    // variables later so that the compiler doesn't crash. It also
+    // checks the externs file for validity. If you don't want to warn
+    // about missing variable declarations, we shut that specific
+    // error off.
+    if (!options.checkSymbols &&
+        !composedGuards.enables(DiagnosticGroups.CHECK_VARIABLES)) {
+      composedGuards.addGuard(new DiagnosticGroupWarningsGuard(
+          DiagnosticGroups.CHECK_VARIABLES, CheckLevel.OFF));
+    }
+
+    this.warningsGuard = composedGuards;
+  }
+
+There is a bug in the above code, please help me locate it.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_2 ==================
+
+source code:
+public void initOptions(CompilerOptions options) {
+    this.options = options;
+    if (errorManager == null) {
+      if (outStream == null) {
+        setErrorManager(
+            new LoggerErrorManager(createMessageFormatter(), logger));
+      } else {
+        PrintStreamErrorManager printer =
+            new PrintStreamErrorManager(createMessageFormatter(), outStream);
+        printer.setSummaryDetailLevel(options.summaryDetailLevel);
+        setErrorManager(printer);
+      }
+    }
+
+    // DiagnosticGroups override the plain checkTypes option.
+    if (options.enables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = true;
+    } else if (options.disables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = false;
+    } else if (!options.checkTypes) {
+      // If DiagnosticGroups did not override the plain checkTypes
+      // option, and checkTypes is enabled, then turn off the
+      // parser type warnings.
+      options.setWarningLevel(
+          DiagnosticGroup.forType(
+              RhinoErrorReporter.TYPE_PARSE_ERROR),
+          CheckLevel.OFF);
+    }
+
+    if (options.checkGlobalThisLevel.isOn()) {
+      options.setWarningLevel(
+          DiagnosticGroups.GLOBAL_THIS,
+          options.checkGlobalThisLevel);
+    }
+
+    if (options.getLanguageIn() == LanguageMode.ECMASCRIPT5_STRICT) {
+      options.setWarningLevel(
+          DiagnosticGroups.ES5_STRICT,
+          CheckLevel.ERROR);
+    }
+
+    // Initialize the warnings guard.
+    List<WarningsGuard> guards = Lists.newArrayList();
+    guards.add(
+        new SuppressDocWarningsGuard(
+            getDiagnosticGroups().getRegisteredGroups()));
+    guards.add(options.getWarningsGuard());
+
+    ComposeWarningsGuard composedGuards = new ComposeWarningsGuard(guards);
+
+    // All passes must run the variable check. This synthesizes
+    // variables later so that the compiler doesn't crash. It also
+    // checks the externs file for validity. If you don't want to warn
+    // about missing variable declarations, we shut that specific
+    // error off.
+    if (!options.checkSymbols &&
+        !composedGuards.enables(DiagnosticGroups.CHECK_VARIABLES)) {
+      composedGuards.addGuard(new DiagnosticGroupWarningsGuard(
+          DiagnosticGroups.CHECK_VARIABLES, CheckLevel.OFF));
+    }
+
+    this.warningsGuard = composedGuards;
+  }
+
+stack trace:
+com.google.javascript.jscomp.CommandLineRunnerTest::testCheckGlobalThisOff
+junit.framework.AssertionFailedError: Expected no warnings or errors
+Errors:
+Warnings:
+JSC_USED_GLOBAL_THIS. dangerous use of the global this object at input0 line 1 : 15 expected:<0> but was:<1>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.TestCase.assertEquals(TestCase.java:401)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.test(CommandLineRunnerTest.java:861)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.test(CommandLineRunnerTest.java:847)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.testSame(CommandLineRunnerTest.java:835)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.testSame(CommandLineRunnerTest.java:831)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.testCheckGlobalThisOff(CommandLineRunnerTest.java:160)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_3 ==================
+
+source code:
+public void initOptions(CompilerOptions options) {
+    this.options = options;
+    if (errorManager == null) {
+      if (outStream == null) {
+        setErrorManager(
+            new LoggerErrorManager(createMessageFormatter(), logger));
+      } else {
+        PrintStreamErrorManager printer =
+            new PrintStreamErrorManager(createMessageFormatter(), outStream);
+        printer.setSummaryDetailLevel(options.summaryDetailLevel);
+        setErrorManager(printer);
+      }
+    }
+
+    // DiagnosticGroups override the plain checkTypes option.
+    if (options.enables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = true;
+    } else if (options.disables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = false;
+    } else if (!options.checkTypes) {
+      // If DiagnosticGroups did not override the plain checkTypes
+      // option, and checkTypes is enabled, then turn off the
+      // parser type warnings.
+      options.setWarningLevel(
+          DiagnosticGroup.forType(
+              RhinoErrorReporter.TYPE_PARSE_ERROR),
+          CheckLevel.OFF);
+    }
+
+    if (options.checkGlobalThisLevel.isOn()) {
+      options.setWarningLevel(
+          DiagnosticGroups.GLOBAL_THIS,
+          options.checkGlobalThisLevel);
+    }
+
+    if (options.getLanguageIn() == LanguageMode.ECMASCRIPT5_STRICT) {
+      options.setWarningLevel(
+          DiagnosticGroups.ES5_STRICT,
+          CheckLevel.ERROR);
+    }
+
+    // Initialize the warnings guard.
+    List<WarningsGuard> guards = Lists.newArrayList();
+    guards.add(
+        new SuppressDocWarningsGuard(
+            getDiagnosticGroups().getRegisteredGroups()));
+    guards.add(options.getWarningsGuard());
+
+    ComposeWarningsGuard composedGuards = new ComposeWarningsGuard(guards);
+
+    // All passes must run the variable check. This synthesizes
+    // variables later so that the compiler doesn't crash. It also
+    // checks the externs file for validity. If you don't want to warn
+    // about missing variable declarations, we shut that specific
+    // error off.
+    if (!options.checkSymbols &&
+        !composedGuards.enables(DiagnosticGroups.CHECK_VARIABLES)) {
+      composedGuards.addGuard(new DiagnosticGroupWarningsGuard(
+          DiagnosticGroups.CHECK_VARIABLES, CheckLevel.OFF));
+    }
+
+    this.warningsGuard = composedGuards;
+  }
+
+stack trace:
+com.google.javascript.jscomp.CommandLineRunnerTest::testCheckGlobalThisOff
+junit.framework.AssertionFailedError: Expected no warnings or errors
+Errors:
+Warnings:
+JSC_USED_GLOBAL_THIS. dangerous use of the global this object at input0 line 1 : 15 expected:<0> but was:<1>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.TestCase.assertEquals(TestCase.java:401)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.test(CommandLineRunnerTest.java:861)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.test(CommandLineRunnerTest.java:847)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.testSame(CommandLineRunnerTest.java:835)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.testSame(CommandLineRunnerTest.java:831)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.testCheckGlobalThisOff(CommandLineRunnerTest.java:160)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+failure assertion code:
+testSame("function f() { this.a = 3; }");
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_4 ==================
+
+source code:
+public void initOptions(CompilerOptions options) {
+    this.options = options;
+    if (errorManager == null) {
+      if (outStream == null) {
+        setErrorManager(
+            new LoggerErrorManager(createMessageFormatter(), logger));
+      } else {
+        PrintStreamErrorManager printer =
+            new PrintStreamErrorManager(createMessageFormatter(), outStream);
+        printer.setSummaryDetailLevel(options.summaryDetailLevel);
+        setErrorManager(printer);
+      }
+    }
+
+    // DiagnosticGroups override the plain checkTypes option.
+    if (options.enables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = true;
+    } else if (options.disables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = false;
+    } else if (!options.checkTypes) {
+      // If DiagnosticGroups did not override the plain checkTypes
+      // option, and checkTypes is enabled, then turn off the
+      // parser type warnings.
+      options.setWarningLevel(
+          DiagnosticGroup.forType(
+              RhinoErrorReporter.TYPE_PARSE_ERROR),
+          CheckLevel.OFF);
+    }
+
+    if (options.checkGlobalThisLevel.isOn()) {
+      options.setWarningLevel(
+          DiagnosticGroups.GLOBAL_THIS,
+          options.checkGlobalThisLevel);
+    }
+
+    if (options.getLanguageIn() == LanguageMode.ECMASCRIPT5_STRICT) {
+      options.setWarningLevel(
+          DiagnosticGroups.ES5_STRICT,
+          CheckLevel.ERROR);
+    }
+
+    // Initialize the warnings guard.
+    List<WarningsGuard> guards = Lists.newArrayList();
+    guards.add(
+        new SuppressDocWarningsGuard(
+            getDiagnosticGroups().getRegisteredGroups()));
+    guards.add(options.getWarningsGuard());
+
+    ComposeWarningsGuard composedGuards = new ComposeWarningsGuard(guards);
+
+    // All passes must run the variable check. This synthesizes
+    // variables later so that the compiler doesn't crash. It also
+    // checks the externs file for validity. If you don't want to warn
+    // about missing variable declarations, we shut that specific
+    // error off.
+    if (!options.checkSymbols &&
+        !composedGuards.enables(DiagnosticGroups.CHECK_VARIABLES)) {
+      composedGuards.addGuard(new DiagnosticGroupWarningsGuard(
+          DiagnosticGroups.CHECK_VARIABLES, CheckLevel.OFF));
+    }
+
+    this.warningsGuard = composedGuards;
+  }
+
+There is a bug in the above code, please help me locate it.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_5 ==================
+
+source code:
+public void initOptions(CompilerOptions options) {
+    this.options = options;
+    if (errorManager == null) {
+      if (outStream == null) {
+        setErrorManager(
+            new LoggerErrorManager(createMessageFormatter(), logger));
+      } else {
+        PrintStreamErrorManager printer =
+            new PrintStreamErrorManager(createMessageFormatter(), outStream);
+        printer.setSummaryDetailLevel(options.summaryDetailLevel);
+        setErrorManager(printer);
+      }
+    }
+
+    // DiagnosticGroups override the plain checkTypes option.
+    if (options.enables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = true;
+    } else if (options.disables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = false;
+    } else if (!options.checkTypes) {
+      // If DiagnosticGroups did not override the plain checkTypes
+      // option, and checkTypes is enabled, then turn off the
+      // parser type warnings.
+      options.setWarningLevel(
+          DiagnosticGroup.forType(
+              RhinoErrorReporter.TYPE_PARSE_ERROR),
+          CheckLevel.OFF);
+    }
+
+    if (options.checkGlobalThisLevel.isOn()) {
+      options.setWarningLevel(
+          DiagnosticGroups.GLOBAL_THIS,
+          options.checkGlobalThisLevel);
+    }
+
+    if (options.getLanguageIn() == LanguageMode.ECMASCRIPT5_STRICT) {
+      options.setWarningLevel(
+          DiagnosticGroups.ES5_STRICT,
+          CheckLevel.ERROR);
+    }
+
+    // Initialize the warnings guard.
+    List<WarningsGuard> guards = Lists.newArrayList();
+    guards.add(
+        new SuppressDocWarningsGuard(
+            getDiagnosticGroups().getRegisteredGroups()));
+    guards.add(options.getWarningsGuard());
+
+    ComposeWarningsGuard composedGuards = new ComposeWarningsGuard(guards);
+
+    // All passes must run the variable check. This synthesizes
+    // variables later so that the compiler doesn't crash. It also
+    // checks the externs file for validity. If you don't want to warn
+    // about missing variable declarations, we shut that specific
+    // error off.
+    if (!options.checkSymbols &&
+        !composedGuards.enables(DiagnosticGroups.CHECK_VARIABLES)) {
+      composedGuards.addGuard(new DiagnosticGroupWarningsGuard(
+          DiagnosticGroups.CHECK_VARIABLES, CheckLevel.OFF));
+    }
+
+    this.warningsGuard = composedGuards;
+  }
+
+stack trace:
+com.google.javascript.jscomp.CommandLineRunnerTest::testCheckGlobalThisOff
+junit.framework.AssertionFailedError: Expected no warnings or errors
+Errors:
+Warnings:
+JSC_USED_GLOBAL_THIS. dangerous use of the global this object at input0 line 1 : 15 expected:<0> but was:<1>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.TestCase.assertEquals(TestCase.java:401)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.test(CommandLineRunnerTest.java:861)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.test(CommandLineRunnerTest.java:847)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.testSame(CommandLineRunnerTest.java:835)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.testSame(CommandLineRunnerTest.java:831)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.testCheckGlobalThisOff(CommandLineRunnerTest.java:160)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_6 ==================
+
+source code:
+public void initOptions(CompilerOptions options) {
+    this.options = options;
+    if (errorManager == null) {
+      if (outStream == null) {
+        setErrorManager(
+            new LoggerErrorManager(createMessageFormatter(), logger));
+      } else {
+        PrintStreamErrorManager printer =
+            new PrintStreamErrorManager(createMessageFormatter(), outStream);
+        printer.setSummaryDetailLevel(options.summaryDetailLevel);
+        setErrorManager(printer);
+      }
+    }
+
+    // DiagnosticGroups override the plain checkTypes option.
+    if (options.enables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = true;
+    } else if (options.disables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = false;
+    } else if (!options.checkTypes) {
+      // If DiagnosticGroups did not override the plain checkTypes
+      // option, and checkTypes is enabled, then turn off the
+      // parser type warnings.
+      options.setWarningLevel(
+          DiagnosticGroup.forType(
+              RhinoErrorReporter.TYPE_PARSE_ERROR),
+          CheckLevel.OFF);
+    }
+
+    if (options.checkGlobalThisLevel.isOn()) {
+      options.setWarningLevel(
+          DiagnosticGroups.GLOBAL_THIS,
+          options.checkGlobalThisLevel);
+    }
+
+    if (options.getLanguageIn() == LanguageMode.ECMASCRIPT5_STRICT) {
+      options.setWarningLevel(
+          DiagnosticGroups.ES5_STRICT,
+          CheckLevel.ERROR);
+    }
+
+    // Initialize the warnings guard.
+    List<WarningsGuard> guards = Lists.newArrayList();
+    guards.add(
+        new SuppressDocWarningsGuard(
+            getDiagnosticGroups().getRegisteredGroups()));
+    guards.add(options.getWarningsGuard());
+
+    ComposeWarningsGuard composedGuards = new ComposeWarningsGuard(guards);
+
+    // All passes must run the variable check. This synthesizes
+    // variables later so that the compiler doesn't crash. It also
+    // checks the externs file for validity. If you don't want to warn
+    // about missing variable declarations, we shut that specific
+    // error off.
+    if (!options.checkSymbols &&
+        !composedGuards.enables(DiagnosticGroups.CHECK_VARIABLES)) {
+      composedGuards.addGuard(new DiagnosticGroupWarningsGuard(
+          DiagnosticGroups.CHECK_VARIABLES, CheckLevel.OFF));
+    }
+
+    this.warningsGuard = composedGuards;
+  }
+
+stack trace:
+com.google.javascript.jscomp.CommandLineRunnerTest::testCheckGlobalThisOff
+junit.framework.AssertionFailedError: Expected no warnings or errors
+Errors:
+Warnings:
+JSC_USED_GLOBAL_THIS. dangerous use of the global this object at input0 line 1 : 15 expected:<0> but was:<1>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.TestCase.assertEquals(TestCase.java:401)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.test(CommandLineRunnerTest.java:861)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.test(CommandLineRunnerTest.java:847)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.testSame(CommandLineRunnerTest.java:835)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.testSame(CommandLineRunnerTest.java:831)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.testCheckGlobalThisOff(CommandLineRunnerTest.java:160)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+failure assertion code:
+testSame("function f() { this.a = 3; }");
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_1 ==================
+
+public void initOptions(CompilerOptions options) {
+    this.options = options;
+    if (errorManager == null) {
+      if (outStream == null) {
+        setErrorManager(
+            new LoggerErrorManager(createMessageFormatter(), logger));
+      } else {
+        PrintStreamErrorManager printer =
+            new PrintStreamErrorManager(createMessageFormatter(), outStream);
+        printer.setSummaryDetailLevel(options.summaryDetailLevel);
+        setErrorManager(printer);
+      }
+    }
+
+    // DiagnosticGroups override the plain checkTypes option.
+    if (options.enables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = true;
+    } else if (options.disables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = false;
+    } else if (!options.checkTypes) {
+      // If DiagnosticGroups did not override the plain checkTypes
+      // option, and checkTypes is enabled, then turn off the
+      // parser type warnings.
+      options.setWarningLevel(
+          DiagnosticGroup.forType(
+              RhinoErrorReporter.TYPE_PARSE_ERROR),
+          CheckLevel.OFF);
+    }
+
+    if (options.checkGlobalThisLevel.isOn()) {
+      options.setWarningLevel(
+          DiagnosticGroups.GLOBAL_THIS,
+          options.checkGlobalThisLevel);
+    }
+
+    if (options.getLanguageIn() == LanguageMode.ECMASCRIPT5_STRICT) {
+      options.setWarningLevel(
+          DiagnosticGroups.ES5_STRICT,
+          CheckLevel.ERROR);
+    }
+
+    // Initialize the warnings guard.
+    List<WarningsGuard> guards = Lists.newArrayList();
+    guards.add(
+        new SuppressDocWarningsGuard(
+            getDiagnosticGroups().getRegisteredGroups()));
+    guards.add(options.getWarningsGuard());
+
+    ComposeWarningsGuard composedGuards = new ComposeWarningsGuard(guards);
+
+    // All passes must run the variable check. This synthesizes
+    // variables later so that the compiler doesn't crash. It also
+    // checks the externs file for validity. If you don't want to warn
+    // about missing variable declarations, we shut that specific
+    // error off.
+    if (!options.checkSymbols &&
+        !composedGuards.enables(DiagnosticGroups.CHECK_VARIABLES)) {
+      composedGuards.addGuard(new DiagnosticGroupWarningsGuard(
+          DiagnosticGroups.CHECK_VARIABLES, CheckLevel.OFF));
+    }
+
+    this.warningsGuard = composedGuards;
+  }
+
+There is a bug in line [30] of the code, please help me fix it.
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_2 ==================
+
+public void initOptions(CompilerOptions options) {
+    this.options = options;
+    if (errorManager == null) {
+      if (outStream == null) {
+        setErrorManager(
+            new LoggerErrorManager(createMessageFormatter(), logger));
+      } else {
+        PrintStreamErrorManager printer =
+            new PrintStreamErrorManager(createMessageFormatter(), outStream);
+        printer.setSummaryDetailLevel(options.summaryDetailLevel);
+        setErrorManager(printer);
+      }
+    }
+
+    // DiagnosticGroups override the plain checkTypes option.
+    if (options.enables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = true;
+    } else if (options.disables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = false;
+    } else if (!options.checkTypes) {
+      // If DiagnosticGroups did not override the plain checkTypes
+      // option, and checkTypes is enabled, then turn off the
+      // parser type warnings.
+      options.setWarningLevel(
+          DiagnosticGroup.forType(
+              RhinoErrorReporter.TYPE_PARSE_ERROR),
+          CheckLevel.OFF);
+    }
+
+    if (options.checkGlobalThisLevel.isOn()) {
+      options.setWarningLevel(
+          DiagnosticGroups.GLOBAL_THIS,
+          options.checkGlobalThisLevel);
+    }
+
+    if (options.getLanguageIn() == LanguageMode.ECMASCRIPT5_STRICT) {
+      options.setWarningLevel(
+          DiagnosticGroups.ES5_STRICT,
+          CheckLevel.ERROR);
+    }
+
+    // Initialize the warnings guard.
+    List<WarningsGuard> guards = Lists.newArrayList();
+    guards.add(
+        new SuppressDocWarningsGuard(
+            getDiagnosticGroups().getRegisteredGroups()));
+    guards.add(options.getWarningsGuard());
+
+    ComposeWarningsGuard composedGuards = new ComposeWarningsGuard(guards);
+
+    // All passes must run the variable check. This synthesizes
+    // variables later so that the compiler doesn't crash. It also
+    // checks the externs file for validity. If you don't want to warn
+    // about missing variable declarations, we shut that specific
+    // error off.
+    if (!options.checkSymbols &&
+        !composedGuards.enables(DiagnosticGroups.CHECK_VARIABLES)) {
+      composedGuards.addGuard(new DiagnosticGroupWarningsGuard(
+          DiagnosticGroups.CHECK_VARIABLES, CheckLevel.OFF));
+    }
+
+    this.warningsGuard = composedGuards;
+  }
+
+There is a bug in ['    if (options.checkGlobalThisLevel.isOn()) {'] , please help me fix it. 
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_3 ==================
+
+public void initOptions(CompilerOptions options) {
+    this.options = options;
+    if (errorManager == null) {
+      if (outStream == null) {
+        setErrorManager(
+            new LoggerErrorManager(createMessageFormatter(), logger));
+      } else {
+        PrintStreamErrorManager printer =
+            new PrintStreamErrorManager(createMessageFormatter(), outStream);
+        printer.setSummaryDetailLevel(options.summaryDetailLevel);
+        setErrorManager(printer);
+      }
+    }
+
+    // DiagnosticGroups override the plain checkTypes option.
+    if (options.enables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = true;
+    } else if (options.disables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = false;
+    } else if (!options.checkTypes) {
+      // If DiagnosticGroups did not override the plain checkTypes
+      // option, and checkTypes is enabled, then turn off the
+      // parser type warnings.
+      options.setWarningLevel(
+          DiagnosticGroup.forType(
+              RhinoErrorReporter.TYPE_PARSE_ERROR),
+          CheckLevel.OFF);
+    }
+
+    if (options.checkGlobalThisLevel.isOn()) {
+
+There is a bug in the last statement, please help me fix it.
+
+Return the code **only from the method declaration to the fixed statement**, without completing or adding additional code. Do not modify anything beyond fixing the bug, and do not complete the `if` statement or other unfinished parts. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_4 ==================
+
+public void initOptions(CompilerOptions options) {
+    this.options = options;
+    if (errorManager == null) {
+      if (outStream == null) {
+        setErrorManager(
+            new LoggerErrorManager(createMessageFormatter(), logger));
+      } else {
+        PrintStreamErrorManager printer =
+            new PrintStreamErrorManager(createMessageFormatter(), outStream);
+        printer.setSummaryDetailLevel(options.summaryDetailLevel);
+        setErrorManager(printer);
+      }
+    }
+
+    // DiagnosticGroups override the plain checkTypes option.
+    if (options.enables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = true;
+    } else if (options.disables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = false;
+    } else if (!options.checkTypes) {
+      // If DiagnosticGroups did not override the plain checkTypes
+      // option, and checkTypes is enabled, then turn off the
+      // parser type warnings.
+      options.setWarningLevel(
+          DiagnosticGroup.forType(
+              RhinoErrorReporter.TYPE_PARSE_ERROR),
+          CheckLevel.OFF);
+    }
+
+    if (options.checkGlobalThisLevel.isOn()) {
+      options.setWarningLevel(
+          DiagnosticGroups.GLOBAL_THIS,
+          options.checkGlobalThisLevel);
+    }
+
+    if (options.getLanguageIn() == LanguageMode.ECMASCRIPT5_STRICT) {
+      options.setWarningLevel(
+          DiagnosticGroups.ES5_STRICT,
+          CheckLevel.ERROR);
+    }
+
+    // Initialize the warnings guard.
+    List<WarningsGuard> guards = Lists.newArrayList();
+    guards.add(
+        new SuppressDocWarningsGuard(
+            getDiagnosticGroups().getRegisteredGroups()));
+    guards.add(options.getWarningsGuard());
+
+    ComposeWarningsGuard composedGuards = new ComposeWarningsGuard(guards);
+
+    // All passes must run the variable check. This synthesizes
+    // variables later so that the compiler doesn't crash. It also
+    // checks the externs file for validity. If you don't want to warn
+    // about missing variable declarations, we shut that specific
+    // error off.
+    if (!options.checkSymbols &&
+        !composedGuards.enables(DiagnosticGroups.CHECK_VARIABLES)) {
+      composedGuards.addGuard(new DiagnosticGroupWarningsGuard(
+          DiagnosticGroups.CHECK_VARIABLES, CheckLevel.OFF));
+    }
+
+    this.warningsGuard = composedGuards;
+  }
+
+There is a bug in line [30] of the code, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_5 ==================
+
+public void initOptions(CompilerOptions options) {
+    this.options = options;
+    if (errorManager == null) {
+      if (outStream == null) {
+        setErrorManager(
+            new LoggerErrorManager(createMessageFormatter(), logger));
+      } else {
+        PrintStreamErrorManager printer =
+            new PrintStreamErrorManager(createMessageFormatter(), outStream);
+        printer.setSummaryDetailLevel(options.summaryDetailLevel);
+        setErrorManager(printer);
+      }
+    }
+
+    // DiagnosticGroups override the plain checkTypes option.
+    if (options.enables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = true;
+    } else if (options.disables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = false;
+    } else if (!options.checkTypes) {
+      // If DiagnosticGroups did not override the plain checkTypes
+      // option, and checkTypes is enabled, then turn off the
+      // parser type warnings.
+      options.setWarningLevel(
+          DiagnosticGroup.forType(
+              RhinoErrorReporter.TYPE_PARSE_ERROR),
+          CheckLevel.OFF);
+    }
+
+    if (options.checkGlobalThisLevel.isOn()) {
+      options.setWarningLevel(
+          DiagnosticGroups.GLOBAL_THIS,
+          options.checkGlobalThisLevel);
+    }
+
+    if (options.getLanguageIn() == LanguageMode.ECMASCRIPT5_STRICT) {
+      options.setWarningLevel(
+          DiagnosticGroups.ES5_STRICT,
+          CheckLevel.ERROR);
+    }
+
+    // Initialize the warnings guard.
+    List<WarningsGuard> guards = Lists.newArrayList();
+    guards.add(
+        new SuppressDocWarningsGuard(
+            getDiagnosticGroups().getRegisteredGroups()));
+    guards.add(options.getWarningsGuard());
+
+    ComposeWarningsGuard composedGuards = new ComposeWarningsGuard(guards);
+
+    // All passes must run the variable check. This synthesizes
+    // variables later so that the compiler doesn't crash. It also
+    // checks the externs file for validity. If you don't want to warn
+    // about missing variable declarations, we shut that specific
+    // error off.
+    if (!options.checkSymbols &&
+        !composedGuards.enables(DiagnosticGroups.CHECK_VARIABLES)) {
+      composedGuards.addGuard(new DiagnosticGroupWarningsGuard(
+          DiagnosticGroups.CHECK_VARIABLES, CheckLevel.OFF));
+    }
+
+    this.warningsGuard = composedGuards;
+  }
+
+There is a bug in ['    if (options.checkGlobalThisLevel.isOn()) {'] , please help me fix it. 
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_6 ==================
+
+public void initOptions(CompilerOptions options) {
+    this.options = options;
+    if (errorManager == null) {
+      if (outStream == null) {
+        setErrorManager(
+            new LoggerErrorManager(createMessageFormatter(), logger));
+      } else {
+        PrintStreamErrorManager printer =
+            new PrintStreamErrorManager(createMessageFormatter(), outStream);
+        printer.setSummaryDetailLevel(options.summaryDetailLevel);
+        setErrorManager(printer);
+      }
+    }
+
+    // DiagnosticGroups override the plain checkTypes option.
+    if (options.enables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = true;
+    } else if (options.disables(DiagnosticGroups.CHECK_TYPES)) {
+      options.checkTypes = false;
+    } else if (!options.checkTypes) {
+      // If DiagnosticGroups did not override the plain checkTypes
+      // option, and checkTypes is enabled, then turn off the
+      // parser type warnings.
+      options.setWarningLevel(
+          DiagnosticGroup.forType(
+              RhinoErrorReporter.TYPE_PARSE_ERROR),
+          CheckLevel.OFF);
+    }
+
+    if (options.checkGlobalThisLevel.isOn()) {
+
+There is a bug in the last statement, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.

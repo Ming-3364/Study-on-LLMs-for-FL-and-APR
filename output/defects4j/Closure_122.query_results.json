@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "3",
+            "qwen-turbo": "2",
+            "ernie-3.5-128k": "**4**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "5"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "7",
+            "qwen-turbo": "6",
+            "ernie-3.5-128k": "**1163**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "6"
+        },
+        "prompt_fl_3": {
+            "qwen-turbo": "695",
+            "doubao-pro-4k": "4",
+            "ernie-3.5-128k": "**10**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "25"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "if (comment.getValue().indexOf(\"/* @\") != -1 || comment.getValue().indexOf(\"\\n * @\") != -1)",
+            "doubao-pro-4k": "if (comment.getValue().indexOf(\"/* @\")!= -1 || comment.getValue().indexOf(\"\\n * @\")!= -1)",
+            "deepseek-chat": "if (comment.getValue().indexOf(\"/* @\") != -1 || comment.getValue().indexOf(\"\\n * @\") != -1) {",
+            "ernie-3.5-128k": "if (comment.getValue().indexOf(\"/* @\") != -1 || comment.getValue().indexOf(\"\\n * @\") != -1) {",
+            "gpt-4o-mini": "if (comment.getValue().indexOf(\"/* @\") != -1 || comment.getValue().indexOf(\"\\n * @\") != -1) {"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "errorReporter.warning(\n          SUSPICIOUS_COMMENT_WARNING,\n          sourceName,\n          comment.getLineno(), \"\", 0);",
+            "deepseek-chat": "```java\nif (comment.getValue().indexOf(\"/* @\") != -1 || comment.getValue().indexOf(\"\\n * @\") != -1) {\n```",
+            "doubao-pro-4k": "if (comment.getValue().indexOf(\"/* @\")!= -1 || comment.getValue().indexOf(\"\\n * @\")!= -1)",
+            "ernie-3.5-128k": "if (comment.getValue().indexOf(\"/* @\") != -1 || comment.getValue().indexOf(\"\\n * @\") != -1) {",
+            "gpt-4o-mini": "comment.getValue().indexOf(\"\\n * @\") != -1"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "handleBlockComment(Comment comment) {\n    if (comment.getValue().indexOf(\"/* @\") != -1 || comment.getValue().indexOf(\"\\n * @\") != -1) {",
+            "deepseek-chat": "if (comment.getValue().indexOf(\"/* @\") != -1 || comment.getValue().indexOf(\"\\n * @\") != -1) {",
+            "doubao-pro-4k": "parse(\"/* \\n *@type {number} */ var x = 3;\", SUSPICIOUS_COMMENT_WARNING);",
+            "ernie-3.5-128k": "if (comment.getValue().indexOf(\"/* @\") != -1 || comment.getValue().indexOf(\"\\n * @\") != -1) {",
+            "gpt-4o-mini": "if (comment.getValue().indexOf(\"\\n * @\") != -1) {"
+        },
+        "prompt_apr_1": {
+            "ernie-3.5-128k": "private void handleBlockComment(Comment comment) {\n    if (comment.getValue().contains(\"/* @\") || comment.getValue().contains(\"\\n * @\")) {\n      errorReporter.warning(\n          SUSPICIOUS_COMMENT_WARNING,\n          sourceName,\n          comment.getLineno(), \"\", 0);\n    }\n}",
+            "doubao-pro-4k": "private void handleBlockComment(Comment comment) {\n    if (comment.getValue().startsWith(\"/* @\") || comment.getValue().startsWith(\"\\n * @\")) {\n      errorReporter.warning(\n          SUSPICIOUS_COMMENT_WARNING,\n          sourceName,\n          comment.getLineno(), \"\", 0);\n    }\n  }",
+            "qwen-turbo": "Certainly, the issue in the provided code is that the `indexOf` checks are not correctly identifying whether the comment contains the pattern \"/*@\". The current conditions check for the presence of \"/*@\", but they do not ensure that these sequences appear at the start of the comment after the opening \"/*\" and before the closing \"*/\".\n\nHere is the corrected version of the method:\n\n```java\nprivate void handleBlockComment(Comment comment) {\n    String value = comment.getValue();\n    int startIndex = value.indexOf(\"/*\");\n    int endIndex = value.indexOf(\"*/\");\n\n    if (startIndex != -1 && endIndex != -1) {\n        String content = value.substring(startIndex + 2, endIndex).trim();\n        if (content.contains(\"/*@\") || content.contains(\"\\n * @\")) {\n            errorReporter.warning(SUSPICIOUS_COMMENT_WARNING, sourceName, comment.getLineno(), \"\", 0);\n        }\n    } else {\n        // Handle the case where the comment does not have matching '/*' and '*/'\n        errorReporter.warning(SUSPICIOUS_COMMENT_WARNING, sourceName, comment.getLineno(), \"\", 0);\n    }\n}\n```\n\nThis code ensures that the content between \"/*\" and \"*/\" is checked for the suspicious patterns. If the comment does not contain matching \"/*\" and \"*/\", a warning is also issued.",
+            "gpt-4o-mini": "private void handleBlockComment(Comment comment) {\n    if (comment.getValue().contains(\"/* @\") || comment.getValue().contains(\"\\n * @\")) {\n        errorReporter.warning(\n            SUSPICIOUS_COMMENT_WARNING,\n            sourceName,\n            comment.getLineno(), \"\", 0);\n    }\n}",
+            "deepseek-chat": "private void handleBlockComment(Comment comment) {\n    if (comment.getValue().indexOf(\"/* @\") != -1 || comment.getValue().indexOf(\"\\n * @\") != -1 || comment.getValue().indexOf(\"* @\") != -1) {\n      errorReporter.warning(\n          SUSPICIOUS_COMMENT_WARNING,\n          sourceName,\n          comment.getLineno(), \"\", 0);\n    }\n  }\n\nThe bug in line [2] was that it did not account for the case where the comment might start with `* @` without a leading `/*` or `\\n *`. The corrected version now checks for `* @` as well, ensuring that all suspicious patterns are detected."
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\nprivate void handleBlockComment(Comment comment) {\n    if (comment.getValue().indexOf(\"/*@\") != -1 || comment.getValue().indexOf(\"\\n *@\") != -1) {\n      errorReporter.warning(\n          SUSPICIOUS_COMMENT_WARNING,\n          sourceName,\n          comment.getLineno(), \"\", 0);\n    }\n}\n```\n\nIn this correction, I changed `\"/* @\"` to `\"/*@ \"` and `\"\\n * @\"` to `\"\\n *@ \"` to properly identify the patterns within the comment content.",
+            "deepseek-chat": "private void handleBlockComment(Comment comment) {\n    if (comment.getValue().indexOf(\"/* @\") != -1 || comment.getValue().indexOf(\"\\n * @\") != -1) {\n      errorReporter.warning(\n          SUSPICIOUS_COMMENT_WARNING,\n          sourceName,\n          comment.getLineno(), \"\", 0);\n    }\n  }",
+            "ernie-3.5-128k": "private void handleBlockComment(Comment comment) {\n    String value = comment.getValue();\n    if (value.contains(\"/* @\") || value.contains(\"\\n * @\")) {\n        errorReporter.warning(\n            SUSPICIOUS_COMMENT_WARNING,\n            sourceName,\n            comment.getLineno(), \"\", 0);\n    }\n}",
+            "doubao-pro-4k": "private void handleBlockComment(Comment comment) {\n    if (comment.getValue().indexOf(\"/* @\")!= -1 || comment.getValue().indexOf(\"\\n * @\")!= -1) {\n      errorReporter.warning(\n          SUSPICIOUS_COMMENT_WARNING,\n          sourceName,\n          comment.getLineno(), \"\", 0);\n    }\n  }",
+            "gpt-4o-mini": "private void handleBlockComment(Comment comment) {\n    if (comment.getValue().indexOf(\"/* @\") != -1 || comment.getValue().indexOf(\"\\n * @\") != -1) {\n        errorReporter.warning(\n            SUSPICIOUS_COMMENT_WARNING,\n            sourceName,\n            comment.getLineno(), \"\", 0);\n    }\n}"
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\nprivate void handleBlockComment(Comment comment) {\n    if (comment.getValue().indexOf(\"/* @\") != -1 || comment.getValue().indexOf(\"\\n * @\") != -1) {\n```",
+            "ernie-3.5-128k": "private void handleBlockComment(Comment comment) {\n    if (comment.getValue().indexOf(\"/* @\") != -1 || comment.getValue().contains(\"\\n * @\")) {",
+            "doubao-pro-4k": "private void handleBlockComment(Comment comment) {\n    if (comment.getValue().indexOf(\"/* @\")!= -1 || comment.getValue().indexOf(\"\\n * @\")!= -1) {\n    }\n}",
+            "gpt-4o-mini": "private void handleBlockComment(Comment comment) {\n    if (comment.getValue().indexOf(\"/* @\") != -1 || comment.getValue().indexOf(\"\\n * @\") != -1) {",
+            "deepseek-chat": "private void handleBlockComment(Comment comment) {\n    if (comment.getValue().contains(\"/* @\") || comment.getValue().contains(\"\\n * @\")) {"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (comment.getValue().contains(\\\"/* @\\\") || comment.getValue().contains(\\\"\\\\n * @\\\"))\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (comment.getValue().contains(\\\"/*@\\\") || comment.getValue().contains(\\\"\\\\n * @\\\")) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (comment.getValue().indexOf(\\\"/* @\\\") != -1 || comment.getValue().indexOf(\\\"\\\\n * @\\\") != -1 || comment.getValue().indexOf(\\\" * @\\\") != -1) {\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (comment.getValue().indexOf(\\\"/* @\\\")!= -1 || comment.getValue().indexOf(\\\"\\\\n * @\\\")!= -1 || comment.getValue().indexOf(\\\" * @\\\")!= -1)\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"comment.getValue().contains(\\\"/* @\\\") || comment.getValue().contains(\\\"\\\\n * @\\\")\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"if (comment.getValue().indexOf(\\\"/* @\\\") != -1 || comment.getValue().indexOf(\\\"\\\\n * @\\\") != -1) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"    if (comment.getValue().indexOf(\\\"/* @\\\") != -1 || comment.getValue().indexOf(\\\"\\\\n * @\\\") != -1) {\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"if (comment.getValue().indexOf(\\\"/* @\\\")!= -1 || comment.getValue().indexOf(\\\"\\\\n * @\\\")!= -1)\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"if (comment.getValue().indexOf(\\\"/* @\\\") != -1 || comment.getValue().indexOf(\\\"\\\\n * @\\\") != -1) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"    if (comment.getValue().contains(\"/* @\") || comment.getValue().contains(\"\\\\n * @\")) {\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (comment.getValue().contains(\\\"/* @\\\") || comment.getValue().lines().anyMatch(line -> line.trim().startsWith(\\\"* @\\\"))) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"if (comment.getValue().contains(\"/* @\") || comment.getValue().contains(\"\\\\n * @\")) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (comment.getValue().indexOf(\\\"/* @\\\") != -1 || comment.getValue().indexOf(\\\"\\\\n * @\\\") != -1) {\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"if (comment.getValue().indexOf(\\\"/* @\\\")!= -1 || comment.getValue().indexOf(\\\"\\\\n * @\\\")!= -1)\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (comment.getValue().contains(\\\"/* @\\\") || comment.getValue().contains(\\\"\\\\n * @\\\")) {\"\n    }\n]"
+        }
+    }
+]

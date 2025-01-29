@@ -1,0 +1,207 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/math/fraction/ProperFractionFormat.java
+================== buggy_method ==================
+{'method_name': 'parse', 'method_body': "public Fraction parse(String source, ParsePosition pos) {\n        // try to parse improper fraction\n        Fraction ret = super.parse(source, pos);\n        if (ret != null) {\n            return ret;\n        }\n        \n        int initialIndex = pos.getIndex();\n\n        // parse whitespace\n        parseAndIgnoreWhitespace(source, pos);\n\n        // parse whole\n        Number whole = getWholeFormat().parse(source, pos);\n        if (whole == null) {\n            // invalid integer number\n            // set index back to initial, error index should already be set\n            // character examined.\n            pos.setIndex(initialIndex);\n            return null;\n        }\n\n        // parse whitespace\n        parseAndIgnoreWhitespace(source, pos);\n        \n        // parse numerator\n        Number num = getNumeratorFormat().parse(source, pos);\n        if (num == null) {\n            // invalid integer number\n            // set index back to initial, error index should already be set\n            // character examined.\n            pos.setIndex(initialIndex);\n            return null;\n        }\n        \n            // minus signs should be leading, invalid expression\n\n        // parse '/'\n        int startIndex = pos.getIndex();\n        char c = parseNextCharacter(source, pos);\n        switch (c) {\n        case 0 :\n            // no '/'\n            // return num as a fraction\n            return new Fraction(num.intValue(), 1);\n        case '/' :\n            // found '/', continue parsing denominator\n            break;\n        default :\n            // invalid '/'\n            // set index back to initial, error index should be the last\n            // character examined.\n            pos.setIndex(initialIndex);\n            pos.setErrorIndex(startIndex);\n            return null;\n        }\n\n        // parse whitespace\n        parseAndIgnoreWhitespace(source, pos);\n\n        // parse denominator\n        Number den = getDenominatorFormat().parse(source, pos);\n        if (den == null) {\n            // invalid integer number\n            // set index back to initial, error index should already be set\n            // character examined.\n            pos.setIndex(initialIndex);\n            return null;\n        }\n        \n            // minus signs must be leading, invalid\n\n        int w = whole.intValue();\n        int n = num.intValue();\n        int d = den.intValue();\n        return new Fraction(((Math.abs(w) * d) + n) * MathUtils.sign(w), d);\n    }", 'start_line': 130, 'end_line': 206, 'buggy_lines': [165, 169, 204]}
+================== buggy_method_src ==================
+public Fraction parse(String source, ParsePosition pos) {
+        // try to parse improper fraction
+        Fraction ret = super.parse(source, pos);
+        if (ret != null) {
+            return ret;
+        }
+        
+        int initialIndex = pos.getIndex();
+
+        // parse whitespace
+        parseAndIgnoreWhitespace(source, pos);
+
+        // parse whole
+        Number whole = getWholeFormat().parse(source, pos);
+        if (whole == null) {
+            // invalid integer number
+            // set index back to initial, error index should already be set
+            // character examined.
+            pos.setIndex(initialIndex);
+            return null;
+        }
+
+        // parse whitespace
+        parseAndIgnoreWhitespace(source, pos);
+        
+        // parse numerator
+        Number num = getNumeratorFormat().parse(source, pos);
+        if (num == null) {
+            // invalid integer number
+            // set index back to initial, error index should already be set
+            // character examined.
+            pos.setIndex(initialIndex);
+            return null;
+        }
+        
+            // minus signs should be leading, invalid expression
+
+        // parse '/'
+        int startIndex = pos.getIndex();
+        char c = parseNextCharacter(source, pos);
+        switch (c) {
+        case 0 :
+            // no '/'
+            // return num as a fraction
+            return new Fraction(num.intValue(), 1);
+        case '/' :
+            // found '/', continue parsing denominator
+            break;
+        default :
+            // invalid '/'
+            // set index back to initial, error index should be the last
+            // character examined.
+            pos.setIndex(initialIndex);
+            pos.setErrorIndex(startIndex);
+            return null;
+        }
+
+        // parse whitespace
+        parseAndIgnoreWhitespace(source, pos);
+
+        // parse denominator
+        Number den = getDenominatorFormat().parse(source, pos);
+        if (den == null) {
+            // invalid integer number
+            // set index back to initial, error index should already be set
+            // character examined.
+            pos.setIndex(initialIndex);
+            return null;
+        }
+        
+            // minus signs must be leading, invalid
+
+        int w = whole.intValue();
+        int n = num.intValue();
+        int d = den.intValue();
+        return new Fraction(((Math.abs(w) * d) + n) * MathUtils.sign(w), d);
+    }
+================== test_stack ==================
+org.apache.commons.math.fraction.FractionFormatTest::testParseProperInvalidMinus
+junit.framework.AssertionFailedError: invalid minus in improper fraction.
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.TestCase.fail(TestCase.java:227)
+	at org.apache.commons.math.fraction.FractionFormatTest.testParseProperInvalidMinus(FractionFormatTest.java:236)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+fail("invalid minus in improper fraction.");
+
+================== buggy_lines_in_method ==================
+[36, 40, 75]
+================== buggy_statements ==================
+['            // minus signs should be leading, invalid expression', '        char c = parseNextCharacter(source, pos);', '        int d = den.intValue();']
+================== buggy_method_src_endswith_buggy_statement ==================
+public Fraction parse(String source, ParsePosition pos) {
+        // try to parse improper fraction
+        Fraction ret = super.parse(source, pos);
+        if (ret != null) {
+            return ret;
+        }
+        
+        int initialIndex = pos.getIndex();
+
+        // parse whitespace
+        parseAndIgnoreWhitespace(source, pos);
+
+        // parse whole
+        Number whole = getWholeFormat().parse(source, pos);
+        if (whole == null) {
+            // invalid integer number
+            // set index back to initial, error index should already be set
+            // character examined.
+            pos.setIndex(initialIndex);
+            return null;
+        }
+
+        // parse whitespace
+        parseAndIgnoreWhitespace(source, pos);
+        
+        // parse numerator
+        Number num = getNumeratorFormat().parse(source, pos);
+        if (num == null) {
+            // invalid integer number
+            // set index back to initial, error index should already be set
+            // character examined.
+            pos.setIndex(initialIndex);
+            return null;
+        }
+        
+            // minus signs should be leading, invalid expression
+
+        // parse '/'
+        int startIndex = pos.getIndex();
+        char c = parseNextCharacter(source, pos);
+        switch (c) {
+        case 0 :
+            // no '/'
+            // return num as a fraction
+            return new Fraction(num.intValue(), 1);
+        case '/' :
+            // found '/', continue parsing denominator
+            break;
+        default :
+            // invalid '/'
+            // set index back to initial, error index should be the last
+            // character examined.
+            pos.setIndex(initialIndex);
+            pos.setErrorIndex(startIndex);
+            return null;
+        }
+
+        // parse whitespace
+        parseAndIgnoreWhitespace(source, pos);
+
+        // parse denominator
+        Number den = getDenominatorFormat().parse(source, pos);
+        if (den == null) {
+            // invalid integer number
+            // set index back to initial, error index should already be set
+            // character examined.
+            pos.setIndex(initialIndex);
+            return null;
+        }
+        
+            // minus signs must be leading, invalid
+
+        int w = whole.intValue();
+        int n = num.intValue();
+        int d = den.intValue();

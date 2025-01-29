@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "4",
+            "qwen-turbo": "5",
+            "ernie-3.5-128k": "4",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "8"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "3",
+            "deepseek-chat": "1",
+            "ernie-3.5-128k": "**11**",
+            "gpt-4o-mini": "33"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "10",
+            "qwen-turbo": "3",
+            "ernie-3.5-128k": "**33**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "33"
+        },
+        "prompt_fl_4": {
+            "ernie-3.5-128k": "for(Field field : orderedInstanceFieldsFrom(awaitingInjectionClazz)) {",
+            "qwen-turbo": "mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenInject();",
+            "doubao-pro-4k": "mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenInject();",
+            "deepseek-chat": "mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenInject();",
+            "gpt-4o-mini": "mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenInject();"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenInject();",
+            "deepseek-chat": "mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenInject();",
+            "doubao-pro-4k": "mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenInject();",
+            "ernie-3.5-128k": "mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenInject();",
+            "gpt-4o-mini": "mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenInject();"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "assertSame(REFERENCE, illegalInjectionExample.mockShouldNotGoInHere);",
+            "doubao-pro-4k": "assertSame(REFERENCE, illegalInjectionExample.mockShouldNotGoInHere);",
+            "ernie-3.5-128k": "mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenInject();",
+            "deepseek-chat": "mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenInject();",
+            "gpt-4o-mini": "mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenInject();"
+        },
+        "prompt_apr_1": {
+            "gpt-4o-mini": "private void injectMockCandidate(Class<?> awaitingInjectionClazz, Set<Object> mocks, Object fieldInstance) {\n    for(Field field : orderedInstanceFieldsFrom(awaitingInjectionClazz)) {\n        mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenInject();\n    }\n}",
+            "deepseek-chat": "private void injectMockCandidate(Class<?> awaitingInjectionClazz, Set<Object> mocks, Object fieldInstance) {\n    for (Field field : orderedInstanceFieldsFrom(awaitingInjectionClazz)) {\n        Optional<Object> mockCandidate = mockCandidateFilter.filterCandidate(mocks, field, fieldInstance);\n        if (mockCandidate.isPresent()) {\n            try {\n                field.setAccessible(true);\n                field.set(fieldInstance, mockCandidate.get());\n            } catch (IllegalAccessException e) {\n                throw new RuntimeException(\"Failed to inject mock candidate into field: \" + field.getName(), e);\n            }\n        }\n    }\n}",
+            "doubao-pro-4k": "private void injectMockCandidate(Class<?> awaitingInjectionClazz, Set<Object> mocks, Object fieldInstance) {\n        for(Field field : orderedInstanceFieldsFrom(awaitingInjectionClazz)) {\n            if (mocks.contains(fieldInstance)) { // Bug fix: Added a check to ensure the fieldInstance is in the mocks set\n                mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenInject();\n            }\n        }\n    }",
+            "qwen-turbo": "Certainly! The issue seems to be with the method call `mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenInject();` as it implies that `filterCandidate` returns an object on which `thenInject` can be called. However, typically `filterCandidate` would either directly perform the injection or return a boolean indicating success.\n\nAssuming `mockCandidateFilter.filterCandidate(mocks, field, fieldInstance)` should return a boolean indicating whether the candidate was successfully filtered and injected, you might want to handle it accordingly. Here\u2019s a revised version of your method:\n\n```java\nprivate void injectMockCandidate(Class<?> awaitingInjectionClazz, Set<Object> mocks, Object fieldInstance) {\n    for (Field field : orderedInstanceFieldsFrom(awaitingInjectionClazz)) {\n        if (mockCandidateFilter.filterCandidate(mocks, field, fieldInstance)) {\n            // Assuming thenInject() is a method that performs the injection\n            // This part depends on how your filterCandidate method is implemented.\n            thenInject(field, fieldInstance);\n        }\n    }\n}\n\n// Assuming you need this helper method for injection\nprivate void thenInject(Field field, Object fieldInstance) {\n    // Implement the logic to inject the mock into the field\n}\n```\n\nIn this corrected version:\n1. The `filterCandidate` method is expected to return a boolean indicating if the candidate was filtered correctly.\n2. If `filterCandidate` returns true, `thenInject` is called to perform the injection.\n3. You need to define the `thenInject` method to handle the actual injection logic. \n\nIf `filterCandidate` does something different, please provide more details about its intended behavior so I can adjust the solution accordingly.",
+            "ernie-3.5-128k": "Sure, here is the corrected method with the bug fixed. I'm assuming that `mockCandidateFilter.filterCandidate(mocks, field, fieldInstance)` returns an object that has a `thenInject()` method, and that `orderedInstanceFieldsFrom(Class<?>)` is a correctly implemented method that returns the fields of the class in some order.\n\nprivate void injectMockCandidate(Class<?> awaitingInjectionClazz, Set<Object> mocks, Object fieldInstance) {\n    for(Field field : orderedInstanceFieldsFrom(awaitingInjectionClazz)) {\n        mockCandidateFilter.filterCandidate(mocks, field, fieldInstance.getClass()).thenInject();\n    }\n}\n\nIn the original code, `fieldInstance` was passed directly to `filterCandidate`, but I suspect you might have meant to pass `fieldInstance.getClass()` if `filterCandidate` requires a `Class<?>` type for that parameter. However, if `filterCandidate` actually requires the `fieldInstance` object itself, then you should keep the original code as is (except for ensuring other parts like `thenInject()` are correctly implemented and handled). Since I'm making an assumption here based on typical use cases, adjust according to the actual method signature and requirements of `filterCandidate`."
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\nprivate void injectMockCandidate(Class<?> awaitingInjectionClazz, Set<Object> mocks, Object fieldInstance) {\n    for(Field field : orderedInstanceFieldsFrom(awaitingInjectionClazz)) {\n        if(mockCandidateFilter.filterCandidate(mocks, field, fieldInstance)) {\n            thenInject(field, fieldInstance);\n        }\n    }\n}\n\nprivate void thenInject(Field field, Object fieldInstance) {\n    // Assuming the logic to inject the mock into the field goes here\n    // Example: field.setAccessible(true);\n    // Example: field.set(fieldInstance, mockObject);\n}\n```\n\nIn this corrected version, the `filterCandidate` method is expected to return a boolean indicating whether the injection should proceed. The `thenInject` method is called conditionally based on the result of `filterCandidate`. You will need to implement the actual injection logic inside the `thenInject` method.",
+            "deepseek-chat": "private void injectMockCandidate(Class<?> awaitingInjectionClazz, Set<Object> mocks, Object fieldInstance) {\n    for (Field field : orderedInstanceFieldsFrom(awaitingInjectionClazz)) {\n        Optional<Object> mockCandidate = mockCandidateFilter.filterCandidate(mocks, field, fieldInstance);\n        if (mockCandidate.isPresent()) {\n            try {\n                field.setAccessible(true);\n                field.set(fieldInstance, mockCandidate.get());\n            } catch (IllegalAccessException e) {\n                throw new RuntimeException(\"Failed to inject mock candidate into field: \" + field.getName(), e);\n            }\n        }\n    }\n}",
+            "doubao-pro-4k": "private void injectMockCandidate(Class<?> awaitingInjectionClazz, Set<Object> mocks, Object fieldInstance) {\n        for (Field field : orderedInstanceFieldsFrom(awaitingInjectionClazz)) {\n            if (mockCandidateFilter.filterCandidate(mocks, field, fieldInstance)) {\n                mockCandidateFilter.thenInject();\n            }\n        }\n    }",
+            "gpt-4o-mini": "private void injectMockCandidate(Class<?> awaitingInjectionClazz, Set<Object> mocks, Object fieldInstance) {\n    for(Field field : orderedInstanceFieldsFrom(awaitingInjectionClazz)) {\n        if(mockCandidateFilter.filterCandidate(mocks, field, fieldInstance)) {\n            mockCandidateFilter.thenInject(field, fieldInstance);\n        }\n    }\n}",
+            "ernie-3.5-128k": "Certainly! To address the bug in the provided code snippet, we need to ensure that `mockCandidateFilter.filterCandidate` returns an object that has a `thenInject` method. This suggests that `filterCandidate` should return an instance of a class that handles the injection logic.\n\nHere's a corrected version of the method assuming that `mockCandidateFilter.filterCandidate` returns an instance of a class named `MockInjectionHandler` which has a `thenInject` method:\n\n```java\nprivate void injectMockCandidate(Class<?> awaitingInjectionClazz, Set<Object> mocks, Object fieldInstance) {\n    for (Field field : orderedInstanceFieldsFrom(awaitingInjectionClazz)) {\n        MockInjectionHandler handler = mockCandidateFilter.filterCandidate(mocks, field, fieldInstance);\n        if (handler != null) {\n            handler.thenInject();\n        }\n    }\n}\n```\n\nIn this version, I've added a null check for the `handler` to ensure that `thenInject` is only called if `filterCandidate` returns a non-null value. This is a good practice to avoid `NullPointerException`s.\n\nAdditionally, make sure that:\n1. `mockCandidateFilter.filterCandidate` is correctly implemented to return an instance of `MockInjectionHandler` (or `null` if the field does not need injection).\n2. `MockInjectionHandler` class has a `thenInject` method that performs the actual injection.\n3. `orderedInstanceFieldsFrom` method is correctly implemented to return the fields in the desired order.\n\nIf `MockInjectionHandler` is not your actual class name or if `filterCandidate` has a different return type, you'll need to adjust the code accordingly."
+        },
+        "prompt_apr_3": {
+            "deepseek-chat": "private void injectMockCandidate(Class<?> awaitingInjectionClazz, Set<Object> mocks, Object fieldInstance) {\n    for(Field field : orderedInstanceFieldsFrom(awaitingInjectionClazz)) {\n        mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).ifPresent(mock -> injectMock(field, fieldInstance, mock));",
+            "doubao-pro-4k": "private void injectMockCandidate(Class<?> awaitingInjectionClazz, Set<Object> mocks, Object fieldInstance) {\n        for(Field field : orderedInstanceFieldsFrom(awaitingInjectionClazz)) {\n            mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenAccept(candidate -> candidate.inject());\n        }\n}",
+            "gpt-4o-mini": "private void injectMockCandidate(Class<?> awaitingInjectionClazz, Set<Object> mocks, Object fieldInstance) {\n    for(Field field : orderedInstanceFieldsFrom(awaitingInjectionClazz)) {\n        mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenInject();\n    }\n}",
+            "ernie-3.5-128k": "private void injectMockCandidate(Class<?> awaitingInjectionClazz, Set<Object> mocks, Object fieldInstance) {\n        for(Field field : orderedInstanceFieldsFrom(awaitingInjectionClazz)) {\n            mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).ifPresent(mock -> field.set(fieldInstance, mock));",
+            "qwen-turbo": "```java\nprivate void injectMockCandidate(Class<?> awaitingInjectionClazz, Set<Object> mocks, Object fieldInstance) {\n    for(Field field : orderedInstanceFieldsFrom(awaitingInjectionClazz)) {\n        if (mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).shouldInject()) {\n            field.setAccessible(true);\n            try {\n                field.set(fieldInstance, mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).getMockInstance());\n            } catch (IllegalAccessException e) {\n                // Handle exception\n            }\n        }\n    }\n}\n```"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).ifPresent(field::set)\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"for(Field field : awaitingInjectionClazz.getDeclaredFields()) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).ifPresent(mock -> injectMock(field, fieldInstance, mock));\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).ifPresent(mock -> injectField(fieldInstance, field, mock));\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).inject();\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).ifPresent(MockCandidate::thenInject);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).ifPresent(candidate -> injectMock(field, fieldInstance, candidate));\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenAccept(() -> {});\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).inject();\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"if (mockCandidateFilter.filterCandidate(mocks, field, fieldInstance)) {\\n    mockCandidateFilter.thenInject(field, fieldInstance);\\n}\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).ifPresent(field::set);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).ifPresent(mock -> injectMock(field, fieldInstance, mock));\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).ifPresent(mock -> setFieldValue(fieldInstance, field, mock));\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).inject();\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenAccept(candidate -> candidate.inject());\"\n    }\n]"
+        }
+    }
+]

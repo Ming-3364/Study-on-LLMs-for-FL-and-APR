@@ -1,0 +1,36 @@
+[
+    {
+        "buggy_file": "src/main/java/org/joda/time/DateTimeZone.java",
+        "buggy_method": {
+            "method_name": "adjustOffset",
+            "method_body": "public long adjustOffset(long instant, boolean earlierOrLater) {\n        // a bit messy, but will work in all non-pathological cases\n        \n        // evaluate 3 hours before and after to work out if anything is happening\n        long instantBefore = convertUTCToLocal(instant - 3 * DateTimeConstants.MILLIS_PER_HOUR);\n        long instantAfter = convertUTCToLocal(instant + 3 * DateTimeConstants.MILLIS_PER_HOUR);\n        if (instantBefore == instantAfter) {\n            return instant;  // not an overlap (less than is a gap, equal is normal case)\n        }\n        \n        // work out range of instants that have duplicate local times\n        long local = convertUTCToLocal(instant);\n        return convertLocalToUTC(local, false, earlierOrLater ? instantAfter : instantBefore);\n        \n        // calculate result\n          // currently in later offset\n          // currently in earlier offset\n    }",
+            "start_line": 1163,
+            "end_line": 1180,
+            "buggy_lines": [
+                1167,
+                1168,
+                1169,
+                1174,
+                1175
+            ]
+        },
+        "buggy_method_src": "public long adjustOffset(long instant, boolean earlierOrLater) {\n        // a bit messy, but will work in all non-pathological cases\n        \n        // evaluate 3 hours before and after to work out if anything is happening\n        long instantBefore = convertUTCToLocal(instant - 3 * DateTimeConstants.MILLIS_PER_HOUR);\n        long instantAfter = convertUTCToLocal(instant + 3 * DateTimeConstants.MILLIS_PER_HOUR);\n        if (instantBefore == instantAfter) {\n            return instant;  // not an overlap (less than is a gap, equal is normal case)\n        }\n        \n        // work out range of instants that have duplicate local times\n        long local = convertUTCToLocal(instant);\n        return convertLocalToUTC(local, false, earlierOrLater ? instantAfter : instantBefore);\n        \n        // calculate result\n          // currently in later offset\n          // currently in earlier offset\n    }",
+        "test_stack": "org.joda.time.TestDateTimeZoneCutover::testBug3476684_adjustOffset\njunit.framework.AssertionFailedError: expected:<2012-02-25T23:15:00.000-03:00> but was:<2012-02-25T23:15:00.000-02:00>\n\tat junit.framework.Assert.fail(Assert.java:57)\n\tat junit.framework.Assert.failNotEquals(Assert.java:329)\n\tat junit.framework.Assert.assertEquals(Assert.java:78)\n\tat junit.framework.Assert.assertEquals(Assert.java:86)\n\tat junit.framework.TestCase.assertEquals(TestCase.java:253)\n\tat org.joda.time.TestDateTimeZoneCutover.testBug3476684_adjustOffset(TestDateTimeZoneCutover.java:1259)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n\tat sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.lang.reflect.Method.invoke(Method.java:498)\n\tat junit.framework.TestCase.runTest(TestCase.java:176)\n\tat junit.framework.TestCase.runBare(TestCase.java:141)\n\tat junit.framework.TestResult$1.protect(TestResult.java:122)\n\tat junit.framework.TestResult.runProtected(TestResult.java:142)\n\tat junit.framework.TestResult.run(TestResult.java:125)\n\tat junit.framework.TestCase.run(TestCase.java:129)\n\tat junit.framework.TestSuite.runTest(TestSuite.java:255)\n\tat junit.framework.TestSuite.run(TestSuite.java:250)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)\n\tat org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)\n\tat sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)\n\tat sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.lang.reflect.Method.invoke(Method.java:498)\n\tat org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)\n\tat org.apache.tools.ant.Task.perform(Task.java:348)\n\tat org.apache.tools.ant.Target.execute(Target.java:392)\n\tat org.apache.tools.ant.Target.performTasks(Target.java:413)\n\tat org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)\n\tat org.apache.tools.ant.Project.executeTarget(Project.java:1368)\n\tat org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)\n\tat org.apache.tools.ant.Project.executeTargets(Project.java:1251)\n\tat org.apache.tools.ant.Main.runBuild(Main.java:811)\n\tat org.apache.tools.ant.Main.startAnt(Main.java:217)\n\tat org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)\n\tat org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)\n",
+        "test_assert": "assertEquals(baseAfter, baseBefore.withLaterOffsetAtOverlap());\n",
+        "buggy_lines_in_method": [
+            5,
+            6,
+            7,
+            12,
+            13
+        ],
+        "buggy_statements": [
+            "        long instantBefore = convertUTCToLocal(instant - 3 * DateTimeConstants.MILLIS_PER_HOUR);",
+            "        long instantAfter = convertUTCToLocal(instant + 3 * DateTimeConstants.MILLIS_PER_HOUR);",
+            "        if (instantBefore == instantAfter) {",
+            "        long local = convertUTCToLocal(instant);",
+            "        return convertLocalToUTC(local, false, earlierOrLater ? instantAfter : instantBefore);"
+        ],
+        "buggy_method_src_endswith_buggy_statement": "public long adjustOffset(long instant, boolean earlierOrLater) {\n        // a bit messy, but will work in all non-pathological cases\n        \n        // evaluate 3 hours before and after to work out if anything is happening\n        long instantBefore = convertUTCToLocal(instant - 3 * DateTimeConstants.MILLIS_PER_HOUR);\n        long instantAfter = convertUTCToLocal(instant + 3 * DateTimeConstants.MILLIS_PER_HOUR);\n        if (instantBefore == instantAfter) {\n            return instant;  // not an overlap (less than is a gap, equal is normal case)\n        }\n        \n        // work out range of instants that have duplicate local times\n        long local = convertUTCToLocal(instant);\n        return convertLocalToUTC(local, false, earlierOrLater ? instantAfter : instantBefore);"
+    }
+]

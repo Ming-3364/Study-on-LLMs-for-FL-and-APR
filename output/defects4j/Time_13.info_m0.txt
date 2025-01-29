@@ -1,0 +1,98 @@
+
+================== buggy_file ==================
+src/main/java/org/joda/time/format/PeriodFormatterBuilder.java
+================== buggy_method ==================
+{'method_name': 'calculatePrintedLength', 'method_body': 'public int calculatePrintedLength(ReadablePeriod period, Locale locale) {\n            long valueLong = getFieldValue(period);\n            if (valueLong == Long.MAX_VALUE) {\n                return 0;\n            }\n\n            int sum = Math.max(FormatUtils.calculateDigitCount(valueLong), iMinPrintedDigits);\n            if (iFieldType >= SECONDS_MILLIS) {\n                // valueLong contains the seconds and millis fields\n                // the minimum output is 0.000, which is 4 or 5 digits with a negative\n                sum = Math.max(sum, 4);\n                // plus one for the decimal point\n                sum++;\n                if (iFieldType == SECONDS_OPTIONAL_MILLIS &&\n                        (Math.abs(valueLong) % DateTimeConstants.MILLIS_PER_SECOND) == 0) {\n                    sum -= 4; // remove three digits and decimal point\n                }\n                // reset valueLong to refer to the seconds part for the prefic/suffix calculation\n                valueLong = valueLong / DateTimeConstants.MILLIS_PER_SECOND;\n            }\n            int value = (int) valueLong;\n\n            if (iPrefix != null) {\n                sum += iPrefix.calculatePrintedLength(value);\n            }\n            if (iSuffix != null) {\n                sum += iSuffix.calculatePrintedLength(value);\n            }\n\n            return sum;\n        }', 'start_line': 1088, 'end_line': 1118, 'buggy_lines': [1098]}
+================== buggy_method_src ==================
+public int calculatePrintedLength(ReadablePeriod period, Locale locale) {
+            long valueLong = getFieldValue(period);
+            if (valueLong == Long.MAX_VALUE) {
+                return 0;
+            }
+
+            int sum = Math.max(FormatUtils.calculateDigitCount(valueLong), iMinPrintedDigits);
+            if (iFieldType >= SECONDS_MILLIS) {
+                // valueLong contains the seconds and millis fields
+                // the minimum output is 0.000, which is 4 or 5 digits with a negative
+                sum = Math.max(sum, 4);
+                // plus one for the decimal point
+                sum++;
+                if (iFieldType == SECONDS_OPTIONAL_MILLIS &&
+                        (Math.abs(valueLong) % DateTimeConstants.MILLIS_PER_SECOND) == 0) {
+                    sum -= 4; // remove three digits and decimal point
+                }
+                // reset valueLong to refer to the seconds part for the prefic/suffix calculation
+                valueLong = valueLong / DateTimeConstants.MILLIS_PER_SECOND;
+            }
+            int value = (int) valueLong;
+
+            if (iPrefix != null) {
+                sum += iPrefix.calculatePrintedLength(value);
+            }
+            if (iSuffix != null) {
+                sum += iSuffix.calculatePrintedLength(value);
+            }
+
+            return sum;
+        }
+================== test_stack ==================
+org.joda.time.format.TestISOPeriodFormat::testFormatStandard_negative
+junit.framework.ComparisonFailure: expected:<PT[-]0.008S> but was:<PT[]0.008S>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.Assert.assertEquals(Assert.java:107)
+	at junit.framework.TestCase.assertEquals(TestCase.java:269)
+	at org.joda.time.format.TestISOPeriodFormat.testFormatStandard_negative(TestISOPeriodFormat.java:135)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals("PT-0.008S", ISOPeriodFormat.standard().print(p));
+
+================== buggy_lines_in_method ==================
+[11]
+================== buggy_statements ==================
+['                sum = Math.max(sum, 4);']
+================== buggy_method_src_endswith_buggy_statement ==================
+public int calculatePrintedLength(ReadablePeriod period, Locale locale) {
+            long valueLong = getFieldValue(period);
+            if (valueLong == Long.MAX_VALUE) {
+                return 0;
+            }
+
+            int sum = Math.max(FormatUtils.calculateDigitCount(valueLong), iMinPrintedDigits);
+            if (iFieldType >= SECONDS_MILLIS) {
+                // valueLong contains the seconds and millis fields
+                // the minimum output is 0.000, which is 4 or 5 digits with a negative
+                sum = Math.max(sum, 4);

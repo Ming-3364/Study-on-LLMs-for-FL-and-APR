@@ -1,0 +1,212 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/CheckAccessControls.java
+================== buggy_method ==================
+{'method_name': 'checkPropertyVisibility', 'method_body': "private void checkPropertyVisibility(NodeTraversal t,\n      Node getprop, Node parent) {\n    ObjectType objectType =\n        ObjectType.cast(dereference(getprop.getFirstChild().getJSType()));\n    String propertyName = getprop.getLastChild().getString();\n\n    if (objectType != null) {\n      // Is this a normal property access, or are we trying to override\n      // an existing property?\n      boolean isOverride = t.inGlobalScope() &&\n          parent.getType() == Token.ASSIGN &&\n          parent.getFirstChild() == getprop;\n\n      // Find the lowest property defined on a class with visibility\n      // information.\n      if (isOverride) {\n        objectType = objectType.getImplicitPrototype();\n      }\n      JSDocInfo docInfo = null;\n      for (; objectType != null;\n           objectType = objectType.getImplicitPrototype()) {\n        docInfo = objectType.getOwnPropertyJSDocInfo(propertyName);\n        if (docInfo != null &&\n            docInfo.getVisibility() != Visibility.INHERITED) {\n          break;\n        }\n      }\n\n      if (objectType == null) {\n        // We couldn't find a visibility modifier; assume it's public.\n        return;\n      }\n\n      boolean sameInput =\n          t.getInput().getName().equals(docInfo.getSourceName());\n      Visibility visibility = docInfo.getVisibility();\n      JSType ownerType = normalizeClassType(objectType);\n      if (isOverride) {\n        // Check an ASSIGN statement that's trying to override a property\n        // on a superclass.\n        JSDocInfo overridingInfo = parent.getJSDocInfo();\n        Visibility overridingVisibility = overridingInfo == null ?\n            Visibility.INHERITED : overridingInfo.getVisibility();\n\n        // Check that (a) the property *can* be overridden, and\n        // (b) that the visibility of the override is the same as the\n        // visibility of the original property.\n        if (visibility == Visibility.PRIVATE && !sameInput) {\n          compiler.report(\n              t.makeError(getprop, PRIVATE_OVERRIDE,\n                  objectType.toString()));\n        } else if (overridingVisibility != Visibility.INHERITED &&\n            overridingVisibility != visibility) {\n          compiler.report(\n              t.makeError(getprop, VISIBILITY_MISMATCH,\n                  visibility.name(), objectType.toString(),\n                  overridingVisibility.name()));\n        }\n      } else {\n        if (sameInput) {\n          // private access is always allowed in the same file.\n          return;\n        } else if (visibility == Visibility.PRIVATE &&\n            (currentClass == null || ownerType.differsFrom(currentClass))) {\n          if (docInfo.isConstructor() &&\n              isValidPrivateConstructorAccess(parent)) {\n            return;\n          }\n\n          // private access is not allowed outside the file from a different\n          // enclosing class.\n          compiler.report(\n              t.makeError(getprop,\n                  BAD_PRIVATE_PROPERTY_ACCESS,\n                  propertyName,\n                  validator.getReadableJSTypeName(\n                      getprop.getFirstChild(), true)));\n        } else if (visibility == Visibility.PROTECTED) {\n          // There are 3 types of legal accesses of a protected property:\n          // 1) Accesses in the same file\n          // 2) Overriding the property in a subclass\n          // 3) Accessing the property from inside a subclass\n          // The first two have already been checked for.\n          if (currentClass == null || !currentClass.isSubtype(ownerType)) {\n            compiler.report(\n                t.makeError(getprop,  BAD_PROTECTED_PROPERTY_ACCESS,\n                    propertyName,\n                    validator.getReadableJSTypeName(\n                        getprop.getFirstChild(), true)));\n          }\n        }\n      }\n    }\n  }", 'start_line': 407, 'end_line': 500, 'buggy_lines': [416]}
+================== buggy_method_src ==================
+private void checkPropertyVisibility(NodeTraversal t,
+      Node getprop, Node parent) {
+    ObjectType objectType =
+        ObjectType.cast(dereference(getprop.getFirstChild().getJSType()));
+    String propertyName = getprop.getLastChild().getString();
+
+    if (objectType != null) {
+      // Is this a normal property access, or are we trying to override
+      // an existing property?
+      boolean isOverride = t.inGlobalScope() &&
+          parent.getType() == Token.ASSIGN &&
+          parent.getFirstChild() == getprop;
+
+      // Find the lowest property defined on a class with visibility
+      // information.
+      if (isOverride) {
+        objectType = objectType.getImplicitPrototype();
+      }
+      JSDocInfo docInfo = null;
+      for (; objectType != null;
+           objectType = objectType.getImplicitPrototype()) {
+        docInfo = objectType.getOwnPropertyJSDocInfo(propertyName);
+        if (docInfo != null &&
+            docInfo.getVisibility() != Visibility.INHERITED) {
+          break;
+        }
+      }
+
+      if (objectType == null) {
+        // We couldn't find a visibility modifier; assume it's public.
+        return;
+      }
+
+      boolean sameInput =
+          t.getInput().getName().equals(docInfo.getSourceName());
+      Visibility visibility = docInfo.getVisibility();
+      JSType ownerType = normalizeClassType(objectType);
+      if (isOverride) {
+        // Check an ASSIGN statement that's trying to override a property
+        // on a superclass.
+        JSDocInfo overridingInfo = parent.getJSDocInfo();
+        Visibility overridingVisibility = overridingInfo == null ?
+            Visibility.INHERITED : overridingInfo.getVisibility();
+
+        // Check that (a) the property *can* be overridden, and
+        // (b) that the visibility of the override is the same as the
+        // visibility of the original property.
+        if (visibility == Visibility.PRIVATE && !sameInput) {
+          compiler.report(
+              t.makeError(getprop, PRIVATE_OVERRIDE,
+                  objectType.toString()));
+        } else if (overridingVisibility != Visibility.INHERITED &&
+            overridingVisibility != visibility) {
+          compiler.report(
+              t.makeError(getprop, VISIBILITY_MISMATCH,
+                  visibility.name(), objectType.toString(),
+                  overridingVisibility.name()));
+        }
+      } else {
+        if (sameInput) {
+          // private access is always allowed in the same file.
+          return;
+        } else if (visibility == Visibility.PRIVATE &&
+            (currentClass == null || ownerType.differsFrom(currentClass))) {
+          if (docInfo.isConstructor() &&
+              isValidPrivateConstructorAccess(parent)) {
+            return;
+          }
+
+          // private access is not allowed outside the file from a different
+          // enclosing class.
+          compiler.report(
+              t.makeError(getprop,
+                  BAD_PRIVATE_PROPERTY_ACCESS,
+                  propertyName,
+                  validator.getReadableJSTypeName(
+                      getprop.getFirstChild(), true)));
+        } else if (visibility == Visibility.PROTECTED) {
+          // There are 3 types of legal accesses of a protected property:
+          // 1) Accesses in the same file
+          // 2) Overriding the property in a subclass
+          // 3) Accessing the property from inside a subclass
+          // The first two have already been checked for.
+          if (currentClass == null || !currentClass.isSubtype(ownerType)) {
+            compiler.report(
+                t.makeError(getprop,  BAD_PROTECTED_PROPERTY_ACCESS,
+                    propertyName,
+                    validator.getReadableJSTypeName(
+                        getprop.getFirstChild(), true)));
+          }
+        }
+      }
+    }
+  }
+================== test_stack ==================
+com.google.javascript.jscomp.CheckAccessControlsTest::testNoPrivateAccessForProperties6
+junit.framework.AssertionFailedError: Overriding private property of Foo.prototype.
+ expected:<JSC_BAD_PRIVATE_PROPERTY_ACCESS: Access to private property {0} of {1} not allowed here.> but was:<JSC_PRIVATE_OVERRIDE: Overriding private property of {0}.>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.TestCase.assertEquals(TestCase.java:244)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:904)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:486)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:460)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:445)
+	at com.google.javascript.jscomp.CheckAccessControlsTest.testNoPrivateAccessForProperties6(CheckAccessControlsTest.java:402)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.CheckAccessControlsTest::testNoPrivateAccessForProperties8
+junit.framework.AssertionFailedError: There should be one error.  expected:<1> but was:<0>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.TestCase.assertEquals(TestCase.java:401)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:902)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:486)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:460)
+	at com.google.javascript.jscomp.CompilerTestCase.test(CompilerTestCase.java:445)
+	at com.google.javascript.jscomp.CheckAccessControlsTest.testNoPrivateAccessForProperties8(CheckAccessControlsTest.java:425)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+test(new String[] {
+
+================== buggy_lines_in_method ==================
+[10]
+================== buggy_statements ==================
+['      boolean isOverride = t.inGlobalScope() &&']
+================== buggy_method_src_endswith_buggy_statement ==================
+private void checkPropertyVisibility(NodeTraversal t,
+      Node getprop, Node parent) {
+    ObjectType objectType =
+        ObjectType.cast(dereference(getprop.getFirstChild().getJSType()));
+    String propertyName = getprop.getLastChild().getString();
+
+    if (objectType != null) {
+      // Is this a normal property access, or are we trying to override
+      // an existing property?
+      boolean isOverride = t.inGlobalScope() &&

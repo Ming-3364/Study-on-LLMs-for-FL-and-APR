@@ -1,0 +1,83 @@
+[
+    {
+        "buggy_file": "src/java/org/apache/commons/cli2/commandline/WriteableCommandLineImpl.java",
+        "buggy_method": {
+            "method_name": "addOption",
+            "method_body": "public void addOption(Option option) {\n        options.add(option);\n        nameToOption.put(option.getPreferredName(), option);\n\n        for (Iterator i = option.getTriggers().iterator(); i.hasNext();) {\n            nameToOption.put(i.next(), option);\n        }\n\n        // ensure that all parent options are also added\n        Option parent = option.getParent();\n        while (parent != null && !options.contains(parent)) {\n            options.add(parent);\n            parent = parent.getParent();\n        }\n    }",
+            "start_line": 67,
+            "end_line": 81,
+            "buggy_lines": [
+                70,
+                74
+            ]
+        },
+        "buggy_method_src": "public void addOption(Option option) {\n        options.add(option);\n        nameToOption.put(option.getPreferredName(), option);\n\n        for (Iterator i = option.getTriggers().iterator(); i.hasNext();) {\n            nameToOption.put(i.next(), option);\n        }\n\n        // ensure that all parent options are also added\n        Option parent = option.getParent();\n        while (parent != null && !options.contains(parent)) {\n            options.add(parent);\n            parent = parent.getParent();\n        }\n    }",
+        "test_stack": "org.apache.commons.cli2.bug.BugCLI150Test::testNegativeNumber\norg.apache.commons.cli2.OptionException: Unexpected -42 while processing --num\n\tat org.apache.commons.cli2.commandline.Parser.parse(Parser.java:99)\n\tat org.apache.commons.cli2.bug.BugCLI150Test.testNegativeNumber(BugCLI150Test.java:56)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n\tat sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.lang.reflect.Method.invoke(Method.java:498)\n\tat junit.framework.TestCase.runTest(TestCase.java:176)\n\tat junit.framework.TestCase.runBare(TestCase.java:141)\n\tat junit.framework.TestResult$1.protect(TestResult.java:122)\n\tat junit.framework.TestResult.runProtected(TestResult.java:142)\n\tat junit.framework.TestResult.run(TestResult.java:125)\n\tat junit.framework.TestCase.run(TestCase.java:129)\n\tat junit.framework.TestSuite.runTest(TestSuite.java:255)\n\tat junit.framework.TestSuite.run(TestSuite.java:250)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)\n\tat org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)\n\tat sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)\n\tat sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.lang.reflect.Method.invoke(Method.java:498)\n\tat org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)\n\tat org.apache.tools.ant.Task.perform(Task.java:348)\n\tat org.apache.tools.ant.Target.execute(Target.java:392)\n\tat org.apache.tools.ant.Target.performTasks(Target.java:413)\n\tat org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)\n\tat org.apache.tools.ant.Project.executeTarget(Project.java:1368)\n\tat org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)\n\tat org.apache.tools.ant.Project.executeTargets(Project.java:1251)\n\tat org.apache.tools.ant.Main.runBuild(Main.java:811)\n\tat org.apache.tools.ant.Main.startAnt(Main.java:217)\n\tat org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)\n\tat org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)\n",
+        "test_assert": "CommandLine cl = parser.parse(new String[] {\n",
+        "buggy_lines_in_method": [
+            4,
+            8
+        ],
+        "buggy_statements": [
+            "",
+            ""
+        ],
+        "buggy_method_src_endswith_buggy_statement": "public void addOption(Option option) {\n        options.add(option);\n        nameToOption.put(option.getPreferredName(), option);\n\n        for (Iterator i = option.getTriggers().iterator(); i.hasNext();) {\n            nameToOption.put(i.next(), option);\n        }\n"
+    },
+    {
+        "buggy_file": "src/java/org/apache/commons/cli2/commandline/WriteableCommandLineImpl.java",
+        "buggy_method": {
+            "method_name": "looksLikeOption",
+            "method_body": "public boolean looksLikeOption(final String trigger)\n    {\n            // this is a reentrant call\n\n            for (final Iterator i = prefixes.iterator(); i.hasNext();)\n            {\n                final String prefix = (String) i.next();\n\n                if (trigger.startsWith(prefix))\n                {\n                        return true;\n                }\n            }\n            return false;\n    }",
+            "start_line": 232,
+            "end_line": 246,
+            "buggy_lines": [
+                244
+            ]
+        },
+        "buggy_method_src": "public boolean looksLikeOption(final String trigger)\n    {\n            // this is a reentrant call\n\n            for (final Iterator i = prefixes.iterator(); i.hasNext();)\n            {\n                final String prefix = (String) i.next();\n\n                if (trigger.startsWith(prefix))\n                {\n                        return true;\n                }\n            }\n            return false;\n    }",
+        "test_stack": "org.apache.commons.cli2.bug.BugCLI150Test::testNegativeNumber\norg.apache.commons.cli2.OptionException: Unexpected -42 while processing --num\n\tat org.apache.commons.cli2.commandline.Parser.parse(Parser.java:99)\n\tat org.apache.commons.cli2.bug.BugCLI150Test.testNegativeNumber(BugCLI150Test.java:56)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n\tat sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.lang.reflect.Method.invoke(Method.java:498)\n\tat junit.framework.TestCase.runTest(TestCase.java:176)\n\tat junit.framework.TestCase.runBare(TestCase.java:141)\n\tat junit.framework.TestResult$1.protect(TestResult.java:122)\n\tat junit.framework.TestResult.runProtected(TestResult.java:142)\n\tat junit.framework.TestResult.run(TestResult.java:125)\n\tat junit.framework.TestCase.run(TestCase.java:129)\n\tat junit.framework.TestSuite.runTest(TestSuite.java:255)\n\tat junit.framework.TestSuite.run(TestSuite.java:250)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)\n\tat org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)\n\tat sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)\n\tat sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.lang.reflect.Method.invoke(Method.java:498)\n\tat org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)\n\tat org.apache.tools.ant.Task.perform(Task.java:348)\n\tat org.apache.tools.ant.Target.execute(Target.java:392)\n\tat org.apache.tools.ant.Target.performTasks(Target.java:413)\n\tat org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)\n\tat org.apache.tools.ant.Project.executeTarget(Project.java:1368)\n\tat org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)\n\tat org.apache.tools.ant.Project.executeTargets(Project.java:1251)\n\tat org.apache.tools.ant.Main.runBuild(Main.java:811)\n\tat org.apache.tools.ant.Main.startAnt(Main.java:217)\n\tat org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)\n\tat org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)\n",
+        "test_assert": "CommandLine cl = parser.parse(new String[] {\n",
+        "buggy_lines_in_method": [
+            13
+        ],
+        "buggy_statements": [
+            "            }"
+        ],
+        "buggy_method_src_endswith_buggy_statement": "public boolean looksLikeOption(final String trigger)\n    {\n            // this is a reentrant call\n\n            for (final Iterator i = prefixes.iterator(); i.hasNext();)\n            {\n                final String prefix = (String) i.next();\n\n                if (trigger.startsWith(prefix))\n                {\n                        return true;\n                }\n            }"
+    },
+    {
+        "buggy_file": "src/java/org/apache/commons/cli2/commandline/WriteableCommandLineImpl.java",
+        "buggy_method": {
+            "method_name": "toString",
+            "method_body": "public String toString() {\n        final StringBuffer buffer = new StringBuffer();\n\n        // need to add group header\n        for (final Iterator i = normalised.iterator(); i.hasNext();) {\n            final String arg = (String) i.next();\n\n            if (arg.indexOf(' ') >= 0) {\n                buffer.append(\"\\\"\").append(arg).append(\"\\\"\");\n            } else {\n                buffer.append(arg);\n            }\n\n            if (i.hasNext()) {\n                buffer.append(' ');\n            }\n        }\n\n        return buffer.toString();\n    }",
+            "start_line": 248,
+            "end_line": 267,
+            "buggy_lines": [
+                247,
+                251,
+                260,
+                262,
+                265
+            ]
+        },
+        "buggy_method_src": "public String toString() {\n        final StringBuffer buffer = new StringBuffer();\n\n        // need to add group header\n        for (final Iterator i = normalised.iterator(); i.hasNext();) {\n            final String arg = (String) i.next();\n\n            if (arg.indexOf(' ') >= 0) {\n                buffer.append(\"\\\"\").append(arg).append(\"\\\"\");\n            } else {\n                buffer.append(arg);\n            }\n\n            if (i.hasNext()) {\n                buffer.append(' ');\n            }\n        }\n\n        return buffer.toString();\n    }",
+        "test_stack": "org.apache.commons.cli2.bug.BugCLI150Test::testNegativeNumber\norg.apache.commons.cli2.OptionException: Unexpected -42 while processing --num\n\tat org.apache.commons.cli2.commandline.Parser.parse(Parser.java:99)\n\tat org.apache.commons.cli2.bug.BugCLI150Test.testNegativeNumber(BugCLI150Test.java:56)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n\tat sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.lang.reflect.Method.invoke(Method.java:498)\n\tat junit.framework.TestCase.runTest(TestCase.java:176)\n\tat junit.framework.TestCase.runBare(TestCase.java:141)\n\tat junit.framework.TestResult$1.protect(TestResult.java:122)\n\tat junit.framework.TestResult.runProtected(TestResult.java:142)\n\tat junit.framework.TestResult.run(TestResult.java:125)\n\tat junit.framework.TestCase.run(TestCase.java:129)\n\tat junit.framework.TestSuite.runTest(TestSuite.java:255)\n\tat junit.framework.TestSuite.run(TestSuite.java:250)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)\n\tat org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)\n\tat sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)\n\tat sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.lang.reflect.Method.invoke(Method.java:498)\n\tat org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)\n\tat org.apache.tools.ant.Task.perform(Task.java:348)\n\tat org.apache.tools.ant.Target.execute(Target.java:392)\n\tat org.apache.tools.ant.Target.performTasks(Target.java:413)\n\tat org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)\n\tat org.apache.tools.ant.Project.executeTarget(Project.java:1368)\n\tat org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)\n\tat org.apache.tools.ant.Project.executeTargets(Project.java:1251)\n\tat org.apache.tools.ant.Main.runBuild(Main.java:811)\n\tat org.apache.tools.ant.Main.startAnt(Main.java:217)\n\tat org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)\n\tat org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)\n",
+        "test_assert": "CommandLine cl = parser.parse(new String[] {\n",
+        "buggy_lines_in_method": [
+            0,
+            4,
+            13,
+            15,
+            18
+        ],
+        "buggy_statements": [
+            "    }",
+            "        // need to add group header",
+            "",
+            "                buffer.append(' ');",
+            ""
+        ],
+        "buggy_method_src_endswith_buggy_statement": "public String toString() {\n        final StringBuffer buffer = new StringBuffer();\n\n        // need to add group header\n        for (final Iterator i = normalised.iterator(); i.hasNext();) {\n            final String arg = (String) i.next();\n\n            if (arg.indexOf(' ') >= 0) {\n                buffer.append(\"\\\"\").append(arg).append(\"\\\"\");\n            } else {\n                buffer.append(arg);\n            }\n\n            if (i.hasNext()) {\n                buffer.append(' ');\n            }\n        }\n"
+    }
+]

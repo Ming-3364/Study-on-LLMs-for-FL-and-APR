@@ -1,0 +1,174 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "9",
+            "qwen-turbo": "12",
+            "ernie-3.5-128k": "**15**",
+            "deepseek-chat": "12",
+            "gpt-4o-mini": "27"
+        },
+        "prompt_fl_2": {
+            "qwen-turbo": "23",
+            "doubao-pro-4k": "13",
+            "ernie-3.5-128k": "579",
+            "deepseek-chat": "5",
+            "gpt-4o-mini": "232"
+        },
+        "prompt_fl_3": {
+            "qwen-turbo": "232",
+            "deepseek-chat": "4",
+            "ernie-3.5-128k": "**579**",
+            "gpt-4o-mini": "232",
+            "doubao-pro-4k": "579"
+        },
+        "prompt_fl_4": {
+            "doubao-pro-4k": "if (isNaN || divisor.isNaN) {",
+            "qwen-turbo": "if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\n",
+            "deepseek-chat": "double denominator = d * q + c;",
+            "ernie-3.5-128k": "return createComplex((real * q + imaginary) / denominator, (imaginary * q - real) / denominator);",
+            "gpt-4o-mini": "if (isNaN || divisor.isNaN) {"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "return createComplex((real * q + imaginary) / denominator, (imaginary * q - real) / denominator);",
+            "doubao-pro-4k": "return createComplex((Infinity, Infinity));",
+            "deepseek-chat": "if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\n            return NaN;\n        }",
+            "ernie-3.5-128k": "return createComplex((real * q + imaginary) / denominator, (imaginary * q - real) / denominator);",
+            "gpt-4o-mini": "return NaN;"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "Assert.assertTrue(Complex.I.atan().isInfinite());",
+            "doubao-pro-4k": "return NaN;",
+            "ernie-3.5-128k": "return createComplex(Infinity, Infinity);",
+            "deepseek-chat": "if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\n    return NaN;\n}",
+            "gpt-4o-mini": "return NaN;"
+        },
+        "prompt_apr_1": {
+            "gpt-4o-mini": "public Complex divide(Complex divisor)\n        throws NullArgumentException {\n    MathUtils.checkNotNull(divisor);\n    if (isNaN || divisor.isNaN) {\n        return NaN;\n    }\n\n    if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\n        return NaN;\n    }\n\n    if (divisor.isInfinite() && !isInfinite()) {\n        return ZERO;\n    }\n\n    final double c = divisor.getReal();\n    final double d = divisor.getImaginary();\n\n    if (FastMath.abs(c) < FastMath.abs(d)) {\n        double q = c / d;\n        double denominator = c * q + d;\n        return createComplex((real * q + imaginary) / denominator,\n            (imaginary * q - real) / denominator);\n    } else {\n        double q = d / c;\n        double denominator = d * q + c;\n        return createComplex((imaginary * q + real) / denominator,\n            (real - imaginary * q) / denominator);  // Fix here\n    }\n}",
+            "qwen-turbo": "Certainly! The issue on lines 8 and 9 is that `isNaN` and `divisor.isNaN` should be checked using getter methods to determine if the complex numbers are NaN. Assuming that `Complex` class has `isNan()` methods for this purpose, the corrected code would look like this:\n\n```java\npublic Complex divide(Complex divisor)\n        throws NullArgumentException {\n    MathUtils.checkNotNull(divisor);\n    if (this.isNan() || divisor.isNan()) {\n        return NaN;\n    }\n\n    if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\n        return NaN;\n    }\n\n    if (divisor.isInfinite() && !isInfinite()) {\n        return ZERO;\n    }\n\n    final double c = divisor.getReal();\n    final double d = divisor.getImaginary();\n\n    if (FastMath.abs(c) < FastMath.abs(d)) {\n        double q = c / d;\n        double denominator = c * q + d;\n        return createComplex((real * q + imaginary) / denominator,\n            (imaginary * q - real) / denominator);\n    } else {\n        double q = d / c;\n        double denominator = d * q + c;\n        return createComplex((imaginary * q + real) / denominator,\n            (imaginary - real * q) / denominator);\n    }\n}\n```\n\nMake sure that the `Complex` class includes appropriate `isNan()` methods to check for NaN values.",
+            "deepseek-chat": "The bug in the code is related to the division by zero check. The current code checks if both the real and imaginary parts of the divisor are zero, but it should return `NaN` only if both are zero. However, the code should also handle the case where the divisor is infinite. Here is the corrected method:\n\n```java\npublic Complex divide(Complex divisor)\n        throws NullArgumentException {\n    MathUtils.checkNotNull(divisor);\n    if (isNaN || divisor.isNaN) {\n        return NaN;\n    }\n\n    if (divisor.isInfinite() && !isInfinite()) {\n        return ZERO;\n    }\n\n    if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\n        return NaN;\n    }\n\n    final double c = divisor.getReal();\n    final double d = divisor.getImaginary();\n\n    if (FastMath.abs(c) < FastMath.abs(d)) {\n        double q = c / d;\n        double denominator = c * q + d;\n        return createComplex((real * q + imaginary) / denominator,\n            (imaginary * q - real) / denominator);\n    } else {\n        double q = d / c;\n        double denominator = d * q + c;\n        return createComplex((imaginary * q + real) / denominator,\n            (imaginary - real * q) / denominator);\n    }\n}\n```\n\n### Explanation of the Fix:\n1. **Order of Checks**: The check for `divisor.isInfinite()` is moved before the check for division by zero. This ensures that if the divisor is infinite, the method returns `ZERO` before checking for division by zero.\n2. **Division by Zero Check**: The check for division by zero remains the same, but it is now correctly placed after the infinite check.\n\nThis ensures that the method handles both infinite divisors and division by zero correctly.",
+            "doubao-pro-4k": "public Complex divide(Complex divisor)\n        throws NullArgumentException {\n        MathUtils.checkNotNull(divisor);\n        if (isNaN() || divisor.isNaN()) {\n            return NaN;\n        }\n\n        if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\n            return NaN;\n        }\n\n        if (divisor.isInfinite() &&!isInfinite()) {\n            return ZERO;\n        }\n\n        final double c = divisor.getReal();\n        final double d = divisor.getImaginary();\n\n        if (FastMath.abs(c) < FastMath.abs(d)) {\n            double q = c / d;\n            double denominator = c * q + d;\n            return createComplex((real * q + imaginary) / denominator,\n                (imaginary * q - real) / denominator);\n        } else {\n            double q = d / c;\n            double denominator = d * q + c;\n            return createComplex((imaginary * q + real) / denominator,\n                (imaginary - real * q) / denominator);\n        }\n    }",
+            "ernie-3.5-128k": "public Complex divide(Complex divisor)\n        throws NullArgumentException {\n        MathUtils.checkNotNull(divisor);\n        if (this.isNaN || divisor.isNaN) {\n            return Complex.NaN;  // Fix: Use the class name or an appropriate reference to NaN\n        }\n\n        if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\n            return Complex.NaN;  // Fix: Use the class name or an appropriate reference to NaN\n        }\n\n        if (divisor.isInfinite() && !this.isInfinite()) {\n            return Complex.ZERO;  // Fix: Use the class name or an appropriate reference to ZERO\n        }\n\n        final double c = divisor.getReal();\n        final double d = divisor.getImaginary();\n\n        if (FastMath.abs(c) < FastMath.abs(d)) {\n            double q = c / d;\n            double denominator = c * q + d;\n            return createComplex((this.real * q + this.imaginary) / denominator,\n                (this.imaginary * q - this.real) / denominator);\n        } else {\n            double q = d / c;\n            double denominator = d * q + c;\n            return createComplex((this.imaginary * q + this.real) / denominator,\n                (this.imaginary - this.real * q) / denominator);\n        }\n    }\n\nNote: The fixes assume that `Complex.NaN` and `Complex.ZERO` are static instances within the `Complex` class representing the NaN and zero complex numbers respectively. Also, `this.real` and `this.imaginary` are assumed to be the real and imaginary parts of the current `Complex` instance. Ensure that these references are correct according to your class definition."
+        },
+        "prompt_apr_2": {
+            "deepseek-chat": "public Complex divide(Complex divisor)\n        throws NullArgumentException {\n        MathUtils.checkNotNull(divisor);\n        if (isNaN || divisor.isNaN) {\n            return NaN;\n        }\n\n        if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\n            throw new ArithmeticException(\"Division by zero is not allowed.\");\n        }\n\n        if (divisor.isInfinite() && !isInfinite()) {\n            return ZERO;\n        }\n\n        final double c = divisor.getReal();\n        final double d = divisor.getImaginary();\n\n        if (FastMath.abs(c) < FastMath.abs(d)) {\n            double q = c / d;\n            double denominator = c * q + d;\n            return createComplex((real * q + imaginary) / denominator,\n                (imaginary * q - real) / denominator);\n        } else {\n            double q = d / c;\n            double denominator = d * q + c;\n            return createComplex((imaginary * q + real) / denominator,\n                (imaginary - real * q) / denominator);\n        }\n    }",
+            "qwen-turbo": "Certainly, the issue with the current code is that dividing by a complex number with both real and imaginary parts equal to zero is undefined and should indeed return NaN. However, the check for infinity needs to be handled correctly as well. Here is the corrected method:\n\n```java\npublic Complex divide(Complex divisor)\n        throws NullArgumentException {\n    MathUtils.checkNotNull(divisor);\n    if (isNaN || divisor.isNaN) {\n        return NaN;\n    }\n\n    if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\n        return NaN;\n    }\n\n    if (divisor.isInfinite() && !isInfinite()) {\n        return ZERO;\n    }\n\n    final double c = divisor.getReal();\n    final double d = divisor.getImaginary();\n\n    if (FastMath.abs(c) < FastMath.abs(d)) {\n        double q = c / d;\n        double denominator = c * q + d;\n        return createComplex((real * q + imaginary) / denominator,\n            (imaginary * q - real) / denominator);\n    } else {\n        double q = d / c;\n        double denominator = d * q + c;\n        return createComplex((imaginary * q + real) / denominator,\n            (imaginary - real * q) / denominator);\n    }\n}\n```\n\nThis code correctly checks if the divisor is zero (both real and imaginary parts are zero) and returns NaN in such cases. The rest of the logic remains unchanged.",
+            "gpt-4o-mini": "public Complex divide(Complex divisor)\n        throws NullArgumentException {\n        MathUtils.checkNotNull(divisor);\n        if (isNaN || divisor.isNaN) {\n            return NaN;\n        }\n\n        if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\n            throw new ArithmeticException(\"Division by zero (complex number with real and imaginary parts both zero).\");\n        }\n\n        if (divisor.isInfinite() && !isInfinite()) {\n            return ZERO;\n        }\n\n        final double c = divisor.getReal();\n        final double d = divisor.getImaginary();\n\n        if (FastMath.abs(c) < FastMath.abs(d)) {\n            double q = c / d;\n            double denominator = c * q + d;\n            return createComplex((real * q + imaginary) / denominator,\n                (imaginary * q - real) / denominator);\n        } else {\n            double q = d / c;\n            double denominator = d * q + c;\n            return createComplex((imaginary * q + real) / denominator,\n                (imaginary - real * q) / denominator);\n        }\n    }",
+            "ernie-3.5-128k": "public Complex divide(Complex divisor)\n        throws NullArgumentException {\n    MathUtils.checkNotNull(divisor);\n    if (isNaN || divisor.isNaN) {\n        return NaN;\n    }\n\n    final double c = divisor.getReal();\n    final double d = divisor.getImaginary();\n\n    // Check for division by zero (both real and imaginary parts zero)\n    if (c == 0.0 && d == 0.0) {\n        return NaN; // Division by zero is not defined, so return NaN\n    }\n\n    if (divisor.isInfinite() && !isInfinite()) {\n        return ZERO;\n    }\n\n    if (FastMath.abs(c) < FastMath.abs(d)) {\n        double q = c / d;\n        double denominator = c * q + d;\n        return createComplex((real * q + imaginary) / denominator,\n            (imaginary * q - real) / denominator);\n    } else {\n        double q = d / c;\n        double denominator = d * q + c;\n        return createComplex((imaginary * q + real) / denominator,\n            (imaginary - real * q) / denominator);\n    }\n}",
+            "doubao-pro-4k": "public Complex divide(Complex divisor)\n        throws NullArgumentException {\n        MathUtils.checkNotNull(divisor);\n        if (isNaN || divisor.isNaN) {\n            return NaN;\n        }\n\n        if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\n            throw new IllegalArgumentException(\"Divisor cannot be zero.\");\n        }\n\n        if (divisor.isInfinite() &&!isInfinite()) {\n            return ZERO;\n        }\n\n        final double c = divisor.getReal();\n        final double d = divisor.getImaginary();\n\n        if (FastMath.abs(c) < FastMath.abs(d)) {\n            double q = c / d;\n            double denominator = c * q + d;\n            return createComplex((real * q + imaginary) / denominator,\n                (imaginary * q - real) / denominator);\n        } else {\n            double q = d / c;\n            double denominator = d * q + c;\n            return createComplex((imaginary * q + real) / denominator,\n                (imaginary - real * q) / denominator);\n        }\n    }"
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\npublic Complex divide(Complex divisor)\n        throws NullArgumentException {\n    MathUtils.checkNotNull(divisor);\n    if (isNaN || divisor.isNaN) {\n        return NaN;\n    }\n\n    if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\n        throw new ArithmeticException(\"Division by zero\");\n    }\n```",
+            "deepseek-chat": "public Complex divide(Complex divisor)\n        throws NullArgumentException {\n        MathUtils.checkNotNull(divisor);\n        if (isNaN || divisor.isNaN) {\n            return NaN;\n        }\n\n        if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\n            throw new ArithmeticException(\"Division by zero is not allowed\");",
+            "ernie-3.5-128k": "public Complex divide(Complex divisor)\n        throws NullArgumentException {\n        MathUtils.checkNotNull(divisor);\n        if (isNaN || divisor.isNaN) {\n            return NaN;\n        }\n\n        if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\n            throw new ArithmeticException(\"Cannot divide by zero\");\n        }",
+            "doubao-pro-4k": "public Complex divide(Complex divisor)\n        throws NullArgumentException {\n        MathUtils.checkNotNull(divisor);\n        if (isNaN || divisor.isNaN) {\n            return NaN;\n        }\n\n        if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\n            throw new IllegalArgumentException(\"Divisor cannot be zero.\");\n        }\n}",
+            "gpt-4o-mini": "public Complex divide(Complex divisor)\n        throws NullArgumentException {\n    MathUtils.checkNotNull(divisor);\n    if (isNaN || divisor.isNaN) {\n        return NaN;\n    }\n\n    if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\n        throw new ArithmeticException(\"Division by zero\");\n    }"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"if (isNaN() || divisor.isNaN()) {\"\n    },\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"return new Complex(Double.NaN, Double.NaN);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\"\n    },\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"    return NaN;\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"if (isNaN || divisor.isNaN()) {\"\n    },\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"return NaN();\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"if (this.isNaN || divisor.isNaN()) {\"\n    },\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"    return Complex.NaN;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"if (Double.isNaN(real) || Double.isNaN(divisor.getReal()) || Double.isNaN(imaginary) || Double.isNaN(divisor.getImaginary())) {\"\n    },\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"return NaN;\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) { throw new ArithmeticException(\\\"Division by zero\\\"); }\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\"\n    },\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"    return NaN;\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\"\n    },\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"    throw new ArithmeticException(\\\"Division by zero\\\");\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0 &&!divisor.isNaN()) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) {\"\n    },\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"    throw new ArithmeticException(\\\"Cannot divide by zero\\\");\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) { throw new ArithmeticException(\\\"Division by zero\\\"); }\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) { throw new ArithmeticException(\\\"Division by zero\\\"); }\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"throw new ArithmeticException(\\\"Division by zero\\\");\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"if (divisor.getReal() == 0.0 && divisor.getImaginary() == 0.0) { throw new IllegalArgumentException(\\\"Divisor cannot be zero.\\\"); }\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"throw new ArithmeticException(\\\"Cannot divide by zero or NaN.\\\");\"\n    }\n]"
+        }
+    },
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "6",
+            "qwen-turbo": "2",
+            "ernie-3.5-128k": "**5**",
+            "deepseek-chat": "4",
+            "gpt-4o-mini": "6"
+        },
+        "prompt_fl_2": {
+            "qwen-turbo": "4",
+            "doubao-pro-4k": "10",
+            "deepseek-chat": "2",
+            "ernie-3.5-128k": "**5**",
+            "gpt-4o-mini": "21"
+        },
+        "prompt_fl_3": {
+            "qwen-turbo": "26",
+            "ernie-3.5-128k": "**579**",
+            "deepseek-chat": "4",
+            "gpt-4o-mini": "40",
+            "doubao-pro-4k": "11"
+        },
+        "prompt_fl_4": {
+            "doubao-pro-4k": "return NaN;",
+            "qwen-turbo": "if (isNaN || Double.isNaN(divisor))",
+            "ernie-3.5-128k": "if (isNaN || Double.isNaN(divisor)) {",
+            "deepseek-chat": "```java\nreturn !isInfinite() ? ZERO : NaN;\n```",
+            "gpt-4o-mini": "return NaN;"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "return createComplex(real / divisor, imaginary / divisor);",
+            "deepseek-chat": "return createComplex(real / divisor, imaginary  / divisor);",
+            "ernie-3.5-128k": "return createComplex(real / divisor, imaginary / divisor);",
+            "gpt-4o-mini": "return !isInfinite() ? ZERO : NaN;",
+            "doubao-pro-4k": "return createComplex(real / divisor,\n                             imaginary  / divisor);"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "return !isInfinite() ? ZERO : NaN;",
+            "ernie-3.5-128k": "return createComplex(real / divisor, imaginary / divisor);",
+            "doubao-pro-4k": "return createComplex(real / divisor, imaginary  / divisor);",
+            "deepseek-chat": "return !isInfinite() ? ZERO : NaN;",
+            "gpt-4o-mini": "return !isInfinite() ? ZERO : NaN;"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "Certainly, here is the corrected version of your method:\n\n```java\npublic Complex divide(double divisor) {\n    if (Double.isNaN(divisor)) {\n        return NaN;\n    }\n    if (divisor == 0d) {\n        return NaN;\n    }\n    if (Double.isInfinite(divisor)) {\n        return isInfinite() ? ZERO : NaN;\n    }\n    return createComplex(real / divisor, imaginary / divisor);\n}\n```\n\nThe main changes made were:\n1. Corrected the check for `NaN` on `divisor`.\n2. Fixed the logic for checking if the current instance is infinite.",
+            "deepseek-chat": "public Complex divide(double divisor) {\n    if (isNaN || Double.isNaN(divisor)) {\n        return NaN;\n    }\n    if (divisor == 0d) {\n        return NaN;\n    }\n    if (Double.isInfinite(divisor)) {\n        return isInfinite() ? NaN : ZERO;\n    }\n    return createComplex(real / divisor,\n                         imaginary  / divisor);\n}",
+            "gpt-4o-mini": "public Complex divide(double divisor) {\n        if (isNaN || Double.isNaN(divisor)) {\n            return NaN;\n        }\n        if (divisor == 0d) {\n            return NaN;\n        }\n        if (Double.isInfinite(divisor)) {\n            return !isInfinite() ? new Complex(0, 0) : NaN;\n        }\n        return createComplex(real / divisor,\n                             imaginary / divisor);\n    }",
+            "ernie-3.5-128k": "public Complex divide(double divisor) {\n        if (isNaN() || Double.isNaN(divisor)) {\n            return NaN();\n        }\n        if (divisor == 0d) {\n            return NaN();\n        }\n        if (Double.isInfinite(divisor)) {\n            return !isInfinite() ? ZERO() : NaN();\n        }\n        return createComplex(real / divisor, imaginary / divisor);\n    }\n\nIn line 6, I corrected the method calls from `isNaN`, `ZERO`, and `NaN` to be in the form of method invocations (`isNaN()`, `ZERO()`, `NaN()`), assuming these are methods defined within the `Complex` class.",
+            "doubao-pro-4k": "public Complex divide(double divisor) {\n    if (Double.isNaN(real) || Double.isNaN(imaginary) || Double.isNaN(divisor)) {\n        return NaN;\n    }\n    if (divisor == 0d) {\n        return NaN;\n    }\n    if (Double.isInfinite(divisor)) {\n        return!Double.isInfinite(real) &&!Double.isInfinite(imaginary)? ZERO : NaN;\n    }\n    return createComplex(real / divisor,\n                         imaginary / divisor);\n}"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "Certainly, here is the corrected version of your `divide` method:\n\n```java\npublic Complex divide(double divisor) {\n    if (Double.isNaN(divisor)) {\n        return NaN;\n    }\n    if (divisor == 0d) {\n        return isInfinite() ? this : NaN;\n    }\n    if (Double.isInfinite(divisor)) {\n        return !isInfinite() ? ZERO : NaN;\n    }\n    return createComplex(real / divisor, imaginary / divisor);\n}\n```\n\nMake sure that `NaN`, `ZERO`, `isInfinite()`, and `createComplex` are properly defined in your class context. If they are not, you will need to define them accordingly.",
+            "deepseek-chat": "public Complex divide(double divisor) {\n    if (isNaN || Double.isNaN(divisor)) {\n        return createComplex(Double.NaN, Double.NaN);\n    }\n    if (divisor == 0d) {\n        return createComplex(Double.NaN, Double.NaN);\n    }\n    if (Double.isInfinite(divisor)) {\n        return !isInfinite() ? ZERO : createComplex(Double.NaN, Double.NaN);\n    }\n    return createComplex(real / divisor, imaginary / divisor);\n}",
+            "gpt-4o-mini": "public Complex divide(double divisor) {\n    if (isNaN || Double.isNaN(divisor)) {\n        return new Complex(Double.NaN, Double.NaN); // Return Complex NaN\n    }\n    if (divisor == 0d) {\n        return new Complex(Double.NaN, Double.NaN); // Return Complex NaN for division by zero\n    }\n    if (Double.isInfinite(divisor)) {\n        return !isInfinite() ? new Complex(0d, 0d) : new Complex(Double.NaN, Double.NaN); // Handle infinite divisor\n    }\n    return createComplex(real / divisor,\n                         imaginary / divisor);\n}",
+            "ernie-3.5-128k": "public Complex divide(double divisor) {\n    if (isNaN() || Double.isNaN(divisor)) {\n        return NaN();\n    }\n    if (divisor == 0d) {\n        return NaN();\n    }\n    if (Double.isInfinite(divisor)) {\n        return !isInfinite() ? ZERO() : NaN();\n    }\n    return createComplex(real / divisor, imaginary / divisor);\n}\n\nAssumptions:\n- `isNaN()`, `NaN()`, `ZERO()`, and `createComplex` are methods within the `Complex` class.\n- `real` and `imaginary` are fields within the `Complex` class that store the real and imaginary parts of the complex number.",
+            "doubao-pro-4k": "public Complex divide(double divisor) {\n    if (Double.isNaN(real) || Double.isNaN(imaginary) || Double.isNaN(divisor)) {\n        return new Complex(Double.NaN, Double.NaN);\n    }\n    if (divisor == 0d) {\n        return new Complex(Double.NaN, Double.NaN);\n    }\n    if (Double.isInfinite(divisor)) {\n        return!Double.isInfinite(real) &&!Double.isInfinite(imaginary)? new Complex(0, 0) : new Complex(Double.NaN, Double.NaN);\n    }\n    return createComplex(real / divisor,\n                         imaginary / divisor);\n}"
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\npublic Complex divide(double divisor) {\n    if (isNaN || Double.isNaN(divisor)) {\n        return NaN;\n    }\n    if (divisor == 0.0) {\n```",
+            "deepseek-chat": "public Complex divide(double divisor) {\n    if (isNaN || Double.isNaN(divisor)) {\n        return NaN;\n    }\n    if (divisor == 0d) {\n        return NaN;\n    }",
+            "ernie-3.5-128k": "public Complex divide(double divisor) {\n        if (isNaN || Double.isNaN(divisor)) {\n            return NaN;\n        }\n        if (divisor == 0d) {\n            return new Complex(Double.NaN, Double.NaN);\n",
+            "doubao-pro-4k": "public Complex divide(double divisor) {\n    if (isNaN || Double.isNaN(divisor)) {\n        return NaN;\n    }\n    if (divisor == 0d) {\n        throw new IllegalArgumentException(\"Cannot divide by zero.\");\n    }\n}",
+            "gpt-4o-mini": "public Complex divide(double divisor) {\n    if (isNaN || Double.isNaN(divisor)) {\n        return NaN;\n    }\n    if (divisor == 0d) {\n        return new Complex(Double.NaN, Double.NaN);\n    }"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"if (Double.isInfinite(this.real) || Double.isInfinite(this.imaginary))\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return isInfinite()? ZERO : NaN;\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return this.isInfinite() ? NaN : ZERO;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"if (Double.isInfinite(divisor) && !isInfinite()) {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return (isInfinite() || Double.isInfinite(divisor)) ? NaN : createComplex(real / divisor, imaginary / divisor);\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"        if (isNaN(this.real) || isNaN(this.imaginary) || Double.isNaN(divisor)) {\"\n    },\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"            return new Complex(Double.NaN, Double.NaN);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"return new Complex(Double.NaN, Double.NaN);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"return new Complex(Double.NaN, Double.NaN);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"return Complex.NaN;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"        if (isNaN || Double.isNaN(divisor)) {\"\n    },\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"            return createComplex(Double.NaN, Double.NaN);\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"            return new Complex(Double.NaN, Double.NaN);\"\n    }\n]",
+            "doubao-pro-4k": "[\n{\"line_number\": 7,\"fixed_statement\": \"if (divisor == 0d) { return new Complex(Double.NaN, Double.NaN);\"}\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"if (divisor == 0d) { return new Complex(Double.NaN, Double.NaN); }\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"if (divisor == 0d) { return NaN; }\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return new Complex(Double.NaN, Double.NaN);\"\n    }\n]"
+        }
+    }
+]

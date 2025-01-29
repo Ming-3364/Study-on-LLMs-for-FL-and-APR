@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "7",
+            "qwen-turbo": "4",
+            "deepseek-chat": "4",
+            "ernie-3.5-128k": "7",
+            "gpt-4o-mini": "7"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "20",
+            "ernie-3.5-128k": "20",
+            "deepseek-chat": "20",
+            "gpt-4o-mini": "20"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "20",
+            "ernie-3.5-128k": "20",
+            "deepseek-chat": "20",
+            "gpt-4o-mini": "20"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "return (Class) actual;",
+            "ernie-3.5-128k": "return (Class) actual;",
+            "doubao-pro-4k": "return (Class) actual;",
+            "deepseek-chat": "return (Class) actual;",
+            "gpt-4o-mini": "return (Class) actual;"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "return (Class) actual;",
+            "doubao-pro-4k": "sun",
+            "ernie-3.5-128k": "return (Class) actual;",
+            "gpt-4o-mini": "return (Class) actual;",
+            "deepseek-chat": "return (Class) actual;"
+        },
+        "prompt_fl_6": {
+            "doubao-pro-4k": "assertEquals",
+            "qwen-turbo": "assertEquals(Set.class, m.getGenericType(field(\"nested\")));",
+            "deepseek-chat": "return (Class) actual;",
+            "ernie-3.5-128k": "return (Class) actual;",
+            "gpt-4o-mini": "return (Class) actual;"
+        },
+        "prompt_apr_1": {
+            "doubao-pro-4k": "public Class<?> getGenericType(Field field) {\n    Type generic = field.getGenericType();\n    if (generic!= null && generic instanceof ParameterizedType) {\n        Type actual = ((ParameterizedType) generic).getActualTypeArguments()[0];\n        if (actual instanceof Class<?>) {\n            return (Class<?>) actual;\n        }\n    }\n    return Object.class;\n}",
+            "ernie-3.5-128k": "public Class<?> getGenericType(Field field) {        \n    Type generic = field.getGenericType();\n    if (generic != null && generic instanceof ParameterizedType) {\n        Type actual = ((ParameterizedType) generic).getActualTypeArguments()[0];\n        if (actual instanceof Class) {\n            return (Class<?>) actual;\n        } else {\n            return Object.class; // Return Object.class if actual type is not a Class<?>\n        }\n        //in case of nested generics we don't go deep\n    }\n    \n    return Object.class;\n}",
+            "qwen-turbo": "Certainly! The issue in your code is that you are trying to cast `actual` directly to `Class`, but `actual` could be a `Type` that is not necessarily a `Class`. To handle this correctly, you should check if `actual` is an instance of `Class` before casting it. Here is the corrected method:\n\n```java\npublic Class<?> getGenericType(Field field) {        \n    Type generic = field.getGenericType();\n    if (generic != null && generic instanceof ParameterizedType) {\n        Type[] actualTypeArguments = ((ParameterizedType) generic).getActualTypeArguments();\n        if (actualTypeArguments.length > 0) {\n            Type actual = actualTypeArguments[0];\n            if (actual instanceof Class) {\n                return (Class<?>) actual;\n            } else if (actual instanceof ParameterizedType) {\n                return (Class<?>) ((ParameterizedType) actual).getRawType();\n            }\n        }\n    }\n    \n    return Object.class;\n}\n```\n\nThis version of the method ensures that the type is properly handled and avoids potential `ClassCastException`. It also checks for nested generic types and retrieves the raw type if necessary.",
+            "deepseek-chat": "The bug in the code is that the method does not handle the case where the actual type argument is not a `Class` but another `ParameterizedType` or a `TypeVariable`. To fix this, we need to check if the `actual` type is an instance of `Class` before casting it. If it's not, we should return `Object.class`.\n\nHere is the complete corrected method:\n\npublic Class getGenericType(Field field) {        \n    Type generic = field.getGenericType();\n    if (generic != null && generic instanceof ParameterizedType) {\n        Type actual = ((ParameterizedType) generic).getActualTypeArguments()[0];\n        if (actual instanceof Class) {\n            return (Class) actual;\n        } else {\n            return Object.class;\n        }\n        //in case of nested generics we don't go deep\n    }\n    \n    return Object.class;\n}",
+            "gpt-4o-mini": "public Class getGenericType(Field field) {        \n    Type generic = field.getGenericType();\n    if (generic != null && generic instanceof ParameterizedType) {\n        Type actual = ((ParameterizedType) generic).getActualTypeArguments()[0];\n        \n        if (actual instanceof Class) {\n            return (Class) actual;\n        } else {\n            return Object.class;\n        }\n    }\n    \n    return Object.class;\n}"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "Certainly, here is the complete corrected method:\n\n```java\npublic Class<?> getGenericType(Field field) {        \n    Type generic = field.getGenericType();\n    if (generic != null && generic instanceof ParameterizedType) {\n        Type actual = ((ParameterizedType) generic).getActualTypeArguments()[0];\n        if (actual instanceof Class) {\n            return (Class<?>) actual;\n        } else {\n            throw new IllegalArgumentException(\"Expected a Class but found \" + actual.getClass().getName());\n        }\n    }\n    \n    return Object.class;\n}\n```\n\nThis ensures that the type returned is indeed a `Class` and handles the case where the type argument is not a `Class`.",
+            "deepseek-chat": "public Class getGenericType(Field field) {        \n    Type generic = field.getGenericType();\n    if (generic != null && generic instanceof ParameterizedType) {\n        Type actual = ((ParameterizedType) generic).getActualTypeArguments()[0];\n        if (actual instanceof Class) {\n            return (Class) actual;\n        } else if (actual instanceof ParameterizedType) {\n            Type rawType = ((ParameterizedType) actual).getRawType();\n            if (rawType instanceof Class) {\n                return (Class) rawType;\n            }\n        }\n        //in case of nested generics we don't go deep\n    }\n    \n    return Object.class;\n}",
+            "doubao-pro-4k": "public Class<?> getGenericType(Field field) {\n    Type generic = field.getGenericType();\n    if (generic!= null && generic instanceof ParameterizedType) {\n        Type actual = ((ParameterizedType) generic).getActualTypeArguments()[0];\n        if (actual instanceof Class) {\n            return (Class) actual;\n        }\n    }\n    return Object.class;\n}",
+            "gpt-4o-mini": "public Class<?> getGenericType(Field field) {        \n    Type generic = field.getGenericType();\n    if (generic != null && generic instanceof ParameterizedType) {\n        Type actual = ((ParameterizedType) generic).getActualTypeArguments()[0];\n        if (actual instanceof Class) {\n            return (Class<?>) actual;\n        } else {\n            // Handle the case where the actual type argument is not a Class\n            return Object.class;\n        }\n    }\n    \n    return Object.class;\n}",
+            "ernie-3.5-128k": "Certainly! The issue in your code is the unsafe cast `(Class) actual`. The `actual` variable is of type `Type`, which is a superclass of `Class<?>`, `GenericArrayType`, `TypeVariable<?>`, and `WildcardType`. Directly casting `Type` to `Class` can lead to a `ClassCastException` if `actual` is not an instance of `Class`.\n\nTo safely convert `Type` to `Class<?>`, you should use a helper method to check and cast accordingly. Here's the corrected method:\n\npublic Class<?> getGenericType(Field field) {        \n    Type generic = field.getGenericType();\n    if (generic != null && generic instanceof ParameterizedType) {\n        Type actual = ((ParameterizedType) generic).getActualTypeArguments()[0];\n        if (actual instanceof Class<?>) {\n            return (Class<?>) actual;\n        } else {\n            // Handle the case where actual is not a Class<?>\n            // For simplicity, we'll just return Object.class here\n            // You can add more specific handling if needed\n            return Object.class;\n        }\n        // in case of nested generics we don't go deep\n    }\n    \n    return Object.class;\n}"
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\npublic Class getGenericType(Field field) {        \n    Type generic = field.getGenericType();\n    if (generic != null && generic instanceof ParameterizedType) {\n        Type actual = ((ParameterizedType) generic).getActualTypeArguments()[0];\n        return (Class) actual;\n    }\n```",
+            "ernie-3.5-128k": "public Class getGenericType(Field field) {        \n        Type generic = field.getGenericType();\n        if (generic != null && generic instanceof ParameterizedType) {\n            Type actual = ((ParameterizedType) generic).getActualTypeArguments()[0];\n            return (Class<?>) actual;  // Fixed casting to Class<?>\n            //in case of nested generics we don't go deep\n        }",
+            "doubao-pro-4k": "public Class getGenericType(Field field) {        \n    Type generic = field.getGenericType();\n    if (generic!= null && generic instanceof ParameterizedType) {\n        Type actual = ((ParameterizedType) generic).getActualTypeArguments()[0];\n        if (actual instanceof Class) {\n            return (Class) actual;\n        }\n    }\n}",
+            "gpt-4o-mini": "public Class getGenericType(Field field) {        \n        Type generic = field.getGenericType();\n        if (generic != null && generic instanceof ParameterizedType) {\n            Type actual = ((ParameterizedType) generic).getActualTypeArguments()[0];\n            return (Class<?>) actual;\n        }",
+            "deepseek-chat": "```java\npublic Class getGenericType(Field field) {        \n    Type generic = field.getGenericType();\n    if (generic != null && generic instanceof ParameterizedType) {\n        Type actual = ((ParameterizedType) generic).getActualTypeArguments()[0];\n        if (actual instanceof Class) {\n            return (Class) actual;\n        }\n        //in case of nested generics we don't go deep\n    }\n```"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"return (Class<?>) actual;\"\n    },\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"return (Class<?>) actual;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"if (actual instanceof Class) {\"\n    },\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"    return (Class<?>) actual;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"Type actual = ((ParameterizedType) generic).getActualTypeArguments()[0]; if (actual instanceof Class) { return (Class) actual; }\"\n    },\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"return Object.class;\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"Class<?> actualClass = (Class<?>) ((ParameterizedType) generic).getActualTypeArguments()[0];\"\n    },\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"return actualClass;\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"if (generic instanceof ParameterizedType) {\"\n    },\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"return (Class<?>) ((ParameterizedType) generic).getActualTypeArguments()[0];\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"return (Class<?>) actual;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"return (Class<?>) actual;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"if (actual instanceof Class) { return (Class) actual; }\"\n    },\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"}\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return (Class<?>) actual;\"\n    },\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"Class<?> actual = (Class<?>) ((ParameterizedType) generic).getActualTypeArguments()[0];\"\n    },\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"return actual;\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"return (Class<?>) actual;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"if (actual instanceof Class) { return (Class) actual; }\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"return (Class<?>) actual;\"\n    },\n    {\n        \"line_number\": 11,\n        \"fixed_statement\": \"return null;\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"return (Class<?>) actual;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"if (generic!= null && generic instanceof ParameterizedType) {\"\n    },\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"Type actual = ((ParameterizedType) generic).getActualTypeArguments()[0];\"\n    },\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"if (actual instanceof Class) {\"\n    },\n    {\n        \"line_number\": 11,\n        \"fixed_statement\": \"return (Class) actual;\"\n    },\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"} else {\"\n    },\n    {\n        \"line_number\": 13,\n        \"fixed_statement\": \"throw new RuntimeException(\\\"Expected Class type but got: \\\" + actual.getClass().getName());\"\n    },\n    {\n        \"line_number\": 14,\n        \"fixed_statement\": \"}\"\n    }\n]"
+        }
+    }
+]

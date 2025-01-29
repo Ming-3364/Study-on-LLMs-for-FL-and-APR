@@ -1,0 +1,1410 @@
+
+================== prompt_fl_1 ==================
+
+source code:
+private int _findOffsetForAdd(int hash)
+    {
+        // first, check the primary:
+        int offset = _calcOffset(hash);
+        final int[] hashArea = _hashArea;
+        if (hashArea[offset+3] == 0) {
+//System.err.printf(" PRImary slot #%d, hash %X\n", (offset>>2), hash & 0x7F);
+            return offset;
+        }
+        // then secondary
+        int offset2 = _secondaryStart + ((offset >> 3) << 2);
+        if (hashArea[offset2+3] == 0) {
+//System.err.printf(" SECondary slot #%d (start x%X), hash %X\n",(offset >> 3), _secondaryStart, (hash & 0x7F));
+            return offset2;
+        }
+        // if not, tertiary?
+
+        offset2 = _tertiaryStart + ((offset >> (_tertiaryShift + 2)) << _tertiaryShift);
+        final int bucketSize = (1 << _tertiaryShift);
+        for (int end = offset2 + bucketSize; offset2 < end; offset2 += 4) {
+            if (hashArea[offset2+3] == 0) {
+//System.err.printf(" TERtiary slot x%X (from x%X, start x%X), hash %X.\n", offset2, ((offset >> (_tertiaryShift + 2)) << _tertiaryShift), _tertiaryStart, (hash & 0x7F));
+                return offset2;
+            }
+        }
+
+        // and if even tertiary full, append at the end of spill area
+        offset = _spilloverEnd;
+        _spilloverEnd += 4;
+
+//System.err.printf(" SPIll-over at x%X; start x%X; end x%X, hash %X\n", offset, _spilloverStart(), _hashArea.length, (hash & 0x7F));
+        
+        // one caveat: in the unlikely event if spill-over filling up,
+        // check if that could be considered a DoS attack; handle appropriately
+        // (NOTE: approximate for now; we could verify details if that becomes necessary)
+        /* 31-Jul-2015, tatu: Note that spillover area does NOT end at end of array,
+         *   since "long names" area follows. Instead, need to calculate from hash size.
+         */
+        if (_spilloverEnd >= hashArea.length) {
+            if (_failOnDoS) {
+                _reportTooManyCollisions();
+            }
+            // and if we didn't fail, we'll simply force rehash for next add
+            // (which, in turn, may double up or nuke contents, depending on size etc)
+            _needRehash = true;
+        }
+        return offset;
+    }
+
+There is a bug in the above code, please help me locate it.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_2 ==================
+
+source code:
+private int _findOffsetForAdd(int hash)
+    {
+        // first, check the primary:
+        int offset = _calcOffset(hash);
+        final int[] hashArea = _hashArea;
+        if (hashArea[offset+3] == 0) {
+//System.err.printf(" PRImary slot #%d, hash %X\n", (offset>>2), hash & 0x7F);
+            return offset;
+        }
+        // then secondary
+        int offset2 = _secondaryStart + ((offset >> 3) << 2);
+        if (hashArea[offset2+3] == 0) {
+//System.err.printf(" SECondary slot #%d (start x%X), hash %X\n",(offset >> 3), _secondaryStart, (hash & 0x7F));
+            return offset2;
+        }
+        // if not, tertiary?
+
+        offset2 = _tertiaryStart + ((offset >> (_tertiaryShift + 2)) << _tertiaryShift);
+        final int bucketSize = (1 << _tertiaryShift);
+        for (int end = offset2 + bucketSize; offset2 < end; offset2 += 4) {
+            if (hashArea[offset2+3] == 0) {
+//System.err.printf(" TERtiary slot x%X (from x%X, start x%X), hash %X.\n", offset2, ((offset >> (_tertiaryShift + 2)) << _tertiaryShift), _tertiaryStart, (hash & 0x7F));
+                return offset2;
+            }
+        }
+
+        // and if even tertiary full, append at the end of spill area
+        offset = _spilloverEnd;
+        _spilloverEnd += 4;
+
+//System.err.printf(" SPIll-over at x%X; start x%X; end x%X, hash %X\n", offset, _spilloverStart(), _hashArea.length, (hash & 0x7F));
+        
+        // one caveat: in the unlikely event if spill-over filling up,
+        // check if that could be considered a DoS attack; handle appropriately
+        // (NOTE: approximate for now; we could verify details if that becomes necessary)
+        /* 31-Jul-2015, tatu: Note that spillover area does NOT end at end of array,
+         *   since "long names" area follows. Instead, need to calculate from hash size.
+         */
+        if (_spilloverEnd >= hashArea.length) {
+            if (_failOnDoS) {
+                _reportTooManyCollisions();
+            }
+            // and if we didn't fail, we'll simply force rehash for next add
+            // (which, in turn, may double up or nuke contents, depending on size etc)
+            _needRehash = true;
+        }
+        return offset;
+    }
+
+stack trace:
+com.fasterxml.jackson.core.sym.TestByteBasedSymbols::testIssue207
+java.lang.ArrayIndexOutOfBoundsException: 256
+	at com.fasterxml.jackson.core.sym.ByteQuadsCanonicalizer.addName(ByteQuadsCanonicalizer.java:853)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser.addName(UTF8StreamJsonParser.java:2340)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser.parseEscapedName(UTF8StreamJsonParser.java:1980)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser.slowParseName(UTF8StreamJsonParser.java:1867)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser._parseName(UTF8StreamJsonParser.java:1651)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser.nextToken(UTF8StreamJsonParser.java:740)
+	at com.fasterxml.jackson.core.sym.TestByteBasedSymbols.testIssue207(TestByteBasedSymbols.java:119)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.core.sym.TestSymbolTables::testCollisionsWithBytesNew187b
+junit.framework.AssertionFailedError: expected:<16384> but was:<32768>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.Assert.assertEquals(Assert.java:241)
+	at junit.framework.TestCase.assertEquals(TestCase.java:409)
+	at com.fasterxml.jackson.core.sym.TestSymbolTables.testCollisionsWithBytesNew187b(TestSymbolTables.java:316)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.core.sym.TestSymbolTables::testSyntheticWithBytesNew
+junit.framework.AssertionFailedError: expected:<8534> but was:<8524>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.Assert.assertEquals(Assert.java:241)
+	at junit.framework.TestCase.assertEquals(TestCase.java:409)
+	at com.fasterxml.jackson.core.sym.TestSymbolTables.testSyntheticWithBytesNew(TestSymbolTables.java:82)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.core.sym.TestSymbolTables::testShortNameCollisionsDirectNew
+junit.framework.AssertionFailedError: expected:<1024> but was:<2048>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.Assert.assertEquals(Assert.java:241)
+	at junit.framework.TestCase.assertEquals(TestCase.java:409)
+	at com.fasterxml.jackson.core.sym.TestSymbolTables.testShortNameCollisionsDirectNew(TestSymbolTables.java:473)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_3 ==================
+
+source code:
+private int _findOffsetForAdd(int hash)
+    {
+        // first, check the primary:
+        int offset = _calcOffset(hash);
+        final int[] hashArea = _hashArea;
+        if (hashArea[offset+3] == 0) {
+//System.err.printf(" PRImary slot #%d, hash %X\n", (offset>>2), hash & 0x7F);
+            return offset;
+        }
+        // then secondary
+        int offset2 = _secondaryStart + ((offset >> 3) << 2);
+        if (hashArea[offset2+3] == 0) {
+//System.err.printf(" SECondary slot #%d (start x%X), hash %X\n",(offset >> 3), _secondaryStart, (hash & 0x7F));
+            return offset2;
+        }
+        // if not, tertiary?
+
+        offset2 = _tertiaryStart + ((offset >> (_tertiaryShift + 2)) << _tertiaryShift);
+        final int bucketSize = (1 << _tertiaryShift);
+        for (int end = offset2 + bucketSize; offset2 < end; offset2 += 4) {
+            if (hashArea[offset2+3] == 0) {
+//System.err.printf(" TERtiary slot x%X (from x%X, start x%X), hash %X.\n", offset2, ((offset >> (_tertiaryShift + 2)) << _tertiaryShift), _tertiaryStart, (hash & 0x7F));
+                return offset2;
+            }
+        }
+
+        // and if even tertiary full, append at the end of spill area
+        offset = _spilloverEnd;
+        _spilloverEnd += 4;
+
+//System.err.printf(" SPIll-over at x%X; start x%X; end x%X, hash %X\n", offset, _spilloverStart(), _hashArea.length, (hash & 0x7F));
+        
+        // one caveat: in the unlikely event if spill-over filling up,
+        // check if that could be considered a DoS attack; handle appropriately
+        // (NOTE: approximate for now; we could verify details if that becomes necessary)
+        /* 31-Jul-2015, tatu: Note that spillover area does NOT end at end of array,
+         *   since "long names" area follows. Instead, need to calculate from hash size.
+         */
+        if (_spilloverEnd >= hashArea.length) {
+            if (_failOnDoS) {
+                _reportTooManyCollisions();
+            }
+            // and if we didn't fail, we'll simply force rehash for next add
+            // (which, in turn, may double up or nuke contents, depending on size etc)
+            _needRehash = true;
+        }
+        return offset;
+    }
+
+stack trace:
+com.fasterxml.jackson.core.sym.TestByteBasedSymbols::testIssue207
+java.lang.ArrayIndexOutOfBoundsException: 256
+	at com.fasterxml.jackson.core.sym.ByteQuadsCanonicalizer.addName(ByteQuadsCanonicalizer.java:853)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser.addName(UTF8StreamJsonParser.java:2340)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser.parseEscapedName(UTF8StreamJsonParser.java:1980)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser.slowParseName(UTF8StreamJsonParser.java:1867)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser._parseName(UTF8StreamJsonParser.java:1651)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser.nextToken(UTF8StreamJsonParser.java:740)
+	at com.fasterxml.jackson.core.sym.TestByteBasedSymbols.testIssue207(TestByteBasedSymbols.java:119)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.core.sym.TestSymbolTables::testCollisionsWithBytesNew187b
+junit.framework.AssertionFailedError: expected:<16384> but was:<32768>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.Assert.assertEquals(Assert.java:241)
+	at junit.framework.TestCase.assertEquals(TestCase.java:409)
+	at com.fasterxml.jackson.core.sym.TestSymbolTables.testCollisionsWithBytesNew187b(TestSymbolTables.java:316)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.core.sym.TestSymbolTables::testSyntheticWithBytesNew
+junit.framework.AssertionFailedError: expected:<8534> but was:<8524>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.Assert.assertEquals(Assert.java:241)
+	at junit.framework.TestCase.assertEquals(TestCase.java:409)
+	at com.fasterxml.jackson.core.sym.TestSymbolTables.testSyntheticWithBytesNew(TestSymbolTables.java:82)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.core.sym.TestSymbolTables::testShortNameCollisionsDirectNew
+junit.framework.AssertionFailedError: expected:<1024> but was:<2048>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.Assert.assertEquals(Assert.java:241)
+	at junit.framework.TestCase.assertEquals(TestCase.java:409)
+	at com.fasterxml.jackson.core.sym.TestSymbolTables.testShortNameCollisionsDirectNew(TestSymbolTables.java:473)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+failure assertion code:
+while (p.nextToken() != null) { }
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_4 ==================
+
+source code:
+private int _findOffsetForAdd(int hash)
+    {
+        // first, check the primary:
+        int offset = _calcOffset(hash);
+        final int[] hashArea = _hashArea;
+        if (hashArea[offset+3] == 0) {
+//System.err.printf(" PRImary slot #%d, hash %X\n", (offset>>2), hash & 0x7F);
+            return offset;
+        }
+        // then secondary
+        int offset2 = _secondaryStart + ((offset >> 3) << 2);
+        if (hashArea[offset2+3] == 0) {
+//System.err.printf(" SECondary slot #%d (start x%X), hash %X\n",(offset >> 3), _secondaryStart, (hash & 0x7F));
+            return offset2;
+        }
+        // if not, tertiary?
+
+        offset2 = _tertiaryStart + ((offset >> (_tertiaryShift + 2)) << _tertiaryShift);
+        final int bucketSize = (1 << _tertiaryShift);
+        for (int end = offset2 + bucketSize; offset2 < end; offset2 += 4) {
+            if (hashArea[offset2+3] == 0) {
+//System.err.printf(" TERtiary slot x%X (from x%X, start x%X), hash %X.\n", offset2, ((offset >> (_tertiaryShift + 2)) << _tertiaryShift), _tertiaryStart, (hash & 0x7F));
+                return offset2;
+            }
+        }
+
+        // and if even tertiary full, append at the end of spill area
+        offset = _spilloverEnd;
+        _spilloverEnd += 4;
+
+//System.err.printf(" SPIll-over at x%X; start x%X; end x%X, hash %X\n", offset, _spilloverStart(), _hashArea.length, (hash & 0x7F));
+        
+        // one caveat: in the unlikely event if spill-over filling up,
+        // check if that could be considered a DoS attack; handle appropriately
+        // (NOTE: approximate for now; we could verify details if that becomes necessary)
+        /* 31-Jul-2015, tatu: Note that spillover area does NOT end at end of array,
+         *   since "long names" area follows. Instead, need to calculate from hash size.
+         */
+        if (_spilloverEnd >= hashArea.length) {
+            if (_failOnDoS) {
+                _reportTooManyCollisions();
+            }
+            // and if we didn't fail, we'll simply force rehash for next add
+            // (which, in turn, may double up or nuke contents, depending on size etc)
+            _needRehash = true;
+        }
+        return offset;
+    }
+
+There is a bug in the above code, please help me locate it.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_5 ==================
+
+source code:
+private int _findOffsetForAdd(int hash)
+    {
+        // first, check the primary:
+        int offset = _calcOffset(hash);
+        final int[] hashArea = _hashArea;
+        if (hashArea[offset+3] == 0) {
+//System.err.printf(" PRImary slot #%d, hash %X\n", (offset>>2), hash & 0x7F);
+            return offset;
+        }
+        // then secondary
+        int offset2 = _secondaryStart + ((offset >> 3) << 2);
+        if (hashArea[offset2+3] == 0) {
+//System.err.printf(" SECondary slot #%d (start x%X), hash %X\n",(offset >> 3), _secondaryStart, (hash & 0x7F));
+            return offset2;
+        }
+        // if not, tertiary?
+
+        offset2 = _tertiaryStart + ((offset >> (_tertiaryShift + 2)) << _tertiaryShift);
+        final int bucketSize = (1 << _tertiaryShift);
+        for (int end = offset2 + bucketSize; offset2 < end; offset2 += 4) {
+            if (hashArea[offset2+3] == 0) {
+//System.err.printf(" TERtiary slot x%X (from x%X, start x%X), hash %X.\n", offset2, ((offset >> (_tertiaryShift + 2)) << _tertiaryShift), _tertiaryStart, (hash & 0x7F));
+                return offset2;
+            }
+        }
+
+        // and if even tertiary full, append at the end of spill area
+        offset = _spilloverEnd;
+        _spilloverEnd += 4;
+
+//System.err.printf(" SPIll-over at x%X; start x%X; end x%X, hash %X\n", offset, _spilloverStart(), _hashArea.length, (hash & 0x7F));
+        
+        // one caveat: in the unlikely event if spill-over filling up,
+        // check if that could be considered a DoS attack; handle appropriately
+        // (NOTE: approximate for now; we could verify details if that becomes necessary)
+        /* 31-Jul-2015, tatu: Note that spillover area does NOT end at end of array,
+         *   since "long names" area follows. Instead, need to calculate from hash size.
+         */
+        if (_spilloverEnd >= hashArea.length) {
+            if (_failOnDoS) {
+                _reportTooManyCollisions();
+            }
+            // and if we didn't fail, we'll simply force rehash for next add
+            // (which, in turn, may double up or nuke contents, depending on size etc)
+            _needRehash = true;
+        }
+        return offset;
+    }
+
+stack trace:
+com.fasterxml.jackson.core.sym.TestByteBasedSymbols::testIssue207
+java.lang.ArrayIndexOutOfBoundsException: 256
+	at com.fasterxml.jackson.core.sym.ByteQuadsCanonicalizer.addName(ByteQuadsCanonicalizer.java:853)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser.addName(UTF8StreamJsonParser.java:2340)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser.parseEscapedName(UTF8StreamJsonParser.java:1980)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser.slowParseName(UTF8StreamJsonParser.java:1867)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser._parseName(UTF8StreamJsonParser.java:1651)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser.nextToken(UTF8StreamJsonParser.java:740)
+	at com.fasterxml.jackson.core.sym.TestByteBasedSymbols.testIssue207(TestByteBasedSymbols.java:119)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.core.sym.TestSymbolTables::testCollisionsWithBytesNew187b
+junit.framework.AssertionFailedError: expected:<16384> but was:<32768>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.Assert.assertEquals(Assert.java:241)
+	at junit.framework.TestCase.assertEquals(TestCase.java:409)
+	at com.fasterxml.jackson.core.sym.TestSymbolTables.testCollisionsWithBytesNew187b(TestSymbolTables.java:316)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.core.sym.TestSymbolTables::testSyntheticWithBytesNew
+junit.framework.AssertionFailedError: expected:<8534> but was:<8524>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.Assert.assertEquals(Assert.java:241)
+	at junit.framework.TestCase.assertEquals(TestCase.java:409)
+	at com.fasterxml.jackson.core.sym.TestSymbolTables.testSyntheticWithBytesNew(TestSymbolTables.java:82)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.core.sym.TestSymbolTables::testShortNameCollisionsDirectNew
+junit.framework.AssertionFailedError: expected:<1024> but was:<2048>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.Assert.assertEquals(Assert.java:241)
+	at junit.framework.TestCase.assertEquals(TestCase.java:409)
+	at com.fasterxml.jackson.core.sym.TestSymbolTables.testShortNameCollisionsDirectNew(TestSymbolTables.java:473)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_6 ==================
+
+source code:
+private int _findOffsetForAdd(int hash)
+    {
+        // first, check the primary:
+        int offset = _calcOffset(hash);
+        final int[] hashArea = _hashArea;
+        if (hashArea[offset+3] == 0) {
+//System.err.printf(" PRImary slot #%d, hash %X\n", (offset>>2), hash & 0x7F);
+            return offset;
+        }
+        // then secondary
+        int offset2 = _secondaryStart + ((offset >> 3) << 2);
+        if (hashArea[offset2+3] == 0) {
+//System.err.printf(" SECondary slot #%d (start x%X), hash %X\n",(offset >> 3), _secondaryStart, (hash & 0x7F));
+            return offset2;
+        }
+        // if not, tertiary?
+
+        offset2 = _tertiaryStart + ((offset >> (_tertiaryShift + 2)) << _tertiaryShift);
+        final int bucketSize = (1 << _tertiaryShift);
+        for (int end = offset2 + bucketSize; offset2 < end; offset2 += 4) {
+            if (hashArea[offset2+3] == 0) {
+//System.err.printf(" TERtiary slot x%X (from x%X, start x%X), hash %X.\n", offset2, ((offset >> (_tertiaryShift + 2)) << _tertiaryShift), _tertiaryStart, (hash & 0x7F));
+                return offset2;
+            }
+        }
+
+        // and if even tertiary full, append at the end of spill area
+        offset = _spilloverEnd;
+        _spilloverEnd += 4;
+
+//System.err.printf(" SPIll-over at x%X; start x%X; end x%X, hash %X\n", offset, _spilloverStart(), _hashArea.length, (hash & 0x7F));
+        
+        // one caveat: in the unlikely event if spill-over filling up,
+        // check if that could be considered a DoS attack; handle appropriately
+        // (NOTE: approximate for now; we could verify details if that becomes necessary)
+        /* 31-Jul-2015, tatu: Note that spillover area does NOT end at end of array,
+         *   since "long names" area follows. Instead, need to calculate from hash size.
+         */
+        if (_spilloverEnd >= hashArea.length) {
+            if (_failOnDoS) {
+                _reportTooManyCollisions();
+            }
+            // and if we didn't fail, we'll simply force rehash for next add
+            // (which, in turn, may double up or nuke contents, depending on size etc)
+            _needRehash = true;
+        }
+        return offset;
+    }
+
+stack trace:
+com.fasterxml.jackson.core.sym.TestByteBasedSymbols::testIssue207
+java.lang.ArrayIndexOutOfBoundsException: 256
+	at com.fasterxml.jackson.core.sym.ByteQuadsCanonicalizer.addName(ByteQuadsCanonicalizer.java:853)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser.addName(UTF8StreamJsonParser.java:2340)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser.parseEscapedName(UTF8StreamJsonParser.java:1980)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser.slowParseName(UTF8StreamJsonParser.java:1867)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser._parseName(UTF8StreamJsonParser.java:1651)
+	at com.fasterxml.jackson.core.json.UTF8StreamJsonParser.nextToken(UTF8StreamJsonParser.java:740)
+	at com.fasterxml.jackson.core.sym.TestByteBasedSymbols.testIssue207(TestByteBasedSymbols.java:119)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.core.sym.TestSymbolTables::testCollisionsWithBytesNew187b
+junit.framework.AssertionFailedError: expected:<16384> but was:<32768>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.Assert.assertEquals(Assert.java:241)
+	at junit.framework.TestCase.assertEquals(TestCase.java:409)
+	at com.fasterxml.jackson.core.sym.TestSymbolTables.testCollisionsWithBytesNew187b(TestSymbolTables.java:316)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.core.sym.TestSymbolTables::testSyntheticWithBytesNew
+junit.framework.AssertionFailedError: expected:<8534> but was:<8524>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.Assert.assertEquals(Assert.java:241)
+	at junit.framework.TestCase.assertEquals(TestCase.java:409)
+	at com.fasterxml.jackson.core.sym.TestSymbolTables.testSyntheticWithBytesNew(TestSymbolTables.java:82)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.core.sym.TestSymbolTables::testShortNameCollisionsDirectNew
+junit.framework.AssertionFailedError: expected:<1024> but was:<2048>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.Assert.assertEquals(Assert.java:241)
+	at junit.framework.TestCase.assertEquals(TestCase.java:409)
+	at com.fasterxml.jackson.core.sym.TestSymbolTables.testShortNameCollisionsDirectNew(TestSymbolTables.java:473)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+
+failure assertion code:
+while (p.nextToken() != null) { }
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_1 ==================
+
+private int _findOffsetForAdd(int hash)
+    {
+        // first, check the primary:
+        int offset = _calcOffset(hash);
+        final int[] hashArea = _hashArea;
+        if (hashArea[offset+3] == 0) {
+//System.err.printf(" PRImary slot #%d, hash %X\n", (offset>>2), hash & 0x7F);
+            return offset;
+        }
+        // then secondary
+        int offset2 = _secondaryStart + ((offset >> 3) << 2);
+        if (hashArea[offset2+3] == 0) {
+//System.err.printf(" SECondary slot #%d (start x%X), hash %X\n",(offset >> 3), _secondaryStart, (hash & 0x7F));
+            return offset2;
+        }
+        // if not, tertiary?
+
+        offset2 = _tertiaryStart + ((offset >> (_tertiaryShift + 2)) << _tertiaryShift);
+        final int bucketSize = (1 << _tertiaryShift);
+        for (int end = offset2 + bucketSize; offset2 < end; offset2 += 4) {
+            if (hashArea[offset2+3] == 0) {
+//System.err.printf(" TERtiary slot x%X (from x%X, start x%X), hash %X.\n", offset2, ((offset >> (_tertiaryShift + 2)) << _tertiaryShift), _tertiaryStart, (hash & 0x7F));
+                return offset2;
+            }
+        }
+
+        // and if even tertiary full, append at the end of spill area
+        offset = _spilloverEnd;
+        _spilloverEnd += 4;
+
+//System.err.printf(" SPIll-over at x%X; start x%X; end x%X, hash %X\n", offset, _spilloverStart(), _hashArea.length, (hash & 0x7F));
+        
+        // one caveat: in the unlikely event if spill-over filling up,
+        // check if that could be considered a DoS attack; handle appropriately
+        // (NOTE: approximate for now; we could verify details if that becomes necessary)
+        /* 31-Jul-2015, tatu: Note that spillover area does NOT end at end of array,
+         *   since "long names" area follows. Instead, need to calculate from hash size.
+         */
+        if (_spilloverEnd >= hashArea.length) {
+            if (_failOnDoS) {
+                _reportTooManyCollisions();
+            }
+            // and if we didn't fail, we'll simply force rehash for next add
+            // (which, in turn, may double up or nuke contents, depending on size etc)
+            _needRehash = true;
+        }
+        return offset;
+    }
+
+There is a bug in line [39] of the code, please help me fix it.
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_2 ==================
+
+private int _findOffsetForAdd(int hash)
+    {
+        // first, check the primary:
+        int offset = _calcOffset(hash);
+        final int[] hashArea = _hashArea;
+        if (hashArea[offset+3] == 0) {
+//System.err.printf(" PRImary slot #%d, hash %X\n", (offset>>2), hash & 0x7F);
+            return offset;
+        }
+        // then secondary
+        int offset2 = _secondaryStart + ((offset >> 3) << 2);
+        if (hashArea[offset2+3] == 0) {
+//System.err.printf(" SECondary slot #%d (start x%X), hash %X\n",(offset >> 3), _secondaryStart, (hash & 0x7F));
+            return offset2;
+        }
+        // if not, tertiary?
+
+        offset2 = _tertiaryStart + ((offset >> (_tertiaryShift + 2)) << _tertiaryShift);
+        final int bucketSize = (1 << _tertiaryShift);
+        for (int end = offset2 + bucketSize; offset2 < end; offset2 += 4) {
+            if (hashArea[offset2+3] == 0) {
+//System.err.printf(" TERtiary slot x%X (from x%X, start x%X), hash %X.\n", offset2, ((offset >> (_tertiaryShift + 2)) << _tertiaryShift), _tertiaryStart, (hash & 0x7F));
+                return offset2;
+            }
+        }
+
+        // and if even tertiary full, append at the end of spill area
+        offset = _spilloverEnd;
+        _spilloverEnd += 4;
+
+//System.err.printf(" SPIll-over at x%X; start x%X; end x%X, hash %X\n", offset, _spilloverStart(), _hashArea.length, (hash & 0x7F));
+        
+        // one caveat: in the unlikely event if spill-over filling up,
+        // check if that could be considered a DoS attack; handle appropriately
+        // (NOTE: approximate for now; we could verify details if that becomes necessary)
+        /* 31-Jul-2015, tatu: Note that spillover area does NOT end at end of array,
+         *   since "long names" area follows. Instead, need to calculate from hash size.
+         */
+        if (_spilloverEnd >= hashArea.length) {
+            if (_failOnDoS) {
+                _reportTooManyCollisions();
+            }
+            // and if we didn't fail, we'll simply force rehash for next add
+            // (which, in turn, may double up or nuke contents, depending on size etc)
+            _needRehash = true;
+        }
+        return offset;
+    }
+
+There is a bug in ['        if (_spilloverEnd >= hashArea.length) {'] , please help me fix it. 
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_3 ==================
+
+private int _findOffsetForAdd(int hash)
+    {
+        // first, check the primary:
+        int offset = _calcOffset(hash);
+        final int[] hashArea = _hashArea;
+        if (hashArea[offset+3] == 0) {
+//System.err.printf(" PRImary slot #%d, hash %X\n", (offset>>2), hash & 0x7F);
+            return offset;
+        }
+        // then secondary
+        int offset2 = _secondaryStart + ((offset >> 3) << 2);
+        if (hashArea[offset2+3] == 0) {
+//System.err.printf(" SECondary slot #%d (start x%X), hash %X\n",(offset >> 3), _secondaryStart, (hash & 0x7F));
+            return offset2;
+        }
+        // if not, tertiary?
+
+        offset2 = _tertiaryStart + ((offset >> (_tertiaryShift + 2)) << _tertiaryShift);
+        final int bucketSize = (1 << _tertiaryShift);
+        for (int end = offset2 + bucketSize; offset2 < end; offset2 += 4) {
+            if (hashArea[offset2+3] == 0) {
+//System.err.printf(" TERtiary slot x%X (from x%X, start x%X), hash %X.\n", offset2, ((offset >> (_tertiaryShift + 2)) << _tertiaryShift), _tertiaryStart, (hash & 0x7F));
+                return offset2;
+            }
+        }
+
+        // and if even tertiary full, append at the end of spill area
+        offset = _spilloverEnd;
+        _spilloverEnd += 4;
+
+//System.err.printf(" SPIll-over at x%X; start x%X; end x%X, hash %X\n", offset, _spilloverStart(), _hashArea.length, (hash & 0x7F));
+        
+        // one caveat: in the unlikely event if spill-over filling up,
+        // check if that could be considered a DoS attack; handle appropriately
+        // (NOTE: approximate for now; we could verify details if that becomes necessary)
+        /* 31-Jul-2015, tatu: Note that spillover area does NOT end at end of array,
+         *   since "long names" area follows. Instead, need to calculate from hash size.
+         */
+        if (_spilloverEnd >= hashArea.length) {
+
+There is a bug in the last statement, please help me fix it.
+
+Return the code **only from the method declaration to the fixed statement**, without completing or adding additional code. Do not modify anything beyond fixing the bug, and do not complete the `if` statement or other unfinished parts. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_4 ==================
+
+private int _findOffsetForAdd(int hash)
+    {
+        // first, check the primary:
+        int offset = _calcOffset(hash);
+        final int[] hashArea = _hashArea;
+        if (hashArea[offset+3] == 0) {
+//System.err.printf(" PRImary slot #%d, hash %X\n", (offset>>2), hash & 0x7F);
+            return offset;
+        }
+        // then secondary
+        int offset2 = _secondaryStart + ((offset >> 3) << 2);
+        if (hashArea[offset2+3] == 0) {
+//System.err.printf(" SECondary slot #%d (start x%X), hash %X\n",(offset >> 3), _secondaryStart, (hash & 0x7F));
+            return offset2;
+        }
+        // if not, tertiary?
+
+        offset2 = _tertiaryStart + ((offset >> (_tertiaryShift + 2)) << _tertiaryShift);
+        final int bucketSize = (1 << _tertiaryShift);
+        for (int end = offset2 + bucketSize; offset2 < end; offset2 += 4) {
+            if (hashArea[offset2+3] == 0) {
+//System.err.printf(" TERtiary slot x%X (from x%X, start x%X), hash %X.\n", offset2, ((offset >> (_tertiaryShift + 2)) << _tertiaryShift), _tertiaryStart, (hash & 0x7F));
+                return offset2;
+            }
+        }
+
+        // and if even tertiary full, append at the end of spill area
+        offset = _spilloverEnd;
+        _spilloverEnd += 4;
+
+//System.err.printf(" SPIll-over at x%X; start x%X; end x%X, hash %X\n", offset, _spilloverStart(), _hashArea.length, (hash & 0x7F));
+        
+        // one caveat: in the unlikely event if spill-over filling up,
+        // check if that could be considered a DoS attack; handle appropriately
+        // (NOTE: approximate for now; we could verify details if that becomes necessary)
+        /* 31-Jul-2015, tatu: Note that spillover area does NOT end at end of array,
+         *   since "long names" area follows. Instead, need to calculate from hash size.
+         */
+        if (_spilloverEnd >= hashArea.length) {
+            if (_failOnDoS) {
+                _reportTooManyCollisions();
+            }
+            // and if we didn't fail, we'll simply force rehash for next add
+            // (which, in turn, may double up or nuke contents, depending on size etc)
+            _needRehash = true;
+        }
+        return offset;
+    }
+
+There is a bug in line [39] of the code, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_5 ==================
+
+private int _findOffsetForAdd(int hash)
+    {
+        // first, check the primary:
+        int offset = _calcOffset(hash);
+        final int[] hashArea = _hashArea;
+        if (hashArea[offset+3] == 0) {
+//System.err.printf(" PRImary slot #%d, hash %X\n", (offset>>2), hash & 0x7F);
+            return offset;
+        }
+        // then secondary
+        int offset2 = _secondaryStart + ((offset >> 3) << 2);
+        if (hashArea[offset2+3] == 0) {
+//System.err.printf(" SECondary slot #%d (start x%X), hash %X\n",(offset >> 3), _secondaryStart, (hash & 0x7F));
+            return offset2;
+        }
+        // if not, tertiary?
+
+        offset2 = _tertiaryStart + ((offset >> (_tertiaryShift + 2)) << _tertiaryShift);
+        final int bucketSize = (1 << _tertiaryShift);
+        for (int end = offset2 + bucketSize; offset2 < end; offset2 += 4) {
+            if (hashArea[offset2+3] == 0) {
+//System.err.printf(" TERtiary slot x%X (from x%X, start x%X), hash %X.\n", offset2, ((offset >> (_tertiaryShift + 2)) << _tertiaryShift), _tertiaryStart, (hash & 0x7F));
+                return offset2;
+            }
+        }
+
+        // and if even tertiary full, append at the end of spill area
+        offset = _spilloverEnd;
+        _spilloverEnd += 4;
+
+//System.err.printf(" SPIll-over at x%X; start x%X; end x%X, hash %X\n", offset, _spilloverStart(), _hashArea.length, (hash & 0x7F));
+        
+        // one caveat: in the unlikely event if spill-over filling up,
+        // check if that could be considered a DoS attack; handle appropriately
+        // (NOTE: approximate for now; we could verify details if that becomes necessary)
+        /* 31-Jul-2015, tatu: Note that spillover area does NOT end at end of array,
+         *   since "long names" area follows. Instead, need to calculate from hash size.
+         */
+        if (_spilloverEnd >= hashArea.length) {
+            if (_failOnDoS) {
+                _reportTooManyCollisions();
+            }
+            // and if we didn't fail, we'll simply force rehash for next add
+            // (which, in turn, may double up or nuke contents, depending on size etc)
+            _needRehash = true;
+        }
+        return offset;
+    }
+
+There is a bug in ['        if (_spilloverEnd >= hashArea.length) {'] , please help me fix it. 
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_6 ==================
+
+private int _findOffsetForAdd(int hash)
+    {
+        // first, check the primary:
+        int offset = _calcOffset(hash);
+        final int[] hashArea = _hashArea;
+        if (hashArea[offset+3] == 0) {
+//System.err.printf(" PRImary slot #%d, hash %X\n", (offset>>2), hash & 0x7F);
+            return offset;
+        }
+        // then secondary
+        int offset2 = _secondaryStart + ((offset >> 3) << 2);
+        if (hashArea[offset2+3] == 0) {
+//System.err.printf(" SECondary slot #%d (start x%X), hash %X\n",(offset >> 3), _secondaryStart, (hash & 0x7F));
+            return offset2;
+        }
+        // if not, tertiary?
+
+        offset2 = _tertiaryStart + ((offset >> (_tertiaryShift + 2)) << _tertiaryShift);
+        final int bucketSize = (1 << _tertiaryShift);
+        for (int end = offset2 + bucketSize; offset2 < end; offset2 += 4) {
+            if (hashArea[offset2+3] == 0) {
+//System.err.printf(" TERtiary slot x%X (from x%X, start x%X), hash %X.\n", offset2, ((offset >> (_tertiaryShift + 2)) << _tertiaryShift), _tertiaryStart, (hash & 0x7F));
+                return offset2;
+            }
+        }
+
+        // and if even tertiary full, append at the end of spill area
+        offset = _spilloverEnd;
+        _spilloverEnd += 4;
+
+//System.err.printf(" SPIll-over at x%X; start x%X; end x%X, hash %X\n", offset, _spilloverStart(), _hashArea.length, (hash & 0x7F));
+        
+        // one caveat: in the unlikely event if spill-over filling up,
+        // check if that could be considered a DoS attack; handle appropriately
+        // (NOTE: approximate for now; we could verify details if that becomes necessary)
+        /* 31-Jul-2015, tatu: Note that spillover area does NOT end at end of array,
+         *   since "long names" area follows. Instead, need to calculate from hash size.
+         */
+        if (_spilloverEnd >= hashArea.length) {
+
+There is a bug in the last statement, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.

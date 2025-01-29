@@ -1,0 +1,197 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/lang/StringEscapeUtils.java
+================== buggy_method ==================
+{'method_name': 'escapeJavaStyleString', 'method_body': 'private static void escapeJavaStyleString(Writer out, String str, boolean escapeSingleQuote) throws IOException {\n        if (out == null) {\n            throw new IllegalArgumentException("The Writer must not be null");\n        }\n        if (str == null) {\n            return;\n        }\n        int sz;\n        sz = str.length();\n        for (int i = 0; i < sz; i++) {\n            char ch = str.charAt(i);\n\n            // handle unicode\n            if (ch > 0xfff) {\n                out.write("\\\\u" + hex(ch));\n            } else if (ch > 0xff) {\n                out.write("\\\\u0" + hex(ch));\n            } else if (ch > 0x7f) {\n                out.write("\\\\u00" + hex(ch));\n            } else if (ch < 32) {\n                switch (ch) {\n                    case \'\\b\':\n                        out.write(\'\\\\\');\n                        out.write(\'b\');\n                        break;\n                    case \'\\n\':\n                        out.write(\'\\\\\');\n                        out.write(\'n\');\n                        break;\n                    case \'\\t\':\n                        out.write(\'\\\\\');\n                        out.write(\'t\');\n                        break;\n                    case \'\\f\':\n                        out.write(\'\\\\\');\n                        out.write(\'f\');\n                        break;\n                    case \'\\r\':\n                        out.write(\'\\\\\');\n                        out.write(\'r\');\n                        break;\n                    default :\n                        if (ch > 0xf) {\n                            out.write("\\\\u00" + hex(ch));\n                        } else {\n                            out.write("\\\\u000" + hex(ch));\n                        }\n                        break;\n                }\n            } else {\n                switch (ch) {\n                    case \'\\\'\':\n                        if (escapeSingleQuote) {\n                          out.write(\'\\\\\');\n                        }\n                        out.write(\'\\\'\');\n                        break;\n                    case \'"\':\n                        out.write(\'\\\\\');\n                        out.write(\'"\');\n                        break;\n                    case \'\\\\\':\n                        out.write(\'\\\\\');\n                        out.write(\'\\\\\');\n                        break;\n                    default :\n                        out.write(ch);\n                        break;\n                }\n            }\n        }\n    }', 'start_line': 171, 'end_line': 242, 'buggy_lines': [239]}
+================== buggy_method_src ==================
+private static void escapeJavaStyleString(Writer out, String str, boolean escapeSingleQuote) throws IOException {
+        if (out == null) {
+            throw new IllegalArgumentException("The Writer must not be null");
+        }
+        if (str == null) {
+            return;
+        }
+        int sz;
+        sz = str.length();
+        for (int i = 0; i < sz; i++) {
+            char ch = str.charAt(i);
+
+            // handle unicode
+            if (ch > 0xfff) {
+                out.write("\\u" + hex(ch));
+            } else if (ch > 0xff) {
+                out.write("\\u0" + hex(ch));
+            } else if (ch > 0x7f) {
+                out.write("\\u00" + hex(ch));
+            } else if (ch < 32) {
+                switch (ch) {
+                    case '\b':
+                        out.write('\\');
+                        out.write('b');
+                        break;
+                    case '\n':
+                        out.write('\\');
+                        out.write('n');
+                        break;
+                    case '\t':
+                        out.write('\\');
+                        out.write('t');
+                        break;
+                    case '\f':
+                        out.write('\\');
+                        out.write('f');
+                        break;
+                    case '\r':
+                        out.write('\\');
+                        out.write('r');
+                        break;
+                    default :
+                        if (ch > 0xf) {
+                            out.write("\\u00" + hex(ch));
+                        } else {
+                            out.write("\\u000" + hex(ch));
+                        }
+                        break;
+                }
+            } else {
+                switch (ch) {
+                    case '\'':
+                        if (escapeSingleQuote) {
+                          out.write('\\');
+                        }
+                        out.write('\'');
+                        break;
+                    case '"':
+                        out.write('\\');
+                        out.write('"');
+                        break;
+                    case '\\':
+                        out.write('\\');
+                        out.write('\\');
+                        break;
+                    default :
+                        out.write(ch);
+                        break;
+                }
+            }
+        }
+    }
+================== test_stack ==================
+org.apache.commons.lang.StringEscapeUtilsTest::testEscapeJavaScript
+junit.framework.ComparisonFailure: expected:<...ipt>alert(\'aaa\');<[\]/script>\';> but was:<...ipt>alert(\'aaa\');<[]/script>\';>
+	at junit.framework.Assert.assertEquals(Assert.java:100)
+	at junit.framework.Assert.assertEquals(Assert.java:107)
+	at junit.framework.TestCase.assertEquals(TestCase.java:269)
+	at org.apache.commons.lang.StringEscapeUtilsTest.testEscapeJavaScript(StringEscapeUtilsTest.java:187)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals("document.getElementById(\\\"test\\\").value = \\'<script>alert(\\'aaa\\');<\\/script>\\';",
+
+================== buggy_lines_in_method ==================
+[69]
+================== buggy_statements ==================
+['                }']
+================== buggy_method_src_endswith_buggy_statement ==================
+private static void escapeJavaStyleString(Writer out, String str, boolean escapeSingleQuote) throws IOException {
+        if (out == null) {
+            throw new IllegalArgumentException("The Writer must not be null");
+        }
+        if (str == null) {
+            return;
+        }
+        int sz;
+        sz = str.length();
+        for (int i = 0; i < sz; i++) {
+            char ch = str.charAt(i);
+
+            // handle unicode
+            if (ch > 0xfff) {
+                out.write("\\u" + hex(ch));
+            } else if (ch > 0xff) {
+                out.write("\\u0" + hex(ch));
+            } else if (ch > 0x7f) {
+                out.write("\\u00" + hex(ch));
+            } else if (ch < 32) {
+                switch (ch) {
+                    case '\b':
+                        out.write('\\');
+                        out.write('b');
+                        break;
+                    case '\n':
+                        out.write('\\');
+                        out.write('n');
+                        break;
+                    case '\t':
+                        out.write('\\');
+                        out.write('t');
+                        break;
+                    case '\f':
+                        out.write('\\');
+                        out.write('f');
+                        break;
+                    case '\r':
+                        out.write('\\');
+                        out.write('r');
+                        break;
+                    default :
+                        if (ch > 0xf) {
+                            out.write("\\u00" + hex(ch));
+                        } else {
+                            out.write("\\u000" + hex(ch));
+                        }
+                        break;
+                }
+            } else {
+                switch (ch) {
+                    case '\'':
+                        if (escapeSingleQuote) {
+                          out.write('\\');
+                        }
+                        out.write('\'');
+                        break;
+                    case '"':
+                        out.write('\\');
+                        out.write('"');
+                        break;
+                    case '\\':
+                        out.write('\\');
+                        out.write('\\');
+                        break;
+                    default :
+                        out.write(ch);
+                        break;
+                }

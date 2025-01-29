@@ -1,0 +1,103 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/compress/archivers/tar/TarArchiveOutputStream.java
+================== buggy_method ==================
+{'method_name': 'writePaxHeaders', 'method_body': 'void writePaxHeaders(String entryName,\n                         Map<String, String> headers) throws IOException {\n        String name = "./PaxHeaders.X/" + stripTo7Bits(entryName);\n            // TarEntry\'s constructor would think this is a directory\n            // and not allow any data to be written\n        if (name.length() >= TarConstants.NAMELEN) {\n            name = name.substring(0, TarConstants.NAMELEN - 1);\n        }\n        TarArchiveEntry pex = new TarArchiveEntry(name,\n                                                  TarConstants.LF_PAX_EXTENDED_HEADER_LC);\n\n        StringWriter w = new StringWriter();\n        for (Map.Entry<String, String> h : headers.entrySet()) {\n            String key = h.getKey();\n            String value = h.getValue();\n            int len = key.length() + value.length()\n                + 3 /* blank, equals and newline */\n                + 2 /* guess 9 < actual length < 100 */;\n            String line = len + " " + key + "=" + value + "\\n";\n            int actualLength = line.getBytes(CharsetNames.UTF_8).length;\n            while (len != actualLength) {\n                // Adjust for cases where length < 10 or > 100\n                // or where UTF-8 encoding isn\'t a single octet\n                // per character.\n                // Must be in loop as size may go from 99 to 100 in\n                // first pass so we\'d need a second.\n                len = actualLength;\n                line = len + " " + key + "=" + value + "\\n";\n                actualLength = line.getBytes(CharsetNames.UTF_8).length;\n            }\n            w.write(line);\n        }\n        byte[] data = w.toString().getBytes(CharsetNames.UTF_8);\n        pex.setSize(data.length);\n        putArchiveEntry(pex);\n        write(data);\n        closeArchiveEntry();\n    }', 'start_line': 454, 'end_line': 491, 'buggy_lines': [457, 461]}
+================== buggy_method_src ==================
+void writePaxHeaders(String entryName,
+                         Map<String, String> headers) throws IOException {
+        String name = "./PaxHeaders.X/" + stripTo7Bits(entryName);
+            // TarEntry's constructor would think this is a directory
+            // and not allow any data to be written
+        if (name.length() >= TarConstants.NAMELEN) {
+            name = name.substring(0, TarConstants.NAMELEN - 1);
+        }
+        TarArchiveEntry pex = new TarArchiveEntry(name,
+                                                  TarConstants.LF_PAX_EXTENDED_HEADER_LC);
+
+        StringWriter w = new StringWriter();
+        for (Map.Entry<String, String> h : headers.entrySet()) {
+            String key = h.getKey();
+            String value = h.getValue();
+            int len = key.length() + value.length()
+                + 3 /* blank, equals and newline */
+                + 2 /* guess 9 < actual length < 100 */;
+            String line = len + " " + key + "=" + value + "\n";
+            int actualLength = line.getBytes(CharsetNames.UTF_8).length;
+            while (len != actualLength) {
+                // Adjust for cases where length < 10 or > 100
+                // or where UTF-8 encoding isn't a single octet
+                // per character.
+                // Must be in loop as size may go from 99 to 100 in
+                // first pass so we'd need a second.
+                len = actualLength;
+                line = len + " " + key + "=" + value + "\n";
+                actualLength = line.getBytes(CharsetNames.UTF_8).length;
+            }
+            w.write(line);
+        }
+        byte[] data = w.toString().getBytes(CharsetNames.UTF_8);
+        pex.setSize(data.length);
+        putArchiveEntry(pex);
+        write(data);
+        closeArchiveEntry();
+    }
+================== test_stack ==================
+org.apache.commons.compress.archivers.tar.TarArchiveOutputStreamTest::testWriteNonAsciiDirectoryNamePosixMode
+java.io.IOException: request to write '15' bytes exceeds size in header of '0' bytes for entry './PaxHeaders.X/fvv/'
+	at org.apache.commons.compress.archivers.tar.TarArchiveOutputStream.write(TarArchiveOutputStream.java:387)
+	at java.io.OutputStream.write(OutputStream.java:75)
+	at org.apache.commons.compress.archivers.tar.TarArchiveOutputStream.writePaxHeaders(TarArchiveOutputStream.java:489)
+	at org.apache.commons.compress.archivers.tar.TarArchiveOutputStream.putArchiveEntry(TarArchiveOutputStream.java:314)
+	at org.apache.commons.compress.archivers.tar.TarArchiveOutputStreamTest.testWriteNonAsciiDirectoryNamePosixMode(TarArchiveOutputStreamTest.java:418)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+tos.putArchiveEntry(t);
+
+================== buggy_lines_in_method ==================
+[4, 8]
+================== buggy_statements ==================
+["            // TarEntry's constructor would think this is a directory", '        }']
+================== buggy_method_src_endswith_buggy_statement ==================
+void writePaxHeaders(String entryName,
+                         Map<String, String> headers) throws IOException {
+        String name = "./PaxHeaders.X/" + stripTo7Bits(entryName);
+            // TarEntry's constructor would think this is a directory
+            // and not allow any data to be written
+        if (name.length() >= TarConstants.NAMELEN) {
+            name = name.substring(0, TarConstants.NAMELEN - 1);
+        }

@@ -1,0 +1,174 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "8",
+            "qwen-turbo": "4",
+            "deepseek-chat": "4",
+            "gpt-4o-mini": "9",
+            "ernie-3.5-128k": "**10**"
+        },
+        "prompt_fl_2": {
+            "qwen-turbo": "4",
+            "doubao-pro-4k": "1",
+            "ernie-3.5-128k": "434",
+            "deepseek-chat": "424",
+            "gpt-4o-mini": "424"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "2",
+            "qwen-turbo": "434",
+            "deepseek-chat": "434",
+            "ernie-3.5-128k": "434",
+            "gpt-4o-mini": "424"
+        },
+        "prompt_fl_4": {
+            "doubao-pro-4k": "throw new NoInteractionsWanted(join(",
+            "qwen-turbo": "String scenario = scenarioPrinter.print(invocations);",
+            "ernie-3.5-128k": "String scenario = scenarioPrinter.print(invocations);",
+            "deepseek-chat": "throw new NoInteractionsWanted(join(\n                \"No interactions wanted here:\",\n                new LocationImpl(),\n                \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n                undesired.getLocation(),\n                scenario\n        ));",
+            "gpt-4o-mini": "throw new NoInteractionsWanted(join("
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "scenarioPrinter.print(invocations)",
+            "doubao-pro-4k": "org",
+            "ernie-3.5-128k": "throw new NoInteractionsWanted(join(\"No interactions wanted here:\", new LocationImpl(), \"But found this interaction on mock '\" + undesired.getMock() + \"':\", undesired.getLocation(), scenario));",
+            "deepseek-chat": "throw new NoInteractionsWanted(join(\n                \"No interactions wanted here:\",\n                new LocationImpl(),\n                \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n                undesired.getLocation(),\n                scenario\n        ));",
+            "gpt-4o-mini": "undesired.getMock()"
+        },
+        "prompt_fl_6": {
+            "doubao-pro-4k": "new",
+            "qwen-turbo": "new Reporter().noMoreInteractionsWantedInOrder(invocation_with_bogus_default_answer);",
+            "deepseek-chat": "new Reporter().noMoreInteractionsWantedInOrder(invocation_with_bogus_default_answer);",
+            "ernie-3.5-128k": "new Reporter().noMoreInteractionsWantedInOrder(invocation_with_bogus_default_answer);",
+            "gpt-4o-mini": "undesired.getMock()"
+        },
+        "prompt_apr_1": {
+            "gpt-4o-mini": "public void noMoreInteractionsWanted(Invocation undesired, List<VerificationAwareInvocation> invocations) {\n    ScenarioPrinter scenarioPrinter = new ScenarioPrinter();\n    String scenario = scenarioPrinter.print(invocations);\n\n    throw new NoInteractionsWanted(String.join(\n            \"No interactions wanted here:\",\n            new LocationImpl().toString(),\n            \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n            undesired.getLocation().toString(),\n            scenario\n    ));\n}",
+            "qwen-turbo": "Certainly, it looks like the issue might be related to how the `undesired` interaction is being referenced and printed. The `undesired.getMock()` call is correct, but we need to ensure that `undesired.getLocation()` returns a valid location string. If `getLocation()` returns an object, you may need to convert it to a string properly.\n\nHere is the corrected method:\n\n```java\npublic void noMoreInteractionsWanted(Invocation undesired, List<VerificationAwareInvocation> invocations) {\n    ScenarioPrinter scenarioPrinter = new ScenarioPrinter();\n    String scenario = scenarioPrinter.print(invocations);\n\n    throw new NoInteractionsWanted(join(\n            \"No interactions wanted here:\",\n            new LocationImpl(),\n            \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n            undesired.getLocation().toString(), // Ensure getLocation returns a string or convert it to string\n            scenario\n    ));\n}\n```\n\nThis change ensures that `undesired.getLocation()` is converted to a string using `.toString()`, which should resolve the potential issue if `getLocation()` does not directly return a string.",
+            "deepseek-chat": "public void noMoreInteractionsWanted(Invocation undesired, List<VerificationAwareInvocation> invocations) {\n    ScenarioPrinter scenarioPrinter = new ScenarioPrinter();\n    String scenario = scenarioPrinter.print(invocations);\n\n    throw new NoInteractionsWanted(join(\n            \"No interactions wanted here:\",\n            new LocationImpl().toString(),\n            \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n            undesired.getLocation().toString(),\n            scenario\n    ));\n}\n\nThe bug in line [8] was that `new LocationImpl()` was not being converted to a string. The `join` method likely expects string arguments, so `new LocationImpl().toString()` is used to convert the `LocationImpl` object to a string. Similarly, `undesired.getLocation().toString()` is used to ensure that the location is also converted to a string. This should resolve the issue.",
+            "ernie-3.5-128k": "public void noMoreInteractionsWanted(Invocation undesired, List<VerificationAwareInvocation> invocations) {\n        ScenarioPrinter scenarioPrinter = new ScenarioPrinter();\n        String scenario = scenarioPrinter.print(invocations);\n\n        throw new NoInteractionsWanted(String.join(\n                System.lineSeparator(),\n                \"No interactions wanted here:\",\n                new LocationImpl().toString(),\n                \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n                undesired.getLocation().toString(),\n                scenario\n        ));\n    }",
+            "doubao-pro-4k": "public void noMoreInteractionsWanted(Invocation undesired, List<VerificationAwareInvocation> invocations) {\n        ScenarioPrinter scenarioPrinter = new ScenarioPrinter();\n        String scenario = scenarioPrinter.print(invocations);\n\n        throw new NoInteractionsWanted(join(\n                \"No interactions wanted here:\",\n                new LocationImpl(),\n                \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n                undesired.getLocation(),\n                scenario\n        ));\n    }\n\nThe bug might be in the `join` method call. Without further context on what `join` is supposed to do or what the specific issue is, it's difficult to provide an exact fix. It could potentially be an incorrect method invocation or a missing implementation."
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\npublic void noMoreInteractionsWanted(Invocation undesired, List<VerificationAwareInvocation> invocations) {\n    ScenarioPrinter scenarioPrinter = new ScenarioPrinter();\n    String scenario = scenarioPrinter.print(invocations);\n\n    throw new NoInteractionsWanted(join(\n            \"No interactions wanted here:\",\n            new LocationImpl(),\n            \"But found this interaction on mock '\" + undesired.getMock().toString() + \"':\",\n            undesired.getLocation(),\n            scenario\n    ));\n}\n```\n\nIn the provided code, the `undesired.getMock()` method call was missing `.toString()`. This has been fixed by adding `.toString()` to ensure that the mock object is properly converted to a string for inclusion in the error message.",
+            "gpt-4o-mini": "public void noMoreInteractionsWanted(Invocation undesired, List<VerificationAwareInvocation> invocations) {\n    ScenarioPrinter scenarioPrinter = new ScenarioPrinter();\n    String scenario = scenarioPrinter.print(invocations);\n\n    throw new NoInteractionsWanted(join(\n            \"No interactions wanted here:\",\n            new LocationImpl(),\n            \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n            undesired.getLocation(),\n            scenario\n    ));\n}",
+            "deepseek-chat": "public void noMoreInteractionsWanted(Invocation undesired, List<VerificationAwareInvocation> invocations) {\n    ScenarioPrinter scenarioPrinter = new ScenarioPrinter();\n    String scenario = scenarioPrinter.print(invocations);\n\n    throw new NoInteractionsWanted(join(\n            \"No interactions wanted here:\",\n            new LocationImpl(),\n            \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n            undesired.getLocation(),\n            scenario\n    ));\n}\n\nThe bug you mentioned is not clear from the provided code snippet. The line `\"But found this interaction on mock '\" + undesired.getMock() + \"':\",` appears to be correctly concatenating the mock object's string representation. If there is a specific issue or error you are encountering, please provide more details so I can assist further. Otherwise, the method seems correct as it is.",
+            "doubao-pro-4k": "public void noMoreInteractionsWanted(Invocation undesired, List<VerificationAwareInvocation> invocations) {\n        ScenarioPrinter scenarioPrinter = new ScenarioPrinter();\n        String scenario = scenarioPrinter.print(invocations);\n\n        throw new NoInteractionsWanted(join(\n                \"No interactions wanted here:\",\n                new LocationImpl(),\n                \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n                undesired.getLocation(),\n                scenario\n        ));\n    }",
+            "ernie-3.5-128k": "public void noMoreInteractionsWanted(Invocation undesired, List<VerificationAwareInvocation> invocations) {\n        ScenarioPrinter scenarioPrinter = new ScenarioPrinter();\n        String scenario = scenarioPrinter.print(invocations);\n\n        throw new NoInteractionsWanted(join(\n                \"No interactions wanted here:\",\n                new LocationImpl(),\n                \"But found this interaction on mock '\" + undesired.getMock().toString() + \"':\",\n                undesired.getLocation(),\n                scenario\n        ));\n    }"
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\npublic void noMoreInteractionsWanted(Invocation undesired, List<VerificationAwareInvocation> invocations) {\n    ScenarioPrinter scenarioPrinter = new ScenarioPrinter();\n    String scenario = scenarioPrinter.print(invocations);\n\n    throw new NoInteractionsWanted(join(\n            \"No interactions wanted here:\",\n            new LocationImpl(),\n            \"But found this interaction on mock '\" + undesired.getMock().toString() + \"':\"\n```",
+            "deepseek-chat": "```java\npublic void noMoreInteractionsWanted(Invocation undesired, List<VerificationAwareInvocation> invocations) {\n    ScenarioPrinter scenarioPrinter = new ScenarioPrinter();\n    String scenario = scenarioPrinter.print(invocations);\n\n    throw new NoInteractionsWanted(join(\n            \"No interactions wanted here:\",\n            new LocationImpl().toString(),\n            \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n```",
+            "doubao-pro-4k": "public void noMoreInteractionsWanted(Invocation undesired, List<VerificationAwareInvocation> invocations) {\n        ScenarioPrinter scenarioPrinter = new ScenarioPrinter();\n        String scenario = scenarioPrinter.print(invocations);\n\n        throw new NoInteractionsWanted(join(\n                \"No interactions wanted here:\",\n                new LocationImpl(),\n                \"But found this interaction on mock '\" + undesired.getMock().toString() + \"':\"));\n}",
+            "gpt-4o-mini": "public void noMoreInteractionsWanted(Invocation undesired, List<VerificationAwareInvocation> invocations) {\n        ScenarioPrinter scenarioPrinter = new ScenarioPrinter();\n        String scenario = scenarioPrinter.print(invocations);\n\n        throw new NoInteractionsWanted(join(\n                \"No interactions wanted here:\",\n                new LocationImpl(),\n                \"But found this interaction on mock '\" + undesired.getMock() + \"':\"\n        ));\n",
+            "ernie-3.5-128k": "public void noMoreInteractionsWanted(Invocation undesired, List<VerificationAwareInvocation> invocations) {\n        ScenarioPrinter scenarioPrinter = new ScenarioPrinter();\n        String scenario = scenarioPrinter.print(invocations);\n\n        throw new NoInteractionsWanted(join(\n                \"No interactions wanted here:\",\n                new LocationImpl(),\n                \"But found this interaction on mock: '\" + undesired.getMock().toString() + \"':\","
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"scenarioPrinter.print(invocations)\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"throw new NoInteractionsWanted(join(\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"throw new NoInteractionsWanted(String.join(\\\" \\\", \\\"No interactions wanted here:\\\", new LocationImpl().toString(), \\\"But found this interaction on mock '\\\" + undesired.getMock() + \\\"':\\\", undesired.getLocation(), scenario));\"\n    }\n]",
+            "doubao-pro-4k": "[\n{\n\"line_number\": 8,\n\"fixed_statement\": \"throw new NoInteractionsWanted(join(\\n                \\\"No interactions wanted here:\\\",\\n                new LocationImpl(),\\n                \\\"But found this interaction on mock '\\\" + undesired.getMock() + \\\"':\\\",\\n                undesired.getLocation(),\\n                scenario\\n        ));\"\n}\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"throw new NoInteractionsWanted(join(\\n                \\\"No interactions wanted here:\\\",\\n                new LocationImpl().toString(),\\n                \\\"But found this interaction on mock '\\\" + undesired.getMock().toString() + \\\"':\\\",\\n                undesired.getLocation().toString(),\\n                scenario\\n        ));\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"                \\\"But found this interaction on mock '\\\" + undesired.getMock().getName() + \\\"':\\\",\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"                \\\"But found this interaction on mock '\\\\\\\" + undesired.getMock() + \\\"\\\\\\\":\\\",\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"                \\\"But found this interaction on mock \\\" + undesired.getMock() + \\\":\\\",\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"But found this interaction on mock \\'\" + undesired.getMock().toString() + \"\\':\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"\\\"But found this interaction on mock '\" + undesired.getMock().toString() + \"':\\\"\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "deepseek-chat": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"                \\\"But found this interaction on mock '\\\" + undesired.getMock() + \\\"':\\\",\"\n    }\n]",
+            "qwen-turbo": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"throw new NoInteractionsWanted(join(\"\n    },\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"\\\"No interactions wanted here:\\\",\\\\nnew LocationImpl(),\\\\\\\"But found this interaction on mock '\\\\\\\" + undesired.getMock() + \\\"\\\\':\\\", undesired);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"But found this interaction on mock '\" + undesired.getMock().toString() + \"':\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"throw new NoInteractionsWanted(join(\\\"No interactions wanted here:\\\", new LocationImpl(), \\\"But found this interaction on mock '\\\" + undesired.getMock() + \\\"':\\\", scenario));\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"throw new NoInteractionsWanted(join(\\\"No interactions wanted here:\\\", new LocationImpl(), \\\"But found this interaction on mock '\\\" + undesired.getMock() + '\\\":\\\"));\"\n    }\n]"
+        }
+    },
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "5",
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "**7**",
+            "deepseek-chat": "2",
+            "gpt-4o-mini": "6"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "434",
+            "ernie-3.5-128k": "434",
+            "deepseek-chat": "434",
+            "gpt-4o-mini": "434"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "4",
+            "qwen-turbo": "434",
+            "ernie-3.5-128k": "434",
+            "deepseek-chat": "434",
+            "gpt-4o-mini": "434"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "new LocationImpl()",
+            "doubao-pro-4k": "join(\n                \"No interactions wanted here:\",\n                new LocationImpl(),\n                \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n                undesired.getLocation()\n        )",
+            "deepseek-chat": "throw new VerificationInOrderFailure(join(\n                \"No interactions wanted here:\",\n                new LocationImpl(),\n                \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n                undesired.getLocation()\n        ));",
+            "ernie-3.5-128k": "throw new VerificationInOrderFailure(join(\"No interactions wanted here:\", new LocationImpl(), \"But found this interaction on mock '\" + undesired.getMock() + \"':\", undesired.getLocation()));",
+            "gpt-4o-mini": "throw new VerificationInOrderFailure(join( \"No interactions wanted here:\", new LocationImpl(), \"But found this interaction on mock '\" + undesired.getMock() + \"':\", undesired.getLocation() ));"
+        },
+        "prompt_fl_5": {
+            "doubao-pro-4k": "org",
+            "qwen-turbo": "new LocationImpl()",
+            "ernie-3.5-128k": "undesired.getMock()",
+            "gpt-4o-mini": "undesired.getMock() + \"':\",",
+            "deepseek-chat": "throw new VerificationInOrderFailure(join(\n                \"No interactions wanted here:\",\n                new LocationImpl(),\n                \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n                undesired.getLocation()\n        ));"
+        },
+        "prompt_fl_6": {
+            "doubao-pro-4k": "new",
+            "qwen-turbo": "new Reporter().noMoreInteractionsWantedInOrder(invocation_with_bogus_default_answer);",
+            "ernie-3.5-128k": "new Reporter().noMoreInteractionsWantedInOrder(invocation_with_bogus_default_answer);",
+            "deepseek-chat": "throw new VerificationInOrderFailure(join(\n                \"No interactions wanted here:\",\n                new LocationImpl(),\n                \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n                undesired.getLocation()\n        ));",
+            "gpt-4o-mini": "undesired.getMock() + \"':\","
+        },
+        "prompt_apr_1": {
+            "deepseek-chat": "public void noMoreInteractionsWantedInOrder(Invocation undesired) {\n    throw new VerificationInOrderFailure(join(\n            \"No interactions wanted here:\",\n            new LocationImpl(),\n            \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n            undesired.getLocation().toString()\n    ));\n}\n\nThe bug in line [5] was that `undesired.getLocation()` was not being converted to a string, which could cause issues when joining the strings. I added `.toString()` to `undesired.getLocation()` to ensure it is properly converted to a string before being included in the joined message.",
+            "ernie-3.5-128k": "public void noMoreInteractionsWantedInOrder(Invocation undesired) {\n        throw new VerificationInOrderFailure(join(\n                \"No interactions wanted here:\",\n                new LocationImpl(),\n                \"But found this interaction on mock '\" + undesired.getMock().toString() + \"':\",\n                undesired.getLocation()\n        ));\n}",
+            "qwen-turbo": "Certainly, the issue seems to be with the formatting and concatenation of strings in the exception message. The `join` method is not standard in Java and might be causing issues. We can use `StringBuilder` for better string manipulation. Here's the corrected method:\n\n```java\npublic void noMoreInteractionsWantedInOrder(Invocation undesired) {\n    throw new VerificationInOrderFailure(new StringBuilder()\n            .append(\"No interactions wanted here:\")\n            .append(System.lineSeparator())\n            .append(new LocationImpl())\n            .append(System.lineSeparator())\n            .append(\"But found this interaction on mock '\")\n            .append(undesired.getMock())\n            .append(\"':\")\n            .append(System.lineSeparator())\n            .append(undesired.getLocation())\n            .toString());\n}\n```\n\nThis should correctly format the error message and avoid any issues related to the `join` method.",
+            "doubao-pro-4k": "public void noMoreInteractionsWantedInOrder(Invocation undesired) {\n    throw new VerificationInOrderFailure(join(\n            \"No interactions wanted here:\",\n            new LocationImpl(),\n            \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n            undesired.getLocation()\n    ));\n}",
+            "gpt-4o-mini": "public void noMoreInteractionsWantedInOrder(Invocation undesired) {\n        throw new VerificationInOrderFailure(join(\n                \"No interactions wanted here:\",\n                new LocationImpl(),\n                \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n                undesired.getLocation()\n        ));\n    } \n\nIn the code you provided, the issue is related to the `join` method usage. The `join` method expects a `CharSequence` or an array of `CharSequence` elements, and you're trying to concatenate them in a way that might not be valid. Specifically, the `LocationImpl()` object in the `join()` method may not automatically be converted to a string, which could lead to an issue.\n\nThe correct approach would be to make sure that every object you're joining is properly converted to a string. You can use `toString()` on the objects to ensure that they're in a valid form for joining.\n\nHere is the corrected version:\n\npublic void noMoreInteractionsWantedInOrder(Invocation undesired) {\n        throw new VerificationInOrderFailure(join(\n                \"No interactions wanted here:\",\n                new LocationImpl().toString(),  // Ensure LocationImpl is converted to string\n                \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n                undesired.getLocation().toString()  // Ensure Location is converted to string\n        ));\n    }\n\nThe key fixes are:\n\n1. `.toString()` is called on `new LocationImpl()` and `undesired.getLocation()`, ensuring that they're treated as `String` objects during the `join` operation.\n   \nThis should resolve the bug."
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\npublic void noMoreInteractionsWantedInOrder(Invocation undesired) {\n    throw new VerificationInOrderFailure(join(\n            \"No interactions wanted here:\",\n            new LocationImpl(),\n            \"But found this interaction on mock '\" + undesired.getMock().toString() + \"':\",\n            undesired.getLocation()\n    ));\n}\n```\nIn the provided code, the `undesired.getMock()` method call may not return a string representation directly. To ensure that we get a proper string representation of the mock object, we can use `.toString()` to convert it to a string. This should resolve the issue.",
+            "ernie-3.5-128k": "public void noMoreInteractionsWantedInOrder(Invocation undesired) {\n        throw new VerificationInOrderFailure(join(\n                \"No interactions wanted here:\",\n                new LocationImpl(),\n                \"But found this interaction on mock '\" + undesired.getMock().toString() + \"':\",\n                undesired.getLocation()\n        ));\n}",
+            "gpt-4o-mini": "public void noMoreInteractionsWantedInOrder(Invocation undesired) {\n        throw new VerificationInOrderFailure(join(\n                \"No interactions wanted here:\",\n                new LocationImpl(),\n                \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n                undesired.getLocation()\n        ));\n    }",
+            "deepseek-chat": "public void noMoreInteractionsWantedInOrder(Invocation undesired) {\n    throw new VerificationInOrderFailure(join(\n            \"No interactions wanted here:\",\n            new LocationImpl(),\n            \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n            undesired.getLocation()\n    ));\n}\n\nThe code you provided does not contain any syntax errors or bugs. The line `\"But found this interaction on mock '\" + undesired.getMock() + \"':\",` is correctly concatenating the string with the mock object's name. If you are encountering an issue, it might be related to the logic or context in which this method is being used, rather than the code itself. If you have a specific issue or error message, please provide more details so I can assist further.",
+            "doubao-pro-4k": "public void noMoreInteractionsWantedInOrder(Invocation undesired) {\n        throw new VerificationInOrderFailure(join(\n                \"No interactions wanted here:\",\n                new LocationImpl(),\n                \"But found this interaction on mock '\" + undesired.getMock() + \"':\",\n                undesired.getLocation()\n        ));\n    }"
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\npublic void noMoreInteractionsWantedInOrder(Invocation undesired) {\n    throw new VerificationInOrderFailure(join(\n            \"No interactions wanted here:\",\n            new LocationImpl(),\n            \"But found this interaction on mock '\" + undesired.getMock().toString() + \"':\"\n```",
+            "deepseek-chat": "public void noMoreInteractionsWantedInOrder(Invocation undesired) {\n    throw new VerificationInOrderFailure(join(\n            \"No interactions wanted here:\",\n            new LocationImpl(),\n            \"But found this interaction on mock '\" + undesired.getMock() + \"':\"));",
+            "doubao-pro-4k": "public void noMoreInteractionsWantedInOrder(Invocation undesired) {\n        throw new VerificationInOrderFailure(join(\n                \"No interactions wanted here:\",\n                new LocationImpl(),\n                \"But found this interaction on mock '\" + undesired.getMock().getName() + \"':\",\n        ));\n}",
+            "ernie-3.5-128k": "public void noMoreInteractionsWantedInOrder(Invocation undesired) {\n        throw new VerificationInOrderFailure(join(\n                \"No interactions wanted here:\",\n                new LocationImpl(),\n                \"But found this interaction on mock '\" + undesired.getMock().toString() + \"':\",",
+            "gpt-4o-mini": "public void noMoreInteractionsWantedInOrder(Invocation undesired) {\n    throw new VerificationInOrderFailure(join(\n            \"No interactions wanted here:\",\n            new LocationImpl(),\n            \"But found this interaction on mock '\" + undesired.getMock().toString() + \"':\",\n            undesired.toString()));"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"VerificationInOrderFailure.newException(join(\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"                \\\"But found this interaction on mock \\\" + undesired.getMock() + \\\":\\\",\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"But found this interaction on mock '\" + undesired.getMock().toString() + \"':\",\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"undesired.getLocation().toString()\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"throw new VerificationInOrderFailure(join(\\n                \\\"No interactions wanted here:\\\",\\n                new LocationImpl(),\\n                \\\"But found this interaction on mock '\\\" + undesired.getMock() + \\\":\\\",\\n                undesired.getLocation()\\n        ));\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"                \\\"But found this interaction on mock '\\\" + undesired.getMock().toString() + \\\"':\\\",\"\n    }\n]",
+            "doubao-pro-4k": "[\n{\n\"line_number\": 4,\n\"fixed_statement\": \"                \\\"But found this interaction on mock '\\\" + undesired.getMock() + \\\":\\\", \"\n}\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"                \\\"But found this interaction on mock \\\" + undesired.getMock() + \\\":\\\",\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"                \\\"But found this interaction on mock '\" + undesired.getMock().toString() + \"':\\\",\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"\\\"But found this interaction on mock '\" + undesired.getMock().toString() + \"':\\\"\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "deepseek-chat": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"                \\\"But found this interaction on mock \\\" + undesired.getMock() + \\\":\\\",\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"But found this interaction on mock '\" + undesired.getMock().toString() + \"':\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"But found this interaction on mock '\" + undesired.getMockName() + \"':\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"    \\\"But found this interaction on mock '\\\" + undesired.getMock() + \\\"':\\\"\"\n    }\n]",
+            "qwen-turbo": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"join(\\n            \\\"No interactions wanted here:\\\",\\n            new LocationImpl(),\\n            \\\"But found this interaction on mock '\\\" + undesired.getMock() + \\\"':\\\"\"\n    }\n]"
+        }
+    }
+]

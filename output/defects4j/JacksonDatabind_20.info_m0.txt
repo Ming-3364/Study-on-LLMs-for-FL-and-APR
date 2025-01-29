@@ -1,0 +1,90 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/node/ObjectNode.java
+================== buggy_method ==================
+{'method_name': 'setAll', 'method_body': 'public JsonNode setAll(Map<String,? extends JsonNode> properties)\n    {\n        for (Map.Entry<String,? extends JsonNode> en : properties.entrySet()) {\n            JsonNode n = en.getValue();\n            if (n == null) {\n                n = nullNode();\n            }\n            _children.put(en.getKey(), n);\n        }\n        return this;\n    }', 'start_line': 324, 'end_line': 334, 'buggy_lines': [325]}
+================== buggy_method_src ==================
+public JsonNode setAll(Map<String,? extends JsonNode> properties)
+    {
+        for (Map.Entry<String,? extends JsonNode> en : properties.entrySet()) {
+            JsonNode n = en.getValue();
+            if (n == null) {
+                n = nullNode();
+            }
+            _children.put(en.getKey(), n);
+        }
+        return this;
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.introspect.TestNamingStrategyStd::testNamingWithObjectNode
+com.fasterxml.jackson.databind.JsonMappingException: Conflicting setter definitions for property "all": com.fasterxml.jackson.databind.node.ObjectNode#setAll(1 params) vs com.fasterxml.jackson.databind.node.ObjectNode#setAll(1 params)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:270)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:245)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:143)
+	at com.fasterxml.jackson.databind.DeserializationContext.findContextualValueDeserializer(DeserializationContext.java:406)
+	at com.fasterxml.jackson.databind.deser.std.StdDeserializer.findDeserializer(StdDeserializer.java:882)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.resolve(BeanDeserializerBase.java:436)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:297)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:245)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:143)
+	at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:439)
+	at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:3668)
+	at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:3560)
+	at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:2580)
+	at com.fasterxml.jackson.databind.introspect.TestNamingStrategyStd.testNamingWithObjectNode(TestNamingStrategyStd.java:309)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+Caused by: java.lang.IllegalArgumentException: Conflicting setter definitions for property "all": com.fasterxml.jackson.databind.node.ObjectNode#setAll(1 params) vs com.fasterxml.jackson.databind.node.ObjectNode#setAll(1 params)
+	at com.fasterxml.jackson.databind.introspect.POJOPropertyBuilder.getSetter(POJOPropertyBuilder.java:293)
+	at com.fasterxml.jackson.databind.introspect.POJOPropertiesCollector._renameUsing(POJOPropertiesCollector.java:808)
+	at com.fasterxml.jackson.databind.introspect.POJOPropertiesCollector.collect(POJOPropertiesCollector.java:256)
+	at com.fasterxml.jackson.databind.introspect.BasicClassIntrospector.collectProperties(BasicClassIntrospector.java:197)
+	at com.fasterxml.jackson.databind.introspect.BasicClassIntrospector.forDeserialization(BasicClassIntrospector.java:110)
+	at com.fasterxml.jackson.databind.introspect.BasicClassIntrospector.forDeserialization(BasicClassIntrospector.java:15)
+	at com.fasterxml.jackson.databind.DeserializationConfig.introspect(DeserializationConfig.java:703)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createDeserializer(DeserializerCache.java:330)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:265)
+	... 47 more
+
+================== test_assert ==================
+ClassWithObjectNodeField result =
+
+================== buggy_lines_in_method ==================
+[2]
+================== buggy_statements ==================
+['    {']
+================== buggy_method_src_endswith_buggy_statement ==================
+public JsonNode setAll(Map<String,? extends JsonNode> properties)
+    {

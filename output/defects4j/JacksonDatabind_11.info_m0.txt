@@ -1,0 +1,173 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/type/TypeFactory.java
+================== buggy_method ==================
+{'method_name': '_fromVariable', 'method_body': 'protected JavaType _fromVariable(TypeVariable<?> type, TypeBindings context)\n    {\n        final String name = type.getName();\n        // 19-Mar-2015: Without context, all we can check are bounds.\n        if (context == null) {\n            // And to prevent infinite loops, now need this:\n            return _unknownType();\n        } else {\n            // Ok: here\'s where context might come in handy!\n            /* 19-Mar-2015, tatu: As per [databind#609], may need to allow\n             *   unresolved type variables to handle some cases where bounds\n             *   are enough. Let\'s hope it does not hide real fail cases.\n             */\n            JavaType actualType = context.findType(name);\n            if (actualType != null) {\n                return actualType;\n            }\n        }\n\n        /* 29-Jan-2010, tatu: We used to throw exception here, if type was\n         *   bound: but the problem is that this can occur for generic "base"\n         *   method, overridden by sub-class. If so, we will want to ignore\n         *   current type (for method) since it will be masked.\n         */\n        Type[] bounds = type.getBounds();\n\n        // With type variables we must use bound information.\n        // Theoretically this gets tricky, as there may be multiple\n        // bounds ("... extends A & B"); and optimally we might\n        // want to choose the best match. Also, bounds are optional;\n        // but here we are lucky in that implicit "Object" is\n        // added as bounds if so.\n        // Either way let\'s just use the first bound, for now, and\n        // worry about better match later on if there is need.\n\n        /* 29-Jan-2010, tatu: One more problem are recursive types\n         *   (T extends Comparable<T>). Need to add "placeholder"\n         *   for resolution to catch those.\n         */\n        context._addPlaceholder(name);\n        return _constructType(bounds[0], context);\n    }', 'start_line': 889, 'end_line': 930, 'buggy_lines': [895, 902]}
+================== buggy_method_src ==================
+protected JavaType _fromVariable(TypeVariable<?> type, TypeBindings context)
+    {
+        final String name = type.getName();
+        // 19-Mar-2015: Without context, all we can check are bounds.
+        if (context == null) {
+            // And to prevent infinite loops, now need this:
+            return _unknownType();
+        } else {
+            // Ok: here's where context might come in handy!
+            /* 19-Mar-2015, tatu: As per [databind#609], may need to allow
+             *   unresolved type variables to handle some cases where bounds
+             *   are enough. Let's hope it does not hide real fail cases.
+             */
+            JavaType actualType = context.findType(name);
+            if (actualType != null) {
+                return actualType;
+            }
+        }
+
+        /* 29-Jan-2010, tatu: We used to throw exception here, if type was
+         *   bound: but the problem is that this can occur for generic "base"
+         *   method, overridden by sub-class. If so, we will want to ignore
+         *   current type (for method) since it will be masked.
+         */
+        Type[] bounds = type.getBounds();
+
+        // With type variables we must use bound information.
+        // Theoretically this gets tricky, as there may be multiple
+        // bounds ("... extends A & B"); and optimally we might
+        // want to choose the best match. Also, bounds are optional;
+        // but here we are lucky in that implicit "Object" is
+        // added as bounds if so.
+        // Either way let's just use the first bound, for now, and
+        // worry about better match later on if there is need.
+
+        /* 29-Jan-2010, tatu: One more problem are recursive types
+         *   (T extends Comparable<T>). Need to add "placeholder"
+         *   for resolution to catch those.
+         */
+        context._addPlaceholder(name);
+        return _constructType(bounds[0], context);
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.type.TestJavaType::testLocalType728
+junit.framework.AssertionFailedError: expected:<interface java.lang.CharSequence> but was:<class java.lang.Object>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:86)
+	at junit.framework.TestCase.assertEquals(TestCase.java:253)
+	at com.fasterxml.jackson.databind.type.TestJavaType.testLocalType728(TestJavaType.java:43)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.databind.type.TestLocalType609::testLocalPartialType609
+com.fasterxml.jackson.databind.JsonMappingException: Type variable 'T' can not be resolved (with context of class com.fasterxml.jackson.databind.type.TestLocalType609$EntityContainer)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:267)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:242)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:143)
+	at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:439)
+	at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:3666)
+	at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:3558)
+	at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:2578)
+	at com.fasterxml.jackson.databind.type.TestLocalType609.testLocalPartialType609(TestLocalType609.java:32)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+Caused by: java.lang.IllegalArgumentException: Type variable 'T' can not be resolved (with context of class com.fasterxml.jackson.databind.type.TestLocalType609$EntityContainer)
+	at com.fasterxml.jackson.databind.type.TypeBindings.findType(TypeBindings.java:179)
+	at com.fasterxml.jackson.databind.type.TypeBindings.findType(TypeBindings.java:120)
+	at com.fasterxml.jackson.databind.type.TypeFactory._fromVariable(TypeFactory.java:902)
+	at com.fasterxml.jackson.databind.type.TypeFactory._constructType(TypeFactory.java:399)
+	at com.fasterxml.jackson.databind.type.TypeBindings.resolveType(TypeBindings.java:102)
+	at com.fasterxml.jackson.databind.introspect.BasicBeanDescription.resolveType(BasicBeanDescription.java:221)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializerFactory.constructSettableProperty(BeanDeserializerFactory.java:707)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializerFactory.addBeanProps(BeanDeserializerFactory.java:498)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializerFactory.buildBeanDeserializer(BeanDeserializerFactory.java:220)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializerFactory.createBeanDeserializer(BeanDeserializerFactory.java:143)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createDeserializer2(DeserializerCache.java:405)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createDeserializer(DeserializerCache.java:354)
+	at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:262)
+	... 41 more
+
+================== test_assert ==================
+assertEquals(CharSequence.class, t.getRawClass());
+
+================== buggy_lines_in_method ==================
+[7, 14]
+================== buggy_statements ==================
+['            return _unknownType();', '            JavaType actualType = context.findType(name);']
+================== buggy_method_src_endswith_buggy_statement ==================
+protected JavaType _fromVariable(TypeVariable<?> type, TypeBindings context)
+    {
+        final String name = type.getName();
+        // 19-Mar-2015: Without context, all we can check are bounds.
+        if (context == null) {
+            // And to prevent infinite loops, now need this:
+            return _unknownType();
+        } else {
+            // Ok: here's where context might come in handy!
+            /* 19-Mar-2015, tatu: As per [databind#609], may need to allow
+             *   unresolved type variables to handle some cases where bounds
+             *   are enough. Let's hope it does not hide real fail cases.
+             */
+            JavaType actualType = context.findType(name);

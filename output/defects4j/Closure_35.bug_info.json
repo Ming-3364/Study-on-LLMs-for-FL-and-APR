@@ -1,0 +1,66 @@
+[
+    {
+        "buggy_file": "src/com/google/javascript/jscomp/TypeInference.java",
+        "buggy_method": {
+            "method_name": "inferPropertyTypesToMatchConstraint",
+            "method_body": "private void inferPropertyTypesToMatchConstraint(\n      JSType type, JSType constraint) {\n    if (type == null || constraint == null) {\n      return;\n    }\n\n    ObjectType constraintObj =\n        ObjectType.cast(constraint.restrictByNotNullOrUndefined());\n    if (constraintObj != null && constraintObj.isRecordType()) {\n      ObjectType objType = ObjectType.cast(type.restrictByNotNullOrUndefined());\n      if (objType != null) {\n        for (String prop : constraintObj.getOwnPropertyNames()) {\n          JSType propType = constraintObj.getPropertyType(prop);\n          if (!objType.isPropertyTypeDeclared(prop)) {\n            JSType typeToInfer = propType;\n            if (!objType.hasProperty(prop)) {\n              typeToInfer =\n                  getNativeType(VOID_TYPE).getLeastSupertype(propType);\n            }\n            objType.defineInferredProperty(prop, typeToInfer, null);\n          }\n        }\n      }\n    }\n  }",
+            "start_line": 1113,
+            "end_line": 1137,
+            "buggy_lines": [
+                1121,
+                1122,
+                1123,
+                1124,
+                1125,
+                1126,
+                1127,
+                1128,
+                1129,
+                1130,
+                1131,
+                1132,
+                1133,
+                1134,
+                1135
+            ]
+        },
+        "buggy_method_src": "private void inferPropertyTypesToMatchConstraint(\n      JSType type, JSType constraint) {\n    if (type == null || constraint == null) {\n      return;\n    }\n\n    ObjectType constraintObj =\n        ObjectType.cast(constraint.restrictByNotNullOrUndefined());\n    if (constraintObj != null && constraintObj.isRecordType()) {\n      ObjectType objType = ObjectType.cast(type.restrictByNotNullOrUndefined());\n      if (objType != null) {\n        for (String prop : constraintObj.getOwnPropertyNames()) {\n          JSType propType = constraintObj.getPropertyType(prop);\n          if (!objType.isPropertyTypeDeclared(prop)) {\n            JSType typeToInfer = propType;\n            if (!objType.hasProperty(prop)) {\n              typeToInfer =\n                  getNativeType(VOID_TYPE).getLeastSupertype(propType);\n            }\n            objType.defineInferredProperty(prop, typeToInfer, null);\n          }\n        }\n      }\n    }\n  }",
+        "test_stack": "com.google.javascript.jscomp.TypeCheckTest::testIssue669\njunit.framework.AssertionFailedError: unexpected warnings(s):\nJSC_TYPE_MISMATCH. inconsistent return type\nfound   : ({prop1: {a: number}}|{prop2: number})\nrequired: {prop1: (Object|null|undefined)} at [testcode] line 1 : 174\n\tat junit.framework.Assert.fail(Assert.java:57)\n\tat junit.framework.TestCase.fail(TestCase.java:227)\n\tat com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:9694)\n\tat com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:9668)\n\tat com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:9606)\n\tat com.google.javascript.jscomp.TypeCheckTest.testTypes(TypeCheckTest.java:9602)\n\tat com.google.javascript.jscomp.TypeCheckTest.testIssue669(TypeCheckTest.java:5621)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n\tat sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.lang.reflect.Method.invoke(Method.java:498)\n\tat junit.framework.TestCase.runTest(TestCase.java:176)\n\tat junit.framework.TestCase.runBare(TestCase.java:141)\n\tat junit.framework.TestResult$1.protect(TestResult.java:122)\n\tat junit.framework.TestResult.runProtected(TestResult.java:142)\n\tat junit.framework.TestResult.run(TestResult.java:125)\n\tat junit.framework.TestCase.run(TestCase.java:129)\n\tat junit.framework.TestSuite.runTest(TestSuite.java:255)\n\tat junit.framework.TestSuite.run(TestSuite.java:250)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)\n\tat org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)\n\tat org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)\n\tat sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)\n\tat sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.lang.reflect.Method.invoke(Method.java:498)\n\tat org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)\n\tat org.apache.tools.ant.Task.perform(Task.java:348)\n\tat org.apache.tools.ant.Target.execute(Target.java:392)\n\tat org.apache.tools.ant.Target.performTasks(Target.java:413)\n\tat org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)\n\tat org.apache.tools.ant.Project.executeTarget(Project.java:1368)\n\tat org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)\n\tat org.apache.tools.ant.Project.executeTargets(Project.java:1251)\n\tat org.apache.tools.ant.Main.runBuild(Main.java:811)\n\tat org.apache.tools.ant.Main.startAnt(Main.java:217)\n\tat org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)\n\tat org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)\n",
+        "test_assert": "testTypes(\n",
+        "buggy_lines_in_method": [
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+        ],
+        "buggy_statements": [
+            "    if (constraintObj != null && constraintObj.isRecordType()) {",
+            "      ObjectType objType = ObjectType.cast(type.restrictByNotNullOrUndefined());",
+            "      if (objType != null) {",
+            "        for (String prop : constraintObj.getOwnPropertyNames()) {",
+            "          JSType propType = constraintObj.getPropertyType(prop);",
+            "          if (!objType.isPropertyTypeDeclared(prop)) {",
+            "            JSType typeToInfer = propType;",
+            "            if (!objType.hasProperty(prop)) {",
+            "              typeToInfer =",
+            "                  getNativeType(VOID_TYPE).getLeastSupertype(propType);",
+            "            }",
+            "            objType.defineInferredProperty(prop, typeToInfer, null);",
+            "          }",
+            "        }",
+            "      }"
+        ],
+        "buggy_method_src_endswith_buggy_statement": "private void inferPropertyTypesToMatchConstraint(\n      JSType type, JSType constraint) {\n    if (type == null || constraint == null) {\n      return;\n    }\n\n    ObjectType constraintObj =\n        ObjectType.cast(constraint.restrictByNotNullOrUndefined());\n    if (constraintObj != null && constraintObj.isRecordType()) {\n      ObjectType objType = ObjectType.cast(type.restrictByNotNullOrUndefined());\n      if (objType != null) {\n        for (String prop : constraintObj.getOwnPropertyNames()) {\n          JSType propType = constraintObj.getPropertyType(prop);\n          if (!objType.isPropertyTypeDeclared(prop)) {\n            JSType typeToInfer = propType;\n            if (!objType.hasProperty(prop)) {\n              typeToInfer =\n                  getNativeType(VOID_TYPE).getLeastSupertype(propType);\n            }\n            objType.defineInferredProperty(prop, typeToInfer, null);\n          }\n        }\n      }"
+    }
+]

@@ -1,0 +1,190 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/MappingIterator.java
+================== buggy_method ==================
+{'method_name': 'hasNextValue', 'method_body': "public boolean hasNextValue() throws IOException\n    {\n        if (_parser == null) {\n            return false;\n            // fall-through\n        }\n        if (!_hasNextChecked) {\n            JsonToken t = _parser.getCurrentToken();\n            _hasNextChecked = true;\n            if (t == null) { // un-initialized or cleared; find next\n                t = _parser.nextToken();\n                // If EOF, no more, or if we hit END_ARRAY (although we don't clear the token).\n                if (t == null || t == JsonToken.END_ARRAY) {\n                    JsonParser jp = _parser;\n                    _parser = null;\n                    if (_closeParser) {\n                        jp.close();\n                    }\n                    return false;\n                }\n            }\n            // fall through\n        }\n        return true;\n    }", 'start_line': 208, 'end_line': 232, 'buggy_lines': [210, 213, 214, 216, 221, 222, 223, 224]}
+================== buggy_method_src ==================
+public boolean hasNextValue() throws IOException
+    {
+        if (_parser == null) {
+            return false;
+            // fall-through
+        }
+        if (!_hasNextChecked) {
+            JsonToken t = _parser.getCurrentToken();
+            _hasNextChecked = true;
+            if (t == null) { // un-initialized or cleared; find next
+                t = _parser.nextToken();
+                // If EOF, no more, or if we hit END_ARRAY (although we don't clear the token).
+                if (t == null || t == JsonToken.END_ARRAY) {
+                    JsonParser jp = _parser;
+                    _parser = null;
+                    if (_closeParser) {
+                        jp.close();
+                    }
+                    return false;
+                }
+            }
+            // fall through
+        }
+        return true;
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.seq.ReadRecoveryTest::testSimpleRootRecovery
+com.fasterxml.jackson.databind.JsonMappingException: Can not instantiate value of type [simple type, class com.fasterxml.jackson.databind.seq.ReadRecoveryTest$Bean] from Integral number (1); no single-int-arg constructor/factory method
+ at [Source: {"a":3}{"a":27,"foo":[1,2],"b":{"x":3}}  {"a":1,"b":2} ; line: 1, column: 23]
+	at com.fasterxml.jackson.databind.JsonMappingException.from(JsonMappingException.java:148)
+	at com.fasterxml.jackson.databind.DeserializationContext.mappingException(DeserializationContext.java:860)
+	at com.fasterxml.jackson.databind.deser.std.StdValueInstantiator.createFromInt(StdValueInstantiator.java:304)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.deserializeFromNumber(BeanDeserializerBase.java:1134)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializer._deserializeOther(BeanDeserializer.java:145)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializer.deserialize(BeanDeserializer.java:134)
+	at com.fasterxml.jackson.databind.MappingIterator.nextValue(MappingIterator.java:249)
+	at com.fasterxml.jackson.databind.seq.ReadRecoveryTest.testSimpleRootRecovery(ReadRecoveryTest.java:67)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.databind.seq.ReadRecoveryTest::testRootBeans
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertFalse(Assert.java:39)
+	at junit.framework.Assert.assertFalse(Assert.java:47)
+	at junit.framework.TestCase.assertFalse(TestCase.java:219)
+	at com.fasterxml.jackson.databind.seq.ReadRecoveryTest.testRootBeans(ReadRecoveryTest.java:41)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.fasterxml.jackson.databind.seq.ReadRecoveryTest::testSimpleArrayRecovery
+com.fasterxml.jackson.databind.JsonMappingException: Can not instantiate value of type [simple type, class com.fasterxml.jackson.databind.seq.ReadRecoveryTest$Bean] from Integral number (1); no single-int-arg constructor/factory method
+ at [Source: [{"a":3},{"a":27,"foo":[1,2],"b":{"x":3}}  ,{"a":1,"b":2}  ]; line: 1, column: 25]
+	at com.fasterxml.jackson.databind.JsonMappingException.from(JsonMappingException.java:148)
+	at com.fasterxml.jackson.databind.DeserializationContext.mappingException(DeserializationContext.java:860)
+	at com.fasterxml.jackson.databind.deser.std.StdValueInstantiator.createFromInt(StdValueInstantiator.java:304)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.deserializeFromNumber(BeanDeserializerBase.java:1134)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializer._deserializeOther(BeanDeserializer.java:145)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializer.deserialize(BeanDeserializer.java:134)
+	at com.fasterxml.jackson.databind.MappingIterator.nextValue(MappingIterator.java:249)
+	at com.fasterxml.jackson.databind.seq.ReadRecoveryTest.testSimpleArrayRecovery(ReadRecoveryTest.java:96)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+bean = it.nextValue();
+
+================== buggy_lines_in_method ==================
+[3, 6, 7, 9, 14, 15, 16, 17]
+================== buggy_statements ==================
+['        if (_parser == null) {', '        }', '        if (!_hasNextChecked) {', '            _hasNextChecked = true;', '                    JsonParser jp = _parser;', '                    _parser = null;', '                    if (_closeParser) {', '                        jp.close();']
+================== buggy_method_src_endswith_buggy_statement ==================
+public boolean hasNextValue() throws IOException
+    {
+        if (_parser == null) {
+            return false;
+            // fall-through
+        }
+        if (!_hasNextChecked) {
+            JsonToken t = _parser.getCurrentToken();
+            _hasNextChecked = true;
+            if (t == null) { // un-initialized or cleared; find next
+                t = _parser.nextToken();
+                // If EOF, no more, or if we hit END_ARRAY (although we don't clear the token).
+                if (t == null || t == JsonToken.END_ARRAY) {
+                    JsonParser jp = _parser;
+                    _parser = null;
+                    if (_closeParser) {
+                        jp.close();

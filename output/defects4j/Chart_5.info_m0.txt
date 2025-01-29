@@ -1,0 +1,103 @@
+
+================== buggy_file ==================
+source/org/jfree/data/xy/XYSeries.java
+================== buggy_method ==================
+{'method_name': 'addOrUpdate', 'method_body': 'public XYDataItem addOrUpdate(Number x, Number y) {\n        if (x == null) {\n            throw new IllegalArgumentException("Null \'x\' argument.");\n        }\n\n        // if we get to here, we know that duplicate X values are not permitted\n        XYDataItem overwritten = null;\n        int index = indexOf(x);\n        if (index >= 0 && !this.allowDuplicateXValues) {\n            XYDataItem existing = (XYDataItem) this.data.get(index);\n            try {\n                overwritten = (XYDataItem) existing.clone();\n            }\n            catch (CloneNotSupportedException e) {\n                throw new SeriesException("Couldn\'t clone XYDataItem!");\n            }\n            existing.setY(y);\n        }\n        else {\n            // if the series is sorted, the negative index is a result from\n            // Collections.binarySearch() and tells us where to insert the\n            // new item...otherwise it will be just -1 and we should just\n            // append the value to the list...\n            if (this.autoSort) {\n                this.data.add(-index - 1, new XYDataItem(x, y));\n            }\n            else {\n                this.data.add(new XYDataItem(x, y));\n            }\n            // check if this addition will exceed the maximum item count...\n            if (getItemCount() > this.maximumItemCount) {\n                this.data.remove(0);\n            }\n        }\n        fireSeriesChanged();\n        return overwritten;\n    }', 'start_line': 540, 'end_line': 576, 'buggy_lines': [548]}
+================== buggy_method_src ==================
+public XYDataItem addOrUpdate(Number x, Number y) {
+        if (x == null) {
+            throw new IllegalArgumentException("Null 'x' argument.");
+        }
+
+        // if we get to here, we know that duplicate X values are not permitted
+        XYDataItem overwritten = null;
+        int index = indexOf(x);
+        if (index >= 0 && !this.allowDuplicateXValues) {
+            XYDataItem existing = (XYDataItem) this.data.get(index);
+            try {
+                overwritten = (XYDataItem) existing.clone();
+            }
+            catch (CloneNotSupportedException e) {
+                throw new SeriesException("Couldn't clone XYDataItem!");
+            }
+            existing.setY(y);
+        }
+        else {
+            // if the series is sorted, the negative index is a result from
+            // Collections.binarySearch() and tells us where to insert the
+            // new item...otherwise it will be just -1 and we should just
+            // append the value to the list...
+            if (this.autoSort) {
+                this.data.add(-index - 1, new XYDataItem(x, y));
+            }
+            else {
+                this.data.add(new XYDataItem(x, y));
+            }
+            // check if this addition will exceed the maximum item count...
+            if (getItemCount() > this.maximumItemCount) {
+                this.data.remove(0);
+            }
+        }
+        fireSeriesChanged();
+        return overwritten;
+    }
+================== test_stack ==================
+org.jfree.data.xy.junit.XYSeriesTests::testBug1955483
+java.lang.IndexOutOfBoundsException: Index: -1, Size: 1
+	at java.util.ArrayList.rangeCheckForAdd(ArrayList.java:665)
+	at java.util.ArrayList.add(ArrayList.java:477)
+	at org.jfree.data.xy.XYSeries.addOrUpdate(XYSeries.java:564)
+	at org.jfree.data.xy.XYSeries.addOrUpdate(XYSeries.java:527)
+	at org.jfree.data.xy.junit.XYSeriesTests.testBug1955483(XYSeriesTests.java:479)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+series.addOrUpdate(1.0, 2.0);
+
+================== buggy_lines_in_method ==================
+[9]
+================== buggy_statements ==================
+['        if (index >= 0 && !this.allowDuplicateXValues) {']
+================== buggy_method_src_endswith_buggy_statement ==================
+public XYDataItem addOrUpdate(Number x, Number y) {
+        if (x == null) {
+            throw new IllegalArgumentException("Null 'x' argument.");
+        }
+
+        // if we get to here, we know that duplicate X values are not permitted
+        XYDataItem overwritten = null;
+        int index = indexOf(x);
+        if (index >= 0 && !this.allowDuplicateXValues) {

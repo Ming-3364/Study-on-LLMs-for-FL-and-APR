@@ -1,0 +1,118 @@
+
+================== buggy_file ==================
+src/main/java/com/fasterxml/jackson/databind/deser/BasicDeserializerFactory.java
+================== buggy_method ==================
+{'method_name': 'createKeyDeserializer', 'method_body': '@Override\n    public KeyDeserializer createKeyDeserializer(DeserializationContext ctxt,\n            JavaType type)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        KeyDeserializer deser = null;\n        if (_factoryConfig.hasKeyDeserializers()) {\n            BeanDescription beanDesc = config.introspectClassAnnotations(type.getRawClass());\n            for (KeyDeserializers d  : _factoryConfig.keyDeserializers()) {\n                deser = d.findKeyDeserializer(type, config, beanDesc);\n                if (deser != null) {\n                    break;\n                }\n            }\n        }\n        // the only non-standard thing is this:\n        if (deser == null) {\n            if (type.isEnumType()) {\n                return _createEnumKeyDeserializer(ctxt, type);\n            }\n            deser = StdKeyDeserializers.findStringBasedKeyDeserializer(config, type);\n        }\n        // and then post-processing\n        if (deser != null) {\n            if (_factoryConfig.hasDeserializerModifiers()) {\n                for (BeanDeserializerModifier mod : _factoryConfig.deserializerModifiers()) {\n                    deser = mod.modifyKeyDeserializer(config, type, deser);\n                }\n            }\n        }\n        return deser;\n    }', 'start_line': 1384, 'end_line': 1416, 'buggy_lines': [1403, 1405]}
+================== buggy_method_src ==================
+@Override
+    public KeyDeserializer createKeyDeserializer(DeserializationContext ctxt,
+            JavaType type)
+        throws JsonMappingException
+    {
+        final DeserializationConfig config = ctxt.getConfig();
+        KeyDeserializer deser = null;
+        if (_factoryConfig.hasKeyDeserializers()) {
+            BeanDescription beanDesc = config.introspectClassAnnotations(type.getRawClass());
+            for (KeyDeserializers d  : _factoryConfig.keyDeserializers()) {
+                deser = d.findKeyDeserializer(type, config, beanDesc);
+                if (deser != null) {
+                    break;
+                }
+            }
+        }
+        // the only non-standard thing is this:
+        if (deser == null) {
+            if (type.isEnumType()) {
+                return _createEnumKeyDeserializer(ctxt, type);
+            }
+            deser = StdKeyDeserializers.findStringBasedKeyDeserializer(config, type);
+        }
+        // and then post-processing
+        if (deser != null) {
+            if (_factoryConfig.hasDeserializerModifiers()) {
+                for (BeanDeserializerModifier mod : _factoryConfig.deserializerModifiers()) {
+                    deser = mod.modifyKeyDeserializer(config, type, deser);
+                }
+            }
+        }
+        return deser;
+    }
+================== test_stack ==================
+com.fasterxml.jackson.databind.module.TestCustomEnumKeyDeserializer::testCustomEnumValueAndKeyViaModifier
+com.fasterxml.jackson.databind.exc.InvalidFormatException: Can not deserialize Map key of type com.fasterxml.jackson.databind.module.TestCustomEnumKeyDeserializer$KeyEnum from String "REPlaceMENTS": not a valid representation, problem: (com.fasterxml.jackson.databind.exc.InvalidFormatException) Can not deserialize Map key of type com.fasterxml.jackson.databind.module.TestCustomEnumKeyDeserializer$KeyEnum from String "REPlaceMENTS": not one of values excepted for Enum class: [rootDirectory, replacements, licenseString]
+ at [Source: {"REPlaceMENTS":"foobar"}; line: 1, column: 2]
+ at [Source: {"REPlaceMENTS":"foobar"}; line: 1, column: 2]
+	at com.fasterxml.jackson.databind.exc.InvalidFormatException.from(InvalidFormatException.java:74)
+	at com.fasterxml.jackson.databind.DeserializationContext.weirdKeyException(DeserializationContext.java:1389)
+	at com.fasterxml.jackson.databind.DeserializationContext.handleWeirdKey(DeserializationContext.java:880)
+	at com.fasterxml.jackson.databind.deser.std.StdKeyDeserializer.deserializeKey(StdKeyDeserializer.java:130)
+	at com.fasterxml.jackson.databind.deser.std.EnumMapDeserializer.deserialize(EnumMapDeserializer.java:139)
+	at com.fasterxml.jackson.databind.deser.std.EnumMapDeserializer.deserialize(EnumMapDeserializer.java:17)
+	at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:3798)
+	at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:2861)
+	at com.fasterxml.jackson.databind.module.TestCustomEnumKeyDeserializer.testCustomEnumValueAndKeyViaModifier(TestCustomEnumKeyDeserializer.java:275)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+EnumMap<KeyEnum,String> map = mapper.readValue(
+
+================== buggy_lines_in_method ==================
+[20, 22]
+================== buggy_statements ==================
+['                return _createEnumKeyDeserializer(ctxt, type);', '            deser = StdKeyDeserializers.findStringBasedKeyDeserializer(config, type);']
+================== buggy_method_src_endswith_buggy_statement ==================
+@Override
+    public KeyDeserializer createKeyDeserializer(DeserializationContext ctxt,
+            JavaType type)
+        throws JsonMappingException
+    {
+        final DeserializationConfig config = ctxt.getConfig();
+        KeyDeserializer deser = null;
+        if (_factoryConfig.hasKeyDeserializers()) {
+            BeanDescription beanDesc = config.introspectClassAnnotations(type.getRawClass());
+            for (KeyDeserializers d  : _factoryConfig.keyDeserializers()) {
+                deser = d.findKeyDeserializer(type, config, beanDesc);
+                if (deser != null) {
+                    break;
+                }
+            }
+        }
+        // the only non-standard thing is this:
+        if (deser == null) {
+            if (type.isEnumType()) {
+                return _createEnumKeyDeserializer(ctxt, type);
+            }
+            deser = StdKeyDeserializers.findStringBasedKeyDeserializer(config, type);

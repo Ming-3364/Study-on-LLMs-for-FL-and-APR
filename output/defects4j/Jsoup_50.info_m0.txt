@@ -1,0 +1,158 @@
+
+================== buggy_file ==================
+src/main/java/org/jsoup/helper/DataUtil.java
+================== buggy_method ==================
+{'method_name': 'parseByteData', 'method_body': 'static Document parseByteData(ByteBuffer byteData, String charsetName, String baseUri, Parser parser) {\n        String docData;\n        Document doc = null;\n\n        // look for BOM - overrides any other header or input\n\n        if (charsetName == null) { // determine from meta. safe parse as UTF-8\n            // look for <meta http-equiv="Content-Type" content="text/html;charset=gb2312"> or HTML5 <meta charset="gb2312">\n            docData = Charset.forName(defaultCharset).decode(byteData).toString();\n            doc = parser.parseInput(docData, baseUri);\n            Element meta = doc.select("meta[http-equiv=content-type], meta[charset]").first();\n            if (meta != null) { // if not found, will keep utf-8 as best attempt\n                String foundCharset = null;\n                if (meta.hasAttr("http-equiv")) {\n                    foundCharset = getCharsetFromContentType(meta.attr("content"));\n                }\n                if (foundCharset == null && meta.hasAttr("charset")) {\n                    try {\n                        if (Charset.isSupported(meta.attr("charset"))) {\n                            foundCharset = meta.attr("charset");\n                        }\n                    } catch (IllegalCharsetNameException e) {\n                        foundCharset = null;\n                    }\n                }\n\n                if (foundCharset != null && foundCharset.length() != 0 && !foundCharset.equals(defaultCharset)) { // need to re-decode\n                    foundCharset = foundCharset.trim().replaceAll("[\\"\']", "");\n                    charsetName = foundCharset;\n                    byteData.rewind();\n                    docData = Charset.forName(foundCharset).decode(byteData).toString();\n                    doc = null;\n                }\n            }\n        } else { // specified by content type header (or by user on file load)\n            Validate.notEmpty(charsetName, "Must set charset arg to character set of file to parse. Set to null to attempt to detect from HTML");\n            docData = Charset.forName(charsetName).decode(byteData).toString();\n        }\n        if (docData.length() > 0 && docData.charAt(0) == UNICODE_BOM) {\n            byteData.rewind();\n            docData = Charset.forName(defaultCharset).decode(byteData).toString();\n            docData = docData.substring(1);\n            charsetName = defaultCharset;\n            doc = null;\n        }\n        if (doc == null) {\n            doc = parser.parseInput(docData, baseUri);\n            doc.outputSettings().charset(charsetName);\n        }\n        return doc;\n    }', 'start_line': 88, 'end_line': 138, 'buggy_lines': [126, 127, 128, 129, 130, 131, 132]}
+================== buggy_method_src ==================
+static Document parseByteData(ByteBuffer byteData, String charsetName, String baseUri, Parser parser) {
+        String docData;
+        Document doc = null;
+
+        // look for BOM - overrides any other header or input
+
+        if (charsetName == null) { // determine from meta. safe parse as UTF-8
+            // look for <meta http-equiv="Content-Type" content="text/html;charset=gb2312"> or HTML5 <meta charset="gb2312">
+            docData = Charset.forName(defaultCharset).decode(byteData).toString();
+            doc = parser.parseInput(docData, baseUri);
+            Element meta = doc.select("meta[http-equiv=content-type], meta[charset]").first();
+            if (meta != null) { // if not found, will keep utf-8 as best attempt
+                String foundCharset = null;
+                if (meta.hasAttr("http-equiv")) {
+                    foundCharset = getCharsetFromContentType(meta.attr("content"));
+                }
+                if (foundCharset == null && meta.hasAttr("charset")) {
+                    try {
+                        if (Charset.isSupported(meta.attr("charset"))) {
+                            foundCharset = meta.attr("charset");
+                        }
+                    } catch (IllegalCharsetNameException e) {
+                        foundCharset = null;
+                    }
+                }
+
+                if (foundCharset != null && foundCharset.length() != 0 && !foundCharset.equals(defaultCharset)) { // need to re-decode
+                    foundCharset = foundCharset.trim().replaceAll("[\"']", "");
+                    charsetName = foundCharset;
+                    byteData.rewind();
+                    docData = Charset.forName(foundCharset).decode(byteData).toString();
+                    doc = null;
+                }
+            }
+        } else { // specified by content type header (or by user on file load)
+            Validate.notEmpty(charsetName, "Must set charset arg to character set of file to parse. Set to null to attempt to detect from HTML");
+            docData = Charset.forName(charsetName).decode(byteData).toString();
+        }
+        if (docData.length() > 0 && docData.charAt(0) == UNICODE_BOM) {
+            byteData.rewind();
+            docData = Charset.forName(defaultCharset).decode(byteData).toString();
+            docData = docData.substring(1);
+            charsetName = defaultCharset;
+            doc = null;
+        }
+        if (doc == null) {
+            doc = parser.parseInput(docData, baseUri);
+            doc.outputSettings().charset(charsetName);
+        }
+        return doc;
+    }
+================== test_stack ==================
+org.jsoup.helper.DataUtilTest::supportsBOMinFiles
+junit.framework.AssertionFailedError
+	at org.junit.Assert.fail(Assert.java:86)
+	at org.junit.Assert.assertTrue(Assert.java:41)
+	at org.junit.Assert.assertTrue(Assert.java:52)
+	at org.jsoup.helper.DataUtilTest.supportsBOMinFiles(DataUtilTest.java:109)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertTrue(doc.title().contains("UTF-16BE"));
+
+================== buggy_lines_in_method ==================
+[39, 40, 41, 42, 43, 44, 45]
+================== buggy_statements ==================
+['        if (docData.length() > 0 && docData.charAt(0) == UNICODE_BOM) {', '            byteData.rewind();', '            docData = Charset.forName(defaultCharset).decode(byteData).toString();', '            docData = docData.substring(1);', '            charsetName = defaultCharset;', '            doc = null;', '        }']
+================== buggy_method_src_endswith_buggy_statement ==================
+static Document parseByteData(ByteBuffer byteData, String charsetName, String baseUri, Parser parser) {
+        String docData;
+        Document doc = null;
+
+        // look for BOM - overrides any other header or input
+
+        if (charsetName == null) { // determine from meta. safe parse as UTF-8
+            // look for <meta http-equiv="Content-Type" content="text/html;charset=gb2312"> or HTML5 <meta charset="gb2312">
+            docData = Charset.forName(defaultCharset).decode(byteData).toString();
+            doc = parser.parseInput(docData, baseUri);
+            Element meta = doc.select("meta[http-equiv=content-type], meta[charset]").first();
+            if (meta != null) { // if not found, will keep utf-8 as best attempt
+                String foundCharset = null;
+                if (meta.hasAttr("http-equiv")) {
+                    foundCharset = getCharsetFromContentType(meta.attr("content"));
+                }
+                if (foundCharset == null && meta.hasAttr("charset")) {
+                    try {
+                        if (Charset.isSupported(meta.attr("charset"))) {
+                            foundCharset = meta.attr("charset");
+                        }
+                    } catch (IllegalCharsetNameException e) {
+                        foundCharset = null;
+                    }
+                }
+
+                if (foundCharset != null && foundCharset.length() != 0 && !foundCharset.equals(defaultCharset)) { // need to re-decode
+                    foundCharset = foundCharset.trim().replaceAll("[\"']", "");
+                    charsetName = foundCharset;
+                    byteData.rewind();
+                    docData = Charset.forName(foundCharset).decode(byteData).toString();
+                    doc = null;
+                }
+            }
+        } else { // specified by content type header (or by user on file load)
+            Validate.notEmpty(charsetName, "Must set charset arg to character set of file to parse. Set to null to attempt to detect from HTML");
+            docData = Charset.forName(charsetName).decode(byteData).toString();
+        }
+        if (docData.length() > 0 && docData.charAt(0) == UNICODE_BOM) {
+            byteData.rewind();
+            docData = Charset.forName(defaultCharset).decode(byteData).toString();
+            docData = docData.substring(1);
+            charsetName = defaultCharset;
+            doc = null;
+        }

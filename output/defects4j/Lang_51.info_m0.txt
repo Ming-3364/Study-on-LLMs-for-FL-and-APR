@@ -1,0 +1,141 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/lang/BooleanUtils.java
+================== buggy_method ==================
+{'method_name': 'toBoolean', 'method_body': 'public static boolean toBoolean(String str) {\n        // Previously used equalsIgnoreCase, which was fast for interned \'true\'.\n        // Non interned \'true\' matched 15 times slower.\n        // \n        // Optimisation provides same performance as before for interned \'true\'.\n        // Similar performance for null, \'false\', and other strings not length 2/3/4.\n        // \'true\'/\'TRUE\' match 4 times slower, \'tRUE\'/\'True\' 7 times slower.\n        if (str == "true") {\n            return true;\n        }\n        if (str == null) {\n            return false;\n        }\n        switch (str.length()) {\n            case 2: {\n                char ch0 = str.charAt(0);\n                char ch1 = str.charAt(1);\n                return \n                    (ch0 == \'o\' || ch0 == \'O\') &&\n                    (ch1 == \'n\' || ch1 == \'N\');\n            }\n            case 3: {\n                char ch = str.charAt(0);\n                if (ch == \'y\') {\n                    return \n                        (str.charAt(1) == \'e\' || str.charAt(1) == \'E\') &&\n                        (str.charAt(2) == \'s\' || str.charAt(2) == \'S\');\n                }\n                if (ch == \'Y\') {\n                    return \n                        (str.charAt(1) == \'E\' || str.charAt(1) == \'e\') &&\n                        (str.charAt(2) == \'S\' || str.charAt(2) == \'s\');\n                }\n            }\n            case 4: {\n                char ch = str.charAt(0);\n                if (ch == \'t\') {\n                    return \n                        (str.charAt(1) == \'r\' || str.charAt(1) == \'R\') &&\n                        (str.charAt(2) == \'u\' || str.charAt(2) == \'U\') &&\n                        (str.charAt(3) == \'e\' || str.charAt(3) == \'E\');\n                }\n                if (ch == \'T\') {\n                    return \n                        (str.charAt(1) == \'R\' || str.charAt(1) == \'r\') &&\n                        (str.charAt(2) == \'U\' || str.charAt(2) == \'u\') &&\n                        (str.charAt(3) == \'E\' || str.charAt(3) == \'e\');\n                }\n            }\n        }\n        return false;\n    }', 'start_line': 649, 'end_line': 700, 'buggy_lines': [682]}
+================== buggy_method_src ==================
+public static boolean toBoolean(String str) {
+        // Previously used equalsIgnoreCase, which was fast for interned 'true'.
+        // Non interned 'true' matched 15 times slower.
+        // 
+        // Optimisation provides same performance as before for interned 'true'.
+        // Similar performance for null, 'false', and other strings not length 2/3/4.
+        // 'true'/'TRUE' match 4 times slower, 'tRUE'/'True' 7 times slower.
+        if (str == "true") {
+            return true;
+        }
+        if (str == null) {
+            return false;
+        }
+        switch (str.length()) {
+            case 2: {
+                char ch0 = str.charAt(0);
+                char ch1 = str.charAt(1);
+                return 
+                    (ch0 == 'o' || ch0 == 'O') &&
+                    (ch1 == 'n' || ch1 == 'N');
+            }
+            case 3: {
+                char ch = str.charAt(0);
+                if (ch == 'y') {
+                    return 
+                        (str.charAt(1) == 'e' || str.charAt(1) == 'E') &&
+                        (str.charAt(2) == 's' || str.charAt(2) == 'S');
+                }
+                if (ch == 'Y') {
+                    return 
+                        (str.charAt(1) == 'E' || str.charAt(1) == 'e') &&
+                        (str.charAt(2) == 'S' || str.charAt(2) == 's');
+                }
+            }
+            case 4: {
+                char ch = str.charAt(0);
+                if (ch == 't') {
+                    return 
+                        (str.charAt(1) == 'r' || str.charAt(1) == 'R') &&
+                        (str.charAt(2) == 'u' || str.charAt(2) == 'U') &&
+                        (str.charAt(3) == 'e' || str.charAt(3) == 'E');
+                }
+                if (ch == 'T') {
+                    return 
+                        (str.charAt(1) == 'R' || str.charAt(1) == 'r') &&
+                        (str.charAt(2) == 'U' || str.charAt(2) == 'u') &&
+                        (str.charAt(3) == 'E' || str.charAt(3) == 'e');
+                }
+            }
+        }
+        return false;
+    }
+================== test_stack ==================
+org.apache.commons.lang.BooleanUtilsTest::test_toBoolean_String
+java.lang.StringIndexOutOfBoundsException: String index out of range: 3
+	at java.lang.String.charAt(String.java:658)
+	at org.apache.commons.lang.BooleanUtils.toBoolean(BooleanUtils.java:686)
+	at org.apache.commons.lang.BooleanUtilsTest.test_toBoolean_String(BooleanUtilsTest.java:334)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertEquals(false, BooleanUtils.toBoolean("tru"));
+
+================== buggy_lines_in_method ==================
+[34]
+================== buggy_statements ==================
+['            }']
+================== buggy_method_src_endswith_buggy_statement ==================
+public static boolean toBoolean(String str) {
+        // Previously used equalsIgnoreCase, which was fast for interned 'true'.
+        // Non interned 'true' matched 15 times slower.
+        // 
+        // Optimisation provides same performance as before for interned 'true'.
+        // Similar performance for null, 'false', and other strings not length 2/3/4.
+        // 'true'/'TRUE' match 4 times slower, 'tRUE'/'True' 7 times slower.
+        if (str == "true") {
+            return true;
+        }
+        if (str == null) {
+            return false;
+        }
+        switch (str.length()) {
+            case 2: {
+                char ch0 = str.charAt(0);
+                char ch1 = str.charAt(1);
+                return 
+                    (ch0 == 'o' || ch0 == 'O') &&
+                    (ch1 == 'n' || ch1 == 'N');
+            }
+            case 3: {
+                char ch = str.charAt(0);
+                if (ch == 'y') {
+                    return 
+                        (str.charAt(1) == 'e' || str.charAt(1) == 'E') &&
+                        (str.charAt(2) == 's' || str.charAt(2) == 'S');
+                }
+                if (ch == 'Y') {
+                    return 
+                        (str.charAt(1) == 'E' || str.charAt(1) == 'e') &&
+                        (str.charAt(2) == 'S' || str.charAt(2) == 's');
+                }
+            }

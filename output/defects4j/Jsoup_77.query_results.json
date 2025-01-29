@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "14",
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "**14**",
+            "deepseek-chat": "10",
+            "gpt-4o-mini": "14"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "13",
+            "qwen-turbo": "14",
+            "ernie-3.5-128k": "20",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "197"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "19",
+            "qwen-turbo": "11",
+            "ernie-3.5-128k": "**30**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "19"
+        },
+        "prompt_fl_4": {
+            "ernie-3.5-128k": "stack.remove(pos);",
+            "qwen-turbo": "stack.remove(pos);",
+            "doubao-pro-4k": "stack.remove(pos);",
+            "deepseek-chat": "stack.remove(pos);",
+            "gpt-4o-mini": "stack.remove(pos);"
+        },
+        "prompt_fl_5": {
+            "doubao-pro-4k": "stack.remove(pos);",
+            "qwen-turbo": "stack.remove(pos);",
+            "ernie-3.5-128k": "stack.remove(pos);",
+            "deepseek-chat": "stack.remove(pos);",
+            "gpt-4o-mini": "stack.remove(pos);"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "stack.remove(pos);",
+            "doubao-pro-4k": "assertEquals(\"<div>\\n test\\n</div>\\n<p></p>\", document.html());",
+            "ernie-3.5-128k": "stack.remove(pos);",
+            "deepseek-chat": "stack.remove(pos);",
+            "gpt-4o-mini": "stack.remove(pos);"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "```java\nprivate void popStackToClose(Token.EndTag endTag) {\n    String elName = endTag.getName(); // Changed from endTag.name() to endTag.getName()\n    Element firstFound = null;\n\n    for (int pos = stack.size() - 1; pos >= 0; pos--) {\n        Element next = stack.get(pos);\n        if (next.tagName().equals(elName)) { // Changed from nodeName() to tagName()\n            firstFound = next;\n            break;\n        }\n    }\n    if (firstFound == null)\n        return; // not found, skip\n\n    for (int pos = stack.size() - 1; pos >= 0; pos--) {\n        Element next = stack.get(pos);\n        stack.remove(pos);\n        if (next == firstFound)\n            break;\n    }\n}\n```\nIn this correction, `endTag.name()` is changed to `endTag.getName()` assuming that the method name should be `getName` for consistency with typical Java conventions. Similarly, `next.nodeName().equals(elName)` is changed to `next.tagName().equals(elName)` assuming that `nodeName` was a mistake and you intended to use `tagName`, which is more common when dealing with HTML elements.",
+            "deepseek-chat": "private void popStackToClose(Token.EndTag endTag) {\n    String elName = endTag.name();\n    Element firstFound = null;\n\n    for (int pos = stack.size() - 1; pos >= 0; pos--) {\n        Element next = stack.get(pos);\n        if (next.nodeName().equalsIgnoreCase(elName)) {  // Changed to equalsIgnoreCase to handle case sensitivity\n            firstFound = next;\n            break;\n        }\n    }\n    if (firstFound == null)\n        return; // not found, skip\n\n    for (int pos = stack.size() - 1; pos >= 0; pos--) {\n        Element next = stack.get(pos);\n        stack.remove(pos);\n        if (next == firstFound)\n            break;\n    }\n}",
+            "doubao-pro-4k": "private void popStackToClose(Token.EndTag endTag) {\n    String elName = endTag.name();\n    Element firstFound = null;\n\n    for (int pos = stack.size() - 1; pos >= 0; pos--) {\n        Element next = stack.get(pos);\n        if (next.getNodeName().equals(elName)) { // Bug fixed: changed nodeName() to getNodeName()\n            firstFound = next;\n            break;\n        }\n    }\n    if (firstFound == null)\n        return; // not found, skip\n\n    for (int pos = stack.size() - 1; pos >= 0; pos--) {\n        Element next = stack.get(pos);\n        stack.remove(pos);\n        if (next == firstFound)\n            break;\n    }\n}",
+            "gpt-4o-mini": "private void popStackToClose(Token.EndTag endTag) {\n        String elName = endTag.name();\n        Element firstFound = null;\n\n        for (int pos = stack.size() - 1; pos >= 0; pos--) {\n            Element next = stack.get(pos);\n            if (next.nodeName().equals(elName)) {\n                firstFound = next;\n                break;\n            }\n        }\n        if (firstFound == null)\n            return; // not found, skip\n\n        // Modify the removal loop to avoid ConcurrentModificationException.\n        // Iterate backward, but adjust for removal of elements.\n        for (int pos = stack.size() - 1; pos >= 0; pos--) {\n            Element next = stack.get(pos);\n            stack.remove(pos);\n            if (next == firstFound)\n                break;\n        }\n    }",
+            "ernie-3.5-128k": "private void popStackToClose(Token.EndTag endTag) {\n    String elName = endTag.name();\n    Element firstFound = null;\n    int firstFoundIndex = -1;  // Fix: Introduce a variable to store the index of the first found element\n\n    for (int pos = stack.size() - 1; pos >= 0; pos--) {\n        Element next = stack.get(pos);\n        if (next.nodeName().equals(elName)) {\n            firstFound = next;\n            firstFoundIndex = pos;  // Fix: Store the index of the first found element\n            break;\n        }\n    }\n    if (firstFound == null)\n        return; // not found, skip\n\n    // Fix: Use the stored index to remove elements efficiently\n    while (stack.size() - 1 > firstFoundIndex) {\n        stack.remove(stack.size() - 1);\n    }\n    stack.remove(firstFoundIndex);  // Finally, remove the matching start tag\n}"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\nprivate void popStackToClose(Token.EndTag endTag) {\n    String elName = endTag.getName().trim(); // Ensure to trim the name to remove any leading or trailing spaces\n    Element firstFound = null;\n\n    for (int pos = stack.size() - 1; pos >= 0; pos--) {\n        Element next = stack.get(pos);\n        if (next.nodeName().equals(elName)) {\n            firstFound = next;\n            break;\n        }\n    }\n    if (firstFound == null)\n        return; // not found, skip\n\n    for (int pos = stack.size() - 1; pos >= 0; pos--) {\n        Element next = stack.get(pos);\n        stack.remove(pos);\n        if (next == firstFound)\n            break;\n    }\n}\n```\n\nIn this correction, I added `.trim()` to `endTag.name()` to ensure that any extraneous whitespace is removed from the element name before comparison. This should resolve the issue you were encountering.",
+            "gpt-4o-mini": "private void popStackToClose(Token.EndTag endTag) {\n    String elName = endTag.name();\n    Element firstFound = null;\n\n    for (int pos = stack.size() - 1; pos >= 0; pos--) {\n        Element next = stack.get(pos);\n        if (next.nodeName().equals(elName)) {\n            firstFound = next;\n            break;\n        }\n    }\n    if (firstFound == null)\n        return; // not found, skip\n\n    for (int pos = stack.size() - 1; pos >= 0; pos--) {\n        Element next = stack.get(pos);\n        stack.remove(pos);\n        if (next == firstFound)\n            break;\n    }\n}",
+            "deepseek-chat": "private void popStackToClose(Token.EndTag endTag) {\n    String elName = endTag.name().toLowerCase(); // Convert to lowercase to ensure case-insensitive matching\n    Element firstFound = null;\n\n    for (int pos = stack.size() - 1; pos >= 0; pos--) {\n        Element next = stack.get(pos);\n        if (next.nodeName().toLowerCase().equals(elName)) { // Convert to lowercase for comparison\n            firstFound = next;\n            break;\n        }\n    }\n    if (firstFound == null)\n        return; // not found, skip\n\n    for (int pos = stack.size() - 1; pos >= 0; pos--) {\n        Element next = stack.get(pos);\n        stack.remove(pos);\n        if (next == firstFound)\n            break;\n    }\n}",
+            "doubao-pro-4k": "private void popStackToClose(Token.EndTag endTag) {\n        String elName = endTag.getName();\n        Element firstFound = null;\n\n        for (int pos = stack.size() - 1; pos >= 0; pos--) {\n            Element next = stack.get(pos);\n            if (next.getNodeName().equals(elName)) {\n                firstFound = next;\n                break;\n            }\n        }\n        if (firstFound == null)\n            return; // not found, skip\n\n        for (int pos = stack.size() - 1; pos >= 0; pos--) {\n            Element next = stack.get(pos);\n            stack.remove(pos);\n            if (next == firstFound)\n                break;\n        }\n    }",
+            "ernie-3.5-128k": "Certainly! The issue you're encountering is likely due to the fact that `endTag.name()` might not be returning the correct type or might not be defined properly. Assuming `Token.EndTag` is a class and `name()` is a method that returns a `String`, the problem might be related to how `endTag` is being passed or how `name()` is implemented.\n\nHowever, based on the code provided and your request, I'll assume that `endTag` is correctly of type `Token.EndTag` and should have a valid `name()` method. If the error is a compilation error suggesting that `name()` cannot be resolved or is not a method, you need to ensure that `Token.EndTag` indeed has a `name()` method that returns a `String`.\n\nHere's the complete corrected method assuming that the `Token.EndTag` class and its `name()` method are correctly defined:\n\nprivate void popStackToClose(Token.EndTag endTag) {\n    String elName = endTag.name();\n    Element firstFound = null;\n\n    for (int pos = stack.size() - 1; pos >= 0; pos--) {\n        Element next = stack.get(pos);\n        if (next.nodeName().equals(elName)) {\n            firstFound = next;\n            break;\n        }\n    }\n    if (firstFound == null)\n        return; // not found, skip\n\n    for (int pos = stack.size() - 1; pos >= 0; pos--) {\n        Element next = stack.get(pos);\n        stack.remove(pos);\n        if (next == firstFound)\n            break;\n    }\n}\n\nIf the issue persists, you should:\n1. Ensure that `Token.EndTag` has a `name()` method declared as follows:\n   ```java\n   public String name();\n   ```\n2. Ensure that `endTag` is not null before calling `endTag.name()`.\n3. Check if there are any import statements missing that might be related to `Token.EndTag`.\n\nIf `Token.EndTag` is part of a library or framework, make sure you have the correct version and all necessary dependencies. If you have access to the `Token.EndTag` class, verify its implementation of the `name()` method."
+        },
+        "prompt_apr_3": {
+            "doubao-pro-4k": "private void popStackToClose(Token.EndTag endTag) {\n    String elName = endTag.name();\n}",
+            "qwen-turbo": "```java\nprivate void popStackToClose(Token.EndTag endTag) {\n    String elName = endTag.getName();\n```",
+            "ernie-3.5-128k": "private void popStackToClose(Token.EndTag endTag) {\n        String elName = endTag.getElementName();",
+            "deepseek-chat": "```java\nprivate void popStackToClose(Token.EndTag endTag) {\n    String elName = endTag.name();\n```",
+            "gpt-4o-mini": "private void popStackToClose(Token.EndTag endTag) {\n    String elName = endTag.name();\n    if (elName.equals(\"div\")) {\n        // bug fixed\n    }\n}"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"String elName = endTag.value();\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"String elName = endTag.getName();\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"String elName = endTag.name().toLowerCase();\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"String elName = endTag.name().toLowerCase();\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"Element firstFound = stack.stream().filter(element -> element.nodeName().equals(elName)).findFirst().orElse(null);\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"String elName = endTag.value();\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"String elName = endTag.tagName();\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"String elName = endTag.name().toLowerCase();\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"String elName = endTag.getName();\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"String elName = endTag.getName();\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"        String elName = endTag.value();\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"String elName = endTag.getName();\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"String elName = endTag.getName();\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"String elName = endTag.getName();\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"String elName = endTag.getName();\"\n    }\n]"
+        }
+    }
+]

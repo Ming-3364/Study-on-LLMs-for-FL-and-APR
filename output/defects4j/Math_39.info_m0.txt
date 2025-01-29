@@ -1,0 +1,275 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/math/ode/nonstiff/EmbeddedRungeKuttaIntegrator.java
+================== buggy_method ==================
+{'method_name': 'integrate', 'method_body': '@Override\n  public void integrate(final ExpandableStatefulODE equations, final double t)\n      throws MathIllegalStateException, MathIllegalArgumentException {\n\n    sanityChecks(equations, t);\n    setEquations(equations);\n    final boolean forward = t > equations.getTime();\n\n    // create some internal working arrays\n    final double[] y0  = equations.getCompleteState();\n    final double[] y = y0.clone();\n    final int stages = c.length + 1;\n    final double[][] yDotK = new double[stages][y.length];\n    final double[] yTmp    = y0.clone();\n    final double[] yDotTmp = new double[y.length];\n\n    // set up an interpolator sharing the integrator arrays\n    final RungeKuttaStepInterpolator interpolator = (RungeKuttaStepInterpolator) prototype.copy();\n    interpolator.reinitialize(this, yTmp, yDotK, forward,\n                              equations.getPrimaryMapper(), equations.getSecondaryMappers());\n    interpolator.storeTime(equations.getTime());\n\n    // set up integration control objects\n    stepStart         = equations.getTime();\n    double  hNew      = 0;\n    boolean firstTime = true;\n    initIntegration(equations.getTime(), y0, t);\n\n    // main integration loop\n    isLastStep = false;\n    do {\n\n      interpolator.shift();\n\n      // iterate over step size, ensuring local normalized error is smaller than 1\n      double error = 10;\n      while (error >= 1.0) {\n\n        if (firstTime || !fsal) {\n          // first stage\n          computeDerivatives(stepStart, y, yDotK[0]);\n        }\n\n        if (firstTime) {\n          final double[] scale = new double[mainSetDimension];\n          if (vecAbsoluteTolerance == null) {\n              for (int i = 0; i < scale.length; ++i) {\n                scale[i] = scalAbsoluteTolerance + scalRelativeTolerance * FastMath.abs(y[i]);\n              }\n          } else {\n              for (int i = 0; i < scale.length; ++i) {\n                scale[i] = vecAbsoluteTolerance[i] + vecRelativeTolerance[i] * FastMath.abs(y[i]);\n              }\n          }\n          hNew = initializeStep(forward, getOrder(), scale,\n                                stepStart, y, yDotK[0], yTmp, yDotK[1]);\n          firstTime = false;\n        }\n\n        stepSize = hNew;\n\n        // next stages\n        for (int k = 1; k < stages; ++k) {\n\n          for (int j = 0; j < y0.length; ++j) {\n            double sum = a[k-1][0] * yDotK[0][j];\n            for (int l = 1; l < k; ++l) {\n              sum += a[k-1][l] * yDotK[l][j];\n            }\n            yTmp[j] = y[j] + stepSize * sum;\n          }\n\n          computeDerivatives(stepStart + c[k-1] * stepSize, yTmp, yDotK[k]);\n\n        }\n\n        // estimate the state at the end of the step\n        for (int j = 0; j < y0.length; ++j) {\n          double sum    = b[0] * yDotK[0][j];\n          for (int l = 1; l < stages; ++l) {\n            sum    += b[l] * yDotK[l][j];\n          }\n          yTmp[j] = y[j] + stepSize * sum;\n        }\n\n        // estimate the error at the end of the step\n        error = estimateError(yDotK, y, yTmp, stepSize);\n        if (error >= 1.0) {\n          // reject the step and attempt to reduce error by stepsize control\n          final double factor =\n              FastMath.min(maxGrowth,\n                           FastMath.max(minReduction, safety * FastMath.pow(error, exp)));\n          hNew = filterStep(stepSize * factor, forward, false);\n        }\n\n      }\n\n      // local error is small enough: accept the step, trigger events and step handlers\n      interpolator.storeTime(stepStart + stepSize);\n      System.arraycopy(yTmp, 0, y, 0, y0.length);\n      System.arraycopy(yDotK[stages - 1], 0, yDotTmp, 0, y0.length);\n      stepStart = acceptStep(interpolator, y, yDotTmp, t);\n      System.arraycopy(y, 0, yTmp, 0, y.length);\n\n      if (!isLastStep) {\n\n          // prepare next step\n          interpolator.storeTime(stepStart);\n\n          if (fsal) {\n              // save the last evaluation for the next step\n              System.arraycopy(yDotTmp, 0, yDotK[0], 0, y0.length);\n          }\n\n          // stepsize control for next step\n          final double factor =\n              FastMath.min(maxGrowth, FastMath.max(minReduction, safety * FastMath.pow(error, exp)));\n          final double  scaledH    = stepSize * factor;\n          final double  nextT      = stepStart + scaledH;\n          final boolean nextIsLast = forward ? (nextT >= t) : (nextT <= t);\n          hNew = filterStep(scaledH, forward, nextIsLast);\n\n          final double  filteredNextT      = stepStart + hNew;\n          final boolean filteredNextIsLast = forward ? (filteredNextT >= t) : (filteredNextT <= t);\n          if (filteredNextIsLast) {\n              hNew = t - stepStart;\n          }\n\n      }\n\n    } while (!isLastStep);\n\n    // dispatch results\n    equations.setTime(stepStart);\n    equations.setCompleteState(y);\n\n    resetInternalState();\n\n  }', 'start_line': 190, 'end_line': 328, 'buggy_lines': [258]}
+================== buggy_method_src ==================
+@Override
+  public void integrate(final ExpandableStatefulODE equations, final double t)
+      throws MathIllegalStateException, MathIllegalArgumentException {
+
+    sanityChecks(equations, t);
+    setEquations(equations);
+    final boolean forward = t > equations.getTime();
+
+    // create some internal working arrays
+    final double[] y0  = equations.getCompleteState();
+    final double[] y = y0.clone();
+    final int stages = c.length + 1;
+    final double[][] yDotK = new double[stages][y.length];
+    final double[] yTmp    = y0.clone();
+    final double[] yDotTmp = new double[y.length];
+
+    // set up an interpolator sharing the integrator arrays
+    final RungeKuttaStepInterpolator interpolator = (RungeKuttaStepInterpolator) prototype.copy();
+    interpolator.reinitialize(this, yTmp, yDotK, forward,
+                              equations.getPrimaryMapper(), equations.getSecondaryMappers());
+    interpolator.storeTime(equations.getTime());
+
+    // set up integration control objects
+    stepStart         = equations.getTime();
+    double  hNew      = 0;
+    boolean firstTime = true;
+    initIntegration(equations.getTime(), y0, t);
+
+    // main integration loop
+    isLastStep = false;
+    do {
+
+      interpolator.shift();
+
+      // iterate over step size, ensuring local normalized error is smaller than 1
+      double error = 10;
+      while (error >= 1.0) {
+
+        if (firstTime || !fsal) {
+          // first stage
+          computeDerivatives(stepStart, y, yDotK[0]);
+        }
+
+        if (firstTime) {
+          final double[] scale = new double[mainSetDimension];
+          if (vecAbsoluteTolerance == null) {
+              for (int i = 0; i < scale.length; ++i) {
+                scale[i] = scalAbsoluteTolerance + scalRelativeTolerance * FastMath.abs(y[i]);
+              }
+          } else {
+              for (int i = 0; i < scale.length; ++i) {
+                scale[i] = vecAbsoluteTolerance[i] + vecRelativeTolerance[i] * FastMath.abs(y[i]);
+              }
+          }
+          hNew = initializeStep(forward, getOrder(), scale,
+                                stepStart, y, yDotK[0], yTmp, yDotK[1]);
+          firstTime = false;
+        }
+
+        stepSize = hNew;
+
+        // next stages
+        for (int k = 1; k < stages; ++k) {
+
+          for (int j = 0; j < y0.length; ++j) {
+            double sum = a[k-1][0] * yDotK[0][j];
+            for (int l = 1; l < k; ++l) {
+              sum += a[k-1][l] * yDotK[l][j];
+            }
+            yTmp[j] = y[j] + stepSize * sum;
+          }
+
+          computeDerivatives(stepStart + c[k-1] * stepSize, yTmp, yDotK[k]);
+
+        }
+
+        // estimate the state at the end of the step
+        for (int j = 0; j < y0.length; ++j) {
+          double sum    = b[0] * yDotK[0][j];
+          for (int l = 1; l < stages; ++l) {
+            sum    += b[l] * yDotK[l][j];
+          }
+          yTmp[j] = y[j] + stepSize * sum;
+        }
+
+        // estimate the error at the end of the step
+        error = estimateError(yDotK, y, yTmp, stepSize);
+        if (error >= 1.0) {
+          // reject the step and attempt to reduce error by stepsize control
+          final double factor =
+              FastMath.min(maxGrowth,
+                           FastMath.max(minReduction, safety * FastMath.pow(error, exp)));
+          hNew = filterStep(stepSize * factor, forward, false);
+        }
+
+      }
+
+      // local error is small enough: accept the step, trigger events and step handlers
+      interpolator.storeTime(stepStart + stepSize);
+      System.arraycopy(yTmp, 0, y, 0, y0.length);
+      System.arraycopy(yDotK[stages - 1], 0, yDotTmp, 0, y0.length);
+      stepStart = acceptStep(interpolator, y, yDotTmp, t);
+      System.arraycopy(y, 0, yTmp, 0, y.length);
+
+      if (!isLastStep) {
+
+          // prepare next step
+          interpolator.storeTime(stepStart);
+
+          if (fsal) {
+              // save the last evaluation for the next step
+              System.arraycopy(yDotTmp, 0, yDotK[0], 0, y0.length);
+          }
+
+          // stepsize control for next step
+          final double factor =
+              FastMath.min(maxGrowth, FastMath.max(minReduction, safety * FastMath.pow(error, exp)));
+          final double  scaledH    = stepSize * factor;
+          final double  nextT      = stepStart + scaledH;
+          final boolean nextIsLast = forward ? (nextT >= t) : (nextT <= t);
+          hNew = filterStep(scaledH, forward, nextIsLast);
+
+          final double  filteredNextT      = stepStart + hNew;
+          final boolean filteredNextIsLast = forward ? (filteredNextT >= t) : (filteredNextT <= t);
+          if (filteredNextIsLast) {
+              hNew = t - stepStart;
+          }
+
+      }
+
+    } while (!isLastStep);
+
+    // dispatch results
+    equations.setTime(stepStart);
+    equations.setCompleteState(y);
+
+    resetInternalState();
+
+  }
+================== test_stack ==================
+org.apache.commons.math.ode.nonstiff.DormandPrince853IntegratorTest::testTooLargeFirstStep
+junit.framework.AssertionFailedError
+	at org.junit.Assert.fail(Assert.java:86)
+	at org.junit.Assert.assertTrue(Assert.java:41)
+	at org.junit.Assert.assertTrue(Assert.java:52)
+	at org.apache.commons.math.ode.nonstiff.DormandPrince853IntegratorTest$3.computeDerivatives(DormandPrince853IntegratorTest.java:194)
+	at org.apache.commons.math.ode.ExpandableStatefulODE.computeDerivatives(ExpandableStatefulODE.java:115)
+	at org.apache.commons.math.ode.AbstractIntegrator.computeDerivatives(AbstractIntegrator.java:265)
+	at org.apache.commons.math.ode.nonstiff.EmbeddedRungeKuttaIntegrator.integrate(EmbeddedRungeKuttaIntegrator.java:262)
+	at org.apache.commons.math.ode.AbstractIntegrator.integrate(AbstractIntegrator.java:228)
+	at org.apache.commons.math.ode.nonstiff.DormandPrince853IntegratorTest.testTooLargeFirstStep(DormandPrince853IntegratorTest.java:201)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+integ.integrate(equations, start, new double[] { 1.0 }, end, new double[1]);
+
+================== buggy_lines_in_method ==================
+[69]
+================== buggy_statements ==================
+['            }']
+================== buggy_method_src_endswith_buggy_statement ==================
+@Override
+  public void integrate(final ExpandableStatefulODE equations, final double t)
+      throws MathIllegalStateException, MathIllegalArgumentException {
+
+    sanityChecks(equations, t);
+    setEquations(equations);
+    final boolean forward = t > equations.getTime();
+
+    // create some internal working arrays
+    final double[] y0  = equations.getCompleteState();
+    final double[] y = y0.clone();
+    final int stages = c.length + 1;
+    final double[][] yDotK = new double[stages][y.length];
+    final double[] yTmp    = y0.clone();
+    final double[] yDotTmp = new double[y.length];
+
+    // set up an interpolator sharing the integrator arrays
+    final RungeKuttaStepInterpolator interpolator = (RungeKuttaStepInterpolator) prototype.copy();
+    interpolator.reinitialize(this, yTmp, yDotK, forward,
+                              equations.getPrimaryMapper(), equations.getSecondaryMappers());
+    interpolator.storeTime(equations.getTime());
+
+    // set up integration control objects
+    stepStart         = equations.getTime();
+    double  hNew      = 0;
+    boolean firstTime = true;
+    initIntegration(equations.getTime(), y0, t);
+
+    // main integration loop
+    isLastStep = false;
+    do {
+
+      interpolator.shift();
+
+      // iterate over step size, ensuring local normalized error is smaller than 1
+      double error = 10;
+      while (error >= 1.0) {
+
+        if (firstTime || !fsal) {
+          // first stage
+          computeDerivatives(stepStart, y, yDotK[0]);
+        }
+
+        if (firstTime) {
+          final double[] scale = new double[mainSetDimension];
+          if (vecAbsoluteTolerance == null) {
+              for (int i = 0; i < scale.length; ++i) {
+                scale[i] = scalAbsoluteTolerance + scalRelativeTolerance * FastMath.abs(y[i]);
+              }
+          } else {
+              for (int i = 0; i < scale.length; ++i) {
+                scale[i] = vecAbsoluteTolerance[i] + vecRelativeTolerance[i] * FastMath.abs(y[i]);
+              }
+          }
+          hNew = initializeStep(forward, getOrder(), scale,
+                                stepStart, y, yDotK[0], yTmp, yDotK[1]);
+          firstTime = false;
+        }
+
+        stepSize = hNew;
+
+        // next stages
+        for (int k = 1; k < stages; ++k) {
+
+          for (int j = 0; j < y0.length; ++j) {
+            double sum = a[k-1][0] * yDotK[0][j];
+            for (int l = 1; l < k; ++l) {
+              sum += a[k-1][l] * yDotK[l][j];
+            }

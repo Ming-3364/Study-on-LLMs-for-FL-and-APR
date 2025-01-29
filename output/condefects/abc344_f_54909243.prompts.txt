@@ -1,0 +1,658 @@
+
+================== prompt_fl_1 ==================
+
+source code:
+id main(String[] args){
+        PrintWriter out = new PrintWriter(System.out);
+        InputReader sc=new InputReader(System.in);
+        int n = sc.nextInt();
+        long[][] p = new long[n][n];
+        long[][] r = new long[n][n - 1];
+        long[][] d = new long[n - 1][n];
+        for (int i = 0; i < n; i++) {
+            p[i] = sc.nextLongArray(n);
+        }
+        for (int i = 0; i < n; i++) {
+            r[i] = sc.nextLongArray(n - 1);
+        }
+        for (int i = 0; i < n - 1; i++) {
+            d[i] = sc.nextLongArray(n);
+        }
+        PairLong[][] dp = new PairLong[n][n];
+        for (int i = 0; i < n; i++) {
+            Arrays.fill(dp[i], new PairLong(MAX, MAX));
+        }
+        dp[0][0] = new PairLong(0, 0);
+        long ans = MAX;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (i == n - 1 && j == n - 1) {
+                  continue;
+                }
+                if (dp[i][j].x == MAX) {
+                    continue;
+                }
+                long[][] dist = new long[n][n];
+                for (int k = 0; k < n; k++) {
+                    Arrays.fill(dist[k], MAX);
+                }
+                dist[i][j] = 0;
+                for (int k = i; k < n; k++) {
+                    for (int l = j; l < n; l++) {
+                        if (k + 1 < n) {
+                            dist[k + 1][l] = Math.min(dist[k + 1][l], dist[k][l] + d[k][l]);
+                        }
+                        if (l + 1 < n) {
+                            dist[k][l + 1] = Math.min(dist[k][l + 1], dist[k][l] + r[k][l]);
+                        }
+                    }
+                }
+                long x = dp[i][j].x;
+                long y = dp[i][j].y;
+                ans = Math.min(ans, x + ceil(Math.max(dist[n - 1][n - 1] - y, 0), p[i][j]));
+                //System.out.println(ans + " " + i + " " + j + " " + x + " " + y + " " + dist[n - 1][n - 1] + " " + p[i][j]);
+                for (int k = i; k < n; k++) {
+                    for (int l = j; l < n; l++) {
+                        if (k == i && l == j) {
+                            continue;
+                        }
+                        if (p[i][j] >= p[k][l]) {
+                            continue;
+                        }
+                        long nx = x + ceil(Math.max(dist[k][l] - y, 0), p[i][j]);
+                        long ny = y +  (ceil(Math.max(dist[k][l] - y, 0), p[i][j]) * p[i][j]) - dist[k][l];
+                        if (nx < dp[k][l].x || (nx == dp[k][l].x && ny < dp[k][l].y)) {
+                            dp[k][l] = new PairLong(nx, ny);
+                        }
+                    }
+                }
+            }
+        }
+        out.println(ans + 2 * n - 2);
+        out.flush();
+    }
+
+    static cla
+
+There is a bug in the above code, please help me locate it.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_4 ==================
+
+source code:
+id main(String[] args){
+        PrintWriter out = new PrintWriter(System.out);
+        InputReader sc=new InputReader(System.in);
+        int n = sc.nextInt();
+        long[][] p = new long[n][n];
+        long[][] r = new long[n][n - 1];
+        long[][] d = new long[n - 1][n];
+        for (int i = 0; i < n; i++) {
+            p[i] = sc.nextLongArray(n);
+        }
+        for (int i = 0; i < n; i++) {
+            r[i] = sc.nextLongArray(n - 1);
+        }
+        for (int i = 0; i < n - 1; i++) {
+            d[i] = sc.nextLongArray(n);
+        }
+        PairLong[][] dp = new PairLong[n][n];
+        for (int i = 0; i < n; i++) {
+            Arrays.fill(dp[i], new PairLong(MAX, MAX));
+        }
+        dp[0][0] = new PairLong(0, 0);
+        long ans = MAX;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (i == n - 1 && j == n - 1) {
+                  continue;
+                }
+                if (dp[i][j].x == MAX) {
+                    continue;
+                }
+                long[][] dist = new long[n][n];
+                for (int k = 0; k < n; k++) {
+                    Arrays.fill(dist[k], MAX);
+                }
+                dist[i][j] = 0;
+                for (int k = i; k < n; k++) {
+                    for (int l = j; l < n; l++) {
+                        if (k + 1 < n) {
+                            dist[k + 1][l] = Math.min(dist[k + 1][l], dist[k][l] + d[k][l]);
+                        }
+                        if (l + 1 < n) {
+                            dist[k][l + 1] = Math.min(dist[k][l + 1], dist[k][l] + r[k][l]);
+                        }
+                    }
+                }
+                long x = dp[i][j].x;
+                long y = dp[i][j].y;
+                ans = Math.min(ans, x + ceil(Math.max(dist[n - 1][n - 1] - y, 0), p[i][j]));
+                //System.out.println(ans + " " + i + " " + j + " " + x + " " + y + " " + dist[n - 1][n - 1] + " " + p[i][j]);
+                for (int k = i; k < n; k++) {
+                    for (int l = j; l < n; l++) {
+                        if (k == i && l == j) {
+                            continue;
+                        }
+                        if (p[i][j] >= p[k][l]) {
+                            continue;
+                        }
+                        long nx = x + ceil(Math.max(dist[k][l] - y, 0), p[i][j]);
+                        long ny = y +  (ceil(Math.max(dist[k][l] - y, 0), p[i][j]) * p[i][j]) - dist[k][l];
+                        if (nx < dp[k][l].x || (nx == dp[k][l].x && ny < dp[k][l].y)) {
+                            dp[k][l] = new PairLong(nx, ny);
+                        }
+                    }
+                }
+            }
+        }
+        out.println(ans + 2 * n - 2);
+        out.flush();
+    }
+
+    static cla
+
+There is a bug in the above code, please help me locate it.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_1 ==================
+
+id main(String[] args){
+        PrintWriter out = new PrintWriter(System.out);
+        InputReader sc=new InputReader(System.in);
+        int n = sc.nextInt();
+        long[][] p = new long[n][n];
+        long[][] r = new long[n][n - 1];
+        long[][] d = new long[n - 1][n];
+        for (int i = 0; i < n; i++) {
+            p[i] = sc.nextLongArray(n);
+        }
+        for (int i = 0; i < n; i++) {
+            r[i] = sc.nextLongArray(n - 1);
+        }
+        for (int i = 0; i < n - 1; i++) {
+            d[i] = sc.nextLongArray(n);
+        }
+        PairLong[][] dp = new PairLong[n][n];
+        for (int i = 0; i < n; i++) {
+            Arrays.fill(dp[i], new PairLong(MAX, MAX));
+        }
+        dp[0][0] = new PairLong(0, 0);
+        long ans = MAX;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (i == n - 1 && j == n - 1) {
+                  continue;
+                }
+                if (dp[i][j].x == MAX) {
+                    continue;
+                }
+                long[][] dist = new long[n][n];
+                for (int k = 0; k < n; k++) {
+                    Arrays.fill(dist[k], MAX);
+                }
+                dist[i][j] = 0;
+                for (int k = i; k < n; k++) {
+                    for (int l = j; l < n; l++) {
+                        if (k + 1 < n) {
+                            dist[k + 1][l] = Math.min(dist[k + 1][l], dist[k][l] + d[k][l]);
+                        }
+                        if (l + 1 < n) {
+                            dist[k][l + 1] = Math.min(dist[k][l + 1], dist[k][l] + r[k][l]);
+                        }
+                    }
+                }
+                long x = dp[i][j].x;
+                long y = dp[i][j].y;
+                ans = Math.min(ans, x + ceil(Math.max(dist[n - 1][n - 1] - y, 0), p[i][j]));
+                //System.out.println(ans + " " + i + " " + j + " " + x + " " + y + " " + dist[n - 1][n - 1] + " " + p[i][j]);
+                for (int k = i; k < n; k++) {
+                    for (int l = j; l < n; l++) {
+                        if (k == i && l == j) {
+                            continue;
+                        }
+                        if (p[i][j] >= p[k][l]) {
+                            continue;
+                        }
+                        long nx = x + ceil(Math.max(dist[k][l] - y, 0), p[i][j]);
+                        long ny = y +  (ceil(Math.max(dist[k][l] - y, 0), p[i][j]) * p[i][j]) - dist[k][l];
+                        if (nx < dp[k][l].x || (nx == dp[k][l].x && ny < dp[k][l].y)) {
+                            dp[k][l] = new PairLong(nx, ny);
+                        }
+                    }
+                }
+            }
+        }
+        out.println(ans + 2 * n - 2);
+        out.flush();
+    }
+
+    static cla
+
+There is a bug in line [60] of the code, please help me fix it.
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_2 ==================
+
+id main(String[] args){
+        PrintWriter out = new PrintWriter(System.out);
+        InputReader sc=new InputReader(System.in);
+        int n = sc.nextInt();
+        long[][] p = new long[n][n];
+        long[][] r = new long[n][n - 1];
+        long[][] d = new long[n - 1][n];
+        for (int i = 0; i < n; i++) {
+            p[i] = sc.nextLongArray(n);
+        }
+        for (int i = 0; i < n; i++) {
+            r[i] = sc.nextLongArray(n - 1);
+        }
+        for (int i = 0; i < n - 1; i++) {
+            d[i] = sc.nextLongArray(n);
+        }
+        PairLong[][] dp = new PairLong[n][n];
+        for (int i = 0; i < n; i++) {
+            Arrays.fill(dp[i], new PairLong(MAX, MAX));
+        }
+        dp[0][0] = new PairLong(0, 0);
+        long ans = MAX;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (i == n - 1 && j == n - 1) {
+                  continue;
+                }
+                if (dp[i][j].x == MAX) {
+                    continue;
+                }
+                long[][] dist = new long[n][n];
+                for (int k = 0; k < n; k++) {
+                    Arrays.fill(dist[k], MAX);
+                }
+                dist[i][j] = 0;
+                for (int k = i; k < n; k++) {
+                    for (int l = j; l < n; l++) {
+                        if (k + 1 < n) {
+                            dist[k + 1][l] = Math.min(dist[k + 1][l], dist[k][l] + d[k][l]);
+                        }
+                        if (l + 1 < n) {
+                            dist[k][l + 1] = Math.min(dist[k][l + 1], dist[k][l] + r[k][l]);
+                        }
+                    }
+                }
+                long x = dp[i][j].x;
+                long y = dp[i][j].y;
+                ans = Math.min(ans, x + ceil(Math.max(dist[n - 1][n - 1] - y, 0), p[i][j]));
+                //System.out.println(ans + " " + i + " " + j + " " + x + " " + y + " " + dist[n - 1][n - 1] + " " + p[i][j]);
+                for (int k = i; k < n; k++) {
+                    for (int l = j; l < n; l++) {
+                        if (k == i && l == j) {
+                            continue;
+                        }
+                        if (p[i][j] >= p[k][l]) {
+                            continue;
+                        }
+                        long nx = x + ceil(Math.max(dist[k][l] - y, 0), p[i][j]);
+                        long ny = y +  (ceil(Math.max(dist[k][l] - y, 0), p[i][j]) * p[i][j]) - dist[k][l];
+                        if (nx < dp[k][l].x || (nx == dp[k][l].x && ny < dp[k][l].y)) {
+                            dp[k][l] = new PairLong(nx, ny);
+                        }
+                    }
+                }
+            }
+        }
+        out.println(ans + 2 * n - 2);
+        out.flush();
+    }
+
+    static cla
+
+There is a bug in ['                        if (nx < dp[k][l].x || (nx == dp[k][l].x && ny < dp[k][l].y)) {'] , please help me fix it. 
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_3 ==================
+
+id main(String[] args){
+        PrintWriter out = new PrintWriter(System.out);
+        InputReader sc=new InputReader(System.in);
+        int n = sc.nextInt();
+        long[][] p = new long[n][n];
+        long[][] r = new long[n][n - 1];
+        long[][] d = new long[n - 1][n];
+        for (int i = 0; i < n; i++) {
+            p[i] = sc.nextLongArray(n);
+        }
+        for (int i = 0; i < n; i++) {
+            r[i] = sc.nextLongArray(n - 1);
+        }
+        for (int i = 0; i < n - 1; i++) {
+            d[i] = sc.nextLongArray(n);
+        }
+        PairLong[][] dp = new PairLong[n][n];
+        for (int i = 0; i < n; i++) {
+            Arrays.fill(dp[i], new PairLong(MAX, MAX));
+        }
+        dp[0][0] = new PairLong(0, 0);
+        long ans = MAX;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (i == n - 1 && j == n - 1) {
+                  continue;
+                }
+                if (dp[i][j].x == MAX) {
+                    continue;
+                }
+                long[][] dist = new long[n][n];
+                for (int k = 0; k < n; k++) {
+                    Arrays.fill(dist[k], MAX);
+                }
+                dist[i][j] = 0;
+                for (int k = i; k < n; k++) {
+                    for (int l = j; l < n; l++) {
+                        if (k + 1 < n) {
+                            dist[k + 1][l] = Math.min(dist[k + 1][l], dist[k][l] + d[k][l]);
+                        }
+                        if (l + 1 < n) {
+                            dist[k][l + 1] = Math.min(dist[k][l + 1], dist[k][l] + r[k][l]);
+                        }
+                    }
+                }
+                long x = dp[i][j].x;
+                long y = dp[i][j].y;
+                ans = Math.min(ans, x + ceil(Math.max(dist[n - 1][n - 1] - y, 0), p[i][j]));
+                //System.out.println(ans + " " + i + " " + j + " " + x + " " + y + " " + dist[n - 1][n - 1] + " " + p[i][j]);
+                for (int k = i; k < n; k++) {
+                    for (int l = j; l < n; l++) {
+                        if (k == i && l == j) {
+                            continue;
+                        }
+                        if (p[i][j] >= p[k][l]) {
+                            continue;
+                        }
+                        long nx = x + ceil(Math.max(dist[k][l] - y, 0), p[i][j]);
+                        long ny = y +  (ceil(Math.max(dist[k][l] - y, 0), p[i][j]) * p[i][j]) - dist[k][l];
+                        if (nx < dp[k][l].x || (nx == dp[k][l].x && ny < dp[k][l].y)) {
+
+There is a bug in the last statement, please help me fix it.
+
+Return the code **only from the method declaration to the fixed statement**, without completing or adding additional code. Do not modify anything beyond fixing the bug, and do not complete the `if` statement or other unfinished parts. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_4 ==================
+
+id main(String[] args){
+        PrintWriter out = new PrintWriter(System.out);
+        InputReader sc=new InputReader(System.in);
+        int n = sc.nextInt();
+        long[][] p = new long[n][n];
+        long[][] r = new long[n][n - 1];
+        long[][] d = new long[n - 1][n];
+        for (int i = 0; i < n; i++) {
+            p[i] = sc.nextLongArray(n);
+        }
+        for (int i = 0; i < n; i++) {
+            r[i] = sc.nextLongArray(n - 1);
+        }
+        for (int i = 0; i < n - 1; i++) {
+            d[i] = sc.nextLongArray(n);
+        }
+        PairLong[][] dp = new PairLong[n][n];
+        for (int i = 0; i < n; i++) {
+            Arrays.fill(dp[i], new PairLong(MAX, MAX));
+        }
+        dp[0][0] = new PairLong(0, 0);
+        long ans = MAX;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (i == n - 1 && j == n - 1) {
+                  continue;
+                }
+                if (dp[i][j].x == MAX) {
+                    continue;
+                }
+                long[][] dist = new long[n][n];
+                for (int k = 0; k < n; k++) {
+                    Arrays.fill(dist[k], MAX);
+                }
+                dist[i][j] = 0;
+                for (int k = i; k < n; k++) {
+                    for (int l = j; l < n; l++) {
+                        if (k + 1 < n) {
+                            dist[k + 1][l] = Math.min(dist[k + 1][l], dist[k][l] + d[k][l]);
+                        }
+                        if (l + 1 < n) {
+                            dist[k][l + 1] = Math.min(dist[k][l + 1], dist[k][l] + r[k][l]);
+                        }
+                    }
+                }
+                long x = dp[i][j].x;
+                long y = dp[i][j].y;
+                ans = Math.min(ans, x + ceil(Math.max(dist[n - 1][n - 1] - y, 0), p[i][j]));
+                //System.out.println(ans + " " + i + " " + j + " " + x + " " + y + " " + dist[n - 1][n - 1] + " " + p[i][j]);
+                for (int k = i; k < n; k++) {
+                    for (int l = j; l < n; l++) {
+                        if (k == i && l == j) {
+                            continue;
+                        }
+                        if (p[i][j] >= p[k][l]) {
+                            continue;
+                        }
+                        long nx = x + ceil(Math.max(dist[k][l] - y, 0), p[i][j]);
+                        long ny = y +  (ceil(Math.max(dist[k][l] - y, 0), p[i][j]) * p[i][j]) - dist[k][l];
+                        if (nx < dp[k][l].x || (nx == dp[k][l].x && ny < dp[k][l].y)) {
+                            dp[k][l] = new PairLong(nx, ny);
+                        }
+                    }
+                }
+            }
+        }
+        out.println(ans + 2 * n - 2);
+        out.flush();
+    }
+
+    static cla
+
+There is a bug in line [60] of the code, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_5 ==================
+
+id main(String[] args){
+        PrintWriter out = new PrintWriter(System.out);
+        InputReader sc=new InputReader(System.in);
+        int n = sc.nextInt();
+        long[][] p = new long[n][n];
+        long[][] r = new long[n][n - 1];
+        long[][] d = new long[n - 1][n];
+        for (int i = 0; i < n; i++) {
+            p[i] = sc.nextLongArray(n);
+        }
+        for (int i = 0; i < n; i++) {
+            r[i] = sc.nextLongArray(n - 1);
+        }
+        for (int i = 0; i < n - 1; i++) {
+            d[i] = sc.nextLongArray(n);
+        }
+        PairLong[][] dp = new PairLong[n][n];
+        for (int i = 0; i < n; i++) {
+            Arrays.fill(dp[i], new PairLong(MAX, MAX));
+        }
+        dp[0][0] = new PairLong(0, 0);
+        long ans = MAX;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (i == n - 1 && j == n - 1) {
+                  continue;
+                }
+                if (dp[i][j].x == MAX) {
+                    continue;
+                }
+                long[][] dist = new long[n][n];
+                for (int k = 0; k < n; k++) {
+                    Arrays.fill(dist[k], MAX);
+                }
+                dist[i][j] = 0;
+                for (int k = i; k < n; k++) {
+                    for (int l = j; l < n; l++) {
+                        if (k + 1 < n) {
+                            dist[k + 1][l] = Math.min(dist[k + 1][l], dist[k][l] + d[k][l]);
+                        }
+                        if (l + 1 < n) {
+                            dist[k][l + 1] = Math.min(dist[k][l + 1], dist[k][l] + r[k][l]);
+                        }
+                    }
+                }
+                long x = dp[i][j].x;
+                long y = dp[i][j].y;
+                ans = Math.min(ans, x + ceil(Math.max(dist[n - 1][n - 1] - y, 0), p[i][j]));
+                //System.out.println(ans + " " + i + " " + j + " " + x + " " + y + " " + dist[n - 1][n - 1] + " " + p[i][j]);
+                for (int k = i; k < n; k++) {
+                    for (int l = j; l < n; l++) {
+                        if (k == i && l == j) {
+                            continue;
+                        }
+                        if (p[i][j] >= p[k][l]) {
+                            continue;
+                        }
+                        long nx = x + ceil(Math.max(dist[k][l] - y, 0), p[i][j]);
+                        long ny = y +  (ceil(Math.max(dist[k][l] - y, 0), p[i][j]) * p[i][j]) - dist[k][l];
+                        if (nx < dp[k][l].x || (nx == dp[k][l].x && ny < dp[k][l].y)) {
+                            dp[k][l] = new PairLong(nx, ny);
+                        }
+                    }
+                }
+            }
+        }
+        out.println(ans + 2 * n - 2);
+        out.flush();
+    }
+
+    static cla
+
+There is a bug in ['                        if (nx < dp[k][l].x || (nx == dp[k][l].x && ny < dp[k][l].y)) {'] , please help me fix it. 
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_6 ==================
+
+id main(String[] args){
+        PrintWriter out = new PrintWriter(System.out);
+        InputReader sc=new InputReader(System.in);
+        int n = sc.nextInt();
+        long[][] p = new long[n][n];
+        long[][] r = new long[n][n - 1];
+        long[][] d = new long[n - 1][n];
+        for (int i = 0; i < n; i++) {
+            p[i] = sc.nextLongArray(n);
+        }
+        for (int i = 0; i < n; i++) {
+            r[i] = sc.nextLongArray(n - 1);
+        }
+        for (int i = 0; i < n - 1; i++) {
+            d[i] = sc.nextLongArray(n);
+        }
+        PairLong[][] dp = new PairLong[n][n];
+        for (int i = 0; i < n; i++) {
+            Arrays.fill(dp[i], new PairLong(MAX, MAX));
+        }
+        dp[0][0] = new PairLong(0, 0);
+        long ans = MAX;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (i == n - 1 && j == n - 1) {
+                  continue;
+                }
+                if (dp[i][j].x == MAX) {
+                    continue;
+                }
+                long[][] dist = new long[n][n];
+                for (int k = 0; k < n; k++) {
+                    Arrays.fill(dist[k], MAX);
+                }
+                dist[i][j] = 0;
+                for (int k = i; k < n; k++) {
+                    for (int l = j; l < n; l++) {
+                        if (k + 1 < n) {
+                            dist[k + 1][l] = Math.min(dist[k + 1][l], dist[k][l] + d[k][l]);
+                        }
+                        if (l + 1 < n) {
+                            dist[k][l + 1] = Math.min(dist[k][l + 1], dist[k][l] + r[k][l]);
+                        }
+                    }
+                }
+                long x = dp[i][j].x;
+                long y = dp[i][j].y;
+                ans = Math.min(ans, x + ceil(Math.max(dist[n - 1][n - 1] - y, 0), p[i][j]));
+                //System.out.println(ans + " " + i + " " + j + " " + x + " " + y + " " + dist[n - 1][n - 1] + " " + p[i][j]);
+                for (int k = i; k < n; k++) {
+                    for (int l = j; l < n; l++) {
+                        if (k == i && l == j) {
+                            continue;
+                        }
+                        if (p[i][j] >= p[k][l]) {
+                            continue;
+                        }
+                        long nx = x + ceil(Math.max(dist[k][l] - y, 0), p[i][j]);
+                        long ny = y +  (ceil(Math.max(dist[k][l] - y, 0), p[i][j]) * p[i][j]) - dist[k][l];
+                        if (nx < dp[k][l].x || (nx == dp[k][l].x && ny < dp[k][l].y)) {
+
+There is a bug in the last statement, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.

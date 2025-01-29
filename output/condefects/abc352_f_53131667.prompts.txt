@@ -1,0 +1,800 @@
+
+================== prompt_fl_1 ==================
+
+source code:
+public void solve() {
+        n = sc.nextInt();
+        int m = sc.nextInt();
+        List<E>[] list = new List[n];
+        UFSize uf = new UFSize(n);
+        Arrays.setAll(list, i -> new ArrayList<>());
+        for(int i=0; i<m; i++) {
+            int a = sc.nextInt()-1;
+            int b = sc.nextInt()-1;
+            int c = sc.nextInt();
+            list[a].add(new E(a, b, -c));
+            list[b].add(new E(b, a, c));
+            uf.join(a, b);
+        }
+        boolean[] v = new boolean[n];
+        int[] l = new int[n];
+        gs = new ArrayList<>();
+        for(int i=0; i<n; i++) {
+            if(uf.root(i) != i) continue;
+            Set<Integer> set = new HashSet<>();
+            set.add(i);
+            v[i] = true;
+            LinkedList<Integer> q = new LinkedList<>();
+            q.offer(i);
+            while(!q.isEmpty()) {
+                int u = q.poll();
+                for(E e : list[u]) {
+                    if(v[e.v]) continue;
+                    v[e.v] = true;
+                    l[e.v] = l[u] + e.c;
+                    q.offer(e.v);
+                    set.add(e.v);
+                }
+            }
+            int min = l[i];
+            int mini = i;
+            for(int j : set) {
+                if(l[j] < min) {
+                    min = l[j];
+                    mini = j;
+                }
+            }
+            int max = 0;
+            int mask = 0;
+            for(int j : set) {
+                l[j] -= min;
+                max = Math.max(max, l[j]);
+                mask |= 1<<l[j];
+            }
+            gs.add(new G(mini, max, mask, set.size()));
+        }
+        d = gs.size();
+        gs.sort(Comparator.comparingInt(a -> a.cnt));
+        int sn  = 0;
+        res = new int[n];
+        Arrays.fill(res, -1);
+        for(int i=0; i<d; i++) {
+            G g = gs.get(i);
+            if(g.cnt == 1) {
+                sn++;
+            }
+        }
+        md = d;
+        if(sn >= 2) {
+            for(int i=0; i<d; i++) {
+                G g = gs.get(i);
+                if(g.cnt == 1) {
+                    res[g.root] = -1;
+                }
+            }
+            md -= sn;
+        }
+        dfs(md-1, 0, new int[md]);
+        for(int i=0; i<md; i++) {
+            G g = gs.get(i);
+            if(g.oset.size() != 1) {
+                continue;
+            }
+            int offset = g.oset.iterator().next();
+            res[g.root] = offset;
+            for(int j=0; j<n; j++) {
+                if(uf.root(j) == uf.root(g.root)) {
+                    res[j] = l[j] + offset;
+                }
+            }
+
+        }
+        
+        for(int i=0; i<res.length; i++) {
+            if(i>0) out.print(" ");
+            if(res[i] >= 0) {
+                res[i]++;
+            }
+            out.print(res[i]);
+         }
+         out.println();
+    }
+
+There is a bug in the above code, please help me locate it.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_4 ==================
+
+source code:
+public void solve() {
+        n = sc.nextInt();
+        int m = sc.nextInt();
+        List<E>[] list = new List[n];
+        UFSize uf = new UFSize(n);
+        Arrays.setAll(list, i -> new ArrayList<>());
+        for(int i=0; i<m; i++) {
+            int a = sc.nextInt()-1;
+            int b = sc.nextInt()-1;
+            int c = sc.nextInt();
+            list[a].add(new E(a, b, -c));
+            list[b].add(new E(b, a, c));
+            uf.join(a, b);
+        }
+        boolean[] v = new boolean[n];
+        int[] l = new int[n];
+        gs = new ArrayList<>();
+        for(int i=0; i<n; i++) {
+            if(uf.root(i) != i) continue;
+            Set<Integer> set = new HashSet<>();
+            set.add(i);
+            v[i] = true;
+            LinkedList<Integer> q = new LinkedList<>();
+            q.offer(i);
+            while(!q.isEmpty()) {
+                int u = q.poll();
+                for(E e : list[u]) {
+                    if(v[e.v]) continue;
+                    v[e.v] = true;
+                    l[e.v] = l[u] + e.c;
+                    q.offer(e.v);
+                    set.add(e.v);
+                }
+            }
+            int min = l[i];
+            int mini = i;
+            for(int j : set) {
+                if(l[j] < min) {
+                    min = l[j];
+                    mini = j;
+                }
+            }
+            int max = 0;
+            int mask = 0;
+            for(int j : set) {
+                l[j] -= min;
+                max = Math.max(max, l[j]);
+                mask |= 1<<l[j];
+            }
+            gs.add(new G(mini, max, mask, set.size()));
+        }
+        d = gs.size();
+        gs.sort(Comparator.comparingInt(a -> a.cnt));
+        int sn  = 0;
+        res = new int[n];
+        Arrays.fill(res, -1);
+        for(int i=0; i<d; i++) {
+            G g = gs.get(i);
+            if(g.cnt == 1) {
+                sn++;
+            }
+        }
+        md = d;
+        if(sn >= 2) {
+            for(int i=0; i<d; i++) {
+                G g = gs.get(i);
+                if(g.cnt == 1) {
+                    res[g.root] = -1;
+                }
+            }
+            md -= sn;
+        }
+        dfs(md-1, 0, new int[md]);
+        for(int i=0; i<md; i++) {
+            G g = gs.get(i);
+            if(g.oset.size() != 1) {
+                continue;
+            }
+            int offset = g.oset.iterator().next();
+            res[g.root] = offset;
+            for(int j=0; j<n; j++) {
+                if(uf.root(j) == uf.root(g.root)) {
+                    res[j] = l[j] + offset;
+                }
+            }
+
+        }
+        
+        for(int i=0; i<res.length; i++) {
+            if(i>0) out.print(" ");
+            if(res[i] >= 0) {
+                res[i]++;
+            }
+            out.print(res[i]);
+         }
+         out.println();
+    }
+
+There is a bug in the above code, please help me locate it.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_1 ==================
+
+public void solve() {
+        n = sc.nextInt();
+        int m = sc.nextInt();
+        List<E>[] list = new List[n];
+        UFSize uf = new UFSize(n);
+        Arrays.setAll(list, i -> new ArrayList<>());
+        for(int i=0; i<m; i++) {
+            int a = sc.nextInt()-1;
+            int b = sc.nextInt()-1;
+            int c = sc.nextInt();
+            list[a].add(new E(a, b, -c));
+            list[b].add(new E(b, a, c));
+            uf.join(a, b);
+        }
+        boolean[] v = new boolean[n];
+        int[] l = new int[n];
+        gs = new ArrayList<>();
+        for(int i=0; i<n; i++) {
+            if(uf.root(i) != i) continue;
+            Set<Integer> set = new HashSet<>();
+            set.add(i);
+            v[i] = true;
+            LinkedList<Integer> q = new LinkedList<>();
+            q.offer(i);
+            while(!q.isEmpty()) {
+                int u = q.poll();
+                for(E e : list[u]) {
+                    if(v[e.v]) continue;
+                    v[e.v] = true;
+                    l[e.v] = l[u] + e.c;
+                    q.offer(e.v);
+                    set.add(e.v);
+                }
+            }
+            int min = l[i];
+            int mini = i;
+            for(int j : set) {
+                if(l[j] < min) {
+                    min = l[j];
+                    mini = j;
+                }
+            }
+            int max = 0;
+            int mask = 0;
+            for(int j : set) {
+                l[j] -= min;
+                max = Math.max(max, l[j]);
+                mask |= 1<<l[j];
+            }
+            gs.add(new G(mini, max, mask, set.size()));
+        }
+        d = gs.size();
+        gs.sort(Comparator.comparingInt(a -> a.cnt));
+        int sn  = 0;
+        res = new int[n];
+        Arrays.fill(res, -1);
+        for(int i=0; i<d; i++) {
+            G g = gs.get(i);
+            if(g.cnt == 1) {
+                sn++;
+            }
+        }
+        md = d;
+        if(sn >= 2) {
+            for(int i=0; i<d; i++) {
+                G g = gs.get(i);
+                if(g.cnt == 1) {
+                    res[g.root] = -1;
+                }
+            }
+            md -= sn;
+        }
+        dfs(md-1, 0, new int[md]);
+        for(int i=0; i<md; i++) {
+            G g = gs.get(i);
+            if(g.oset.size() != 1) {
+                continue;
+            }
+            int offset = g.oset.iterator().next();
+            res[g.root] = offset;
+            for(int j=0; j<n; j++) {
+                if(uf.root(j) == uf.root(g.root)) {
+                    res[j] = l[j] + offset;
+                }
+            }
+
+        }
+        
+        for(int i=0; i<res.length; i++) {
+            if(i>0) out.print(" ");
+            if(res[i] >= 0) {
+                res[i]++;
+            }
+            out.print(res[i]);
+         }
+         out.println();
+    }
+
+There is a bug in line [53] of the code, please help me fix it.
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_2 ==================
+
+public void solve() {
+        n = sc.nextInt();
+        int m = sc.nextInt();
+        List<E>[] list = new List[n];
+        UFSize uf = new UFSize(n);
+        Arrays.setAll(list, i -> new ArrayList<>());
+        for(int i=0; i<m; i++) {
+            int a = sc.nextInt()-1;
+            int b = sc.nextInt()-1;
+            int c = sc.nextInt();
+            list[a].add(new E(a, b, -c));
+            list[b].add(new E(b, a, c));
+            uf.join(a, b);
+        }
+        boolean[] v = new boolean[n];
+        int[] l = new int[n];
+        gs = new ArrayList<>();
+        for(int i=0; i<n; i++) {
+            if(uf.root(i) != i) continue;
+            Set<Integer> set = new HashSet<>();
+            set.add(i);
+            v[i] = true;
+            LinkedList<Integer> q = new LinkedList<>();
+            q.offer(i);
+            while(!q.isEmpty()) {
+                int u = q.poll();
+                for(E e : list[u]) {
+                    if(v[e.v]) continue;
+                    v[e.v] = true;
+                    l[e.v] = l[u] + e.c;
+                    q.offer(e.v);
+                    set.add(e.v);
+                }
+            }
+            int min = l[i];
+            int mini = i;
+            for(int j : set) {
+                if(l[j] < min) {
+                    min = l[j];
+                    mini = j;
+                }
+            }
+            int max = 0;
+            int mask = 0;
+            for(int j : set) {
+                l[j] -= min;
+                max = Math.max(max, l[j]);
+                mask |= 1<<l[j];
+            }
+            gs.add(new G(mini, max, mask, set.size()));
+        }
+        d = gs.size();
+        gs.sort(Comparator.comparingInt(a -> a.cnt));
+        int sn  = 0;
+        res = new int[n];
+        Arrays.fill(res, -1);
+        for(int i=0; i<d; i++) {
+            G g = gs.get(i);
+            if(g.cnt == 1) {
+                sn++;
+            }
+        }
+        md = d;
+        if(sn >= 2) {
+            for(int i=0; i<d; i++) {
+                G g = gs.get(i);
+                if(g.cnt == 1) {
+                    res[g.root] = -1;
+                }
+            }
+            md -= sn;
+        }
+        dfs(md-1, 0, new int[md]);
+        for(int i=0; i<md; i++) {
+            G g = gs.get(i);
+            if(g.oset.size() != 1) {
+                continue;
+            }
+            int offset = g.oset.iterator().next();
+            res[g.root] = offset;
+            for(int j=0; j<n; j++) {
+                if(uf.root(j) == uf.root(g.root)) {
+                    res[j] = l[j] + offset;
+                }
+            }
+
+        }
+        
+        for(int i=0; i<res.length; i++) {
+            if(i>0) out.print(" ");
+            if(res[i] >= 0) {
+                res[i]++;
+            }
+            out.print(res[i]);
+         }
+         out.println();
+    }
+
+There is a bug in ['        gs.sort(Comparator.comparingInt(a -> a.cnt));'] , please help me fix it. 
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_3 ==================
+
+public void solve() {
+        n = sc.nextInt();
+        int m = sc.nextInt();
+        List<E>[] list = new List[n];
+        UFSize uf = new UFSize(n);
+        Arrays.setAll(list, i -> new ArrayList<>());
+        for(int i=0; i<m; i++) {
+            int a = sc.nextInt()-1;
+            int b = sc.nextInt()-1;
+            int c = sc.nextInt();
+            list[a].add(new E(a, b, -c));
+            list[b].add(new E(b, a, c));
+            uf.join(a, b);
+        }
+        boolean[] v = new boolean[n];
+        int[] l = new int[n];
+        gs = new ArrayList<>();
+        for(int i=0; i<n; i++) {
+            if(uf.root(i) != i) continue;
+            Set<Integer> set = new HashSet<>();
+            set.add(i);
+            v[i] = true;
+            LinkedList<Integer> q = new LinkedList<>();
+            q.offer(i);
+            while(!q.isEmpty()) {
+                int u = q.poll();
+                for(E e : list[u]) {
+                    if(v[e.v]) continue;
+                    v[e.v] = true;
+                    l[e.v] = l[u] + e.c;
+                    q.offer(e.v);
+                    set.add(e.v);
+                }
+            }
+            int min = l[i];
+            int mini = i;
+            for(int j : set) {
+                if(l[j] < min) {
+                    min = l[j];
+                    mini = j;
+                }
+            }
+            int max = 0;
+            int mask = 0;
+            for(int j : set) {
+                l[j] -= min;
+                max = Math.max(max, l[j]);
+                mask |= 1<<l[j];
+            }
+            gs.add(new G(mini, max, mask, set.size()));
+        }
+        d = gs.size();
+        gs.sort(Comparator.comparingInt(a -> a.cnt));
+
+There is a bug in the last statement, please help me fix it.
+
+Return the code **only from the method declaration to the fixed statement**, without completing or adding additional code. Do not modify anything beyond fixing the bug, and do not complete the `if` statement or other unfinished parts. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_4 ==================
+
+public void solve() {
+        n = sc.nextInt();
+        int m = sc.nextInt();
+        List<E>[] list = new List[n];
+        UFSize uf = new UFSize(n);
+        Arrays.setAll(list, i -> new ArrayList<>());
+        for(int i=0; i<m; i++) {
+            int a = sc.nextInt()-1;
+            int b = sc.nextInt()-1;
+            int c = sc.nextInt();
+            list[a].add(new E(a, b, -c));
+            list[b].add(new E(b, a, c));
+            uf.join(a, b);
+        }
+        boolean[] v = new boolean[n];
+        int[] l = new int[n];
+        gs = new ArrayList<>();
+        for(int i=0; i<n; i++) {
+            if(uf.root(i) != i) continue;
+            Set<Integer> set = new HashSet<>();
+            set.add(i);
+            v[i] = true;
+            LinkedList<Integer> q = new LinkedList<>();
+            q.offer(i);
+            while(!q.isEmpty()) {
+                int u = q.poll();
+                for(E e : list[u]) {
+                    if(v[e.v]) continue;
+                    v[e.v] = true;
+                    l[e.v] = l[u] + e.c;
+                    q.offer(e.v);
+                    set.add(e.v);
+                }
+            }
+            int min = l[i];
+            int mini = i;
+            for(int j : set) {
+                if(l[j] < min) {
+                    min = l[j];
+                    mini = j;
+                }
+            }
+            int max = 0;
+            int mask = 0;
+            for(int j : set) {
+                l[j] -= min;
+                max = Math.max(max, l[j]);
+                mask |= 1<<l[j];
+            }
+            gs.add(new G(mini, max, mask, set.size()));
+        }
+        d = gs.size();
+        gs.sort(Comparator.comparingInt(a -> a.cnt));
+        int sn  = 0;
+        res = new int[n];
+        Arrays.fill(res, -1);
+        for(int i=0; i<d; i++) {
+            G g = gs.get(i);
+            if(g.cnt == 1) {
+                sn++;
+            }
+        }
+        md = d;
+        if(sn >= 2) {
+            for(int i=0; i<d; i++) {
+                G g = gs.get(i);
+                if(g.cnt == 1) {
+                    res[g.root] = -1;
+                }
+            }
+            md -= sn;
+        }
+        dfs(md-1, 0, new int[md]);
+        for(int i=0; i<md; i++) {
+            G g = gs.get(i);
+            if(g.oset.size() != 1) {
+                continue;
+            }
+            int offset = g.oset.iterator().next();
+            res[g.root] = offset;
+            for(int j=0; j<n; j++) {
+                if(uf.root(j) == uf.root(g.root)) {
+                    res[j] = l[j] + offset;
+                }
+            }
+
+        }
+        
+        for(int i=0; i<res.length; i++) {
+            if(i>0) out.print(" ");
+            if(res[i] >= 0) {
+                res[i]++;
+            }
+            out.print(res[i]);
+         }
+         out.println();
+    }
+
+There is a bug in line [53] of the code, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_5 ==================
+
+public void solve() {
+        n = sc.nextInt();
+        int m = sc.nextInt();
+        List<E>[] list = new List[n];
+        UFSize uf = new UFSize(n);
+        Arrays.setAll(list, i -> new ArrayList<>());
+        for(int i=0; i<m; i++) {
+            int a = sc.nextInt()-1;
+            int b = sc.nextInt()-1;
+            int c = sc.nextInt();
+            list[a].add(new E(a, b, -c));
+            list[b].add(new E(b, a, c));
+            uf.join(a, b);
+        }
+        boolean[] v = new boolean[n];
+        int[] l = new int[n];
+        gs = new ArrayList<>();
+        for(int i=0; i<n; i++) {
+            if(uf.root(i) != i) continue;
+            Set<Integer> set = new HashSet<>();
+            set.add(i);
+            v[i] = true;
+            LinkedList<Integer> q = new LinkedList<>();
+            q.offer(i);
+            while(!q.isEmpty()) {
+                int u = q.poll();
+                for(E e : list[u]) {
+                    if(v[e.v]) continue;
+                    v[e.v] = true;
+                    l[e.v] = l[u] + e.c;
+                    q.offer(e.v);
+                    set.add(e.v);
+                }
+            }
+            int min = l[i];
+            int mini = i;
+            for(int j : set) {
+                if(l[j] < min) {
+                    min = l[j];
+                    mini = j;
+                }
+            }
+            int max = 0;
+            int mask = 0;
+            for(int j : set) {
+                l[j] -= min;
+                max = Math.max(max, l[j]);
+                mask |= 1<<l[j];
+            }
+            gs.add(new G(mini, max, mask, set.size()));
+        }
+        d = gs.size();
+        gs.sort(Comparator.comparingInt(a -> a.cnt));
+        int sn  = 0;
+        res = new int[n];
+        Arrays.fill(res, -1);
+        for(int i=0; i<d; i++) {
+            G g = gs.get(i);
+            if(g.cnt == 1) {
+                sn++;
+            }
+        }
+        md = d;
+        if(sn >= 2) {
+            for(int i=0; i<d; i++) {
+                G g = gs.get(i);
+                if(g.cnt == 1) {
+                    res[g.root] = -1;
+                }
+            }
+            md -= sn;
+        }
+        dfs(md-1, 0, new int[md]);
+        for(int i=0; i<md; i++) {
+            G g = gs.get(i);
+            if(g.oset.size() != 1) {
+                continue;
+            }
+            int offset = g.oset.iterator().next();
+            res[g.root] = offset;
+            for(int j=0; j<n; j++) {
+                if(uf.root(j) == uf.root(g.root)) {
+                    res[j] = l[j] + offset;
+                }
+            }
+
+        }
+        
+        for(int i=0; i<res.length; i++) {
+            if(i>0) out.print(" ");
+            if(res[i] >= 0) {
+                res[i]++;
+            }
+            out.print(res[i]);
+         }
+         out.println();
+    }
+
+There is a bug in ['        gs.sort(Comparator.comparingInt(a -> a.cnt));'] , please help me fix it. 
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_6 ==================
+
+public void solve() {
+        n = sc.nextInt();
+        int m = sc.nextInt();
+        List<E>[] list = new List[n];
+        UFSize uf = new UFSize(n);
+        Arrays.setAll(list, i -> new ArrayList<>());
+        for(int i=0; i<m; i++) {
+            int a = sc.nextInt()-1;
+            int b = sc.nextInt()-1;
+            int c = sc.nextInt();
+            list[a].add(new E(a, b, -c));
+            list[b].add(new E(b, a, c));
+            uf.join(a, b);
+        }
+        boolean[] v = new boolean[n];
+        int[] l = new int[n];
+        gs = new ArrayList<>();
+        for(int i=0; i<n; i++) {
+            if(uf.root(i) != i) continue;
+            Set<Integer> set = new HashSet<>();
+            set.add(i);
+            v[i] = true;
+            LinkedList<Integer> q = new LinkedList<>();
+            q.offer(i);
+            while(!q.isEmpty()) {
+                int u = q.poll();
+                for(E e : list[u]) {
+                    if(v[e.v]) continue;
+                    v[e.v] = true;
+                    l[e.v] = l[u] + e.c;
+                    q.offer(e.v);
+                    set.add(e.v);
+                }
+            }
+            int min = l[i];
+            int mini = i;
+            for(int j : set) {
+                if(l[j] < min) {
+                    min = l[j];
+                    mini = j;
+                }
+            }
+            int max = 0;
+            int mask = 0;
+            for(int j : set) {
+                l[j] -= min;
+                max = Math.max(max, l[j]);
+                mask |= 1<<l[j];
+            }
+            gs.add(new G(mini, max, mask, set.size()));
+        }
+        d = gs.size();
+        gs.sort(Comparator.comparingInt(a -> a.cnt));
+
+There is a bug in the last statement, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.

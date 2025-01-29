@@ -1,0 +1,237 @@
+
+================== buggy_file ==================
+src/com/google/javascript/jscomp/CommandLineRunner.java
+================== buggy_method ==================
+{'method_name': 'initConfigFromFlags', 'method_body': 'private void initConfigFromFlags(String[] args, PrintStream err) {\n\n    List<String> processedArgs = processArgs(args);\n\n    CmdLineParser parser = new CmdLineParser(flags);\n    isConfigValid = true;\n    try {\n      parser.parseArgument(processedArgs.toArray(new String[] {}));\n      // For contains --flagfile flag\n      if (!flags.flag_file.equals("")) {\n        processFlagFile(err);\n      }\n    } catch (CmdLineException e) {\n      err.println(e.getMessage());\n      isConfigValid = false;\n    } catch (IOException ioErr) {\n      err.println("ERROR - " + flags.flag_file + " read error.");\n      isConfigValid = false;\n    }\n\n    if (flags.version) {\n      ResourceBundle config = ResourceBundle.getBundle(configResource);\n      err.println(\n          "Closure Compiler (http://code.google.com/closure/compiler)\\n" +\n          "Version: " + config.getString("compiler.version") + "\\n" +\n          "Built on: " + config.getString("compiler.date"));\n      err.flush();\n    }\n\n    if (!isConfigValid || flags.display_help) {\n      isConfigValid = false;\n      parser.printUsage(err);\n    } else {\n      getCommandLineConfig()\n          .setPrintTree(flags.print_tree)\n          .setComputePhaseOrdering(flags.compute_phase_ordering)\n          .setPrintAst(flags.print_ast)\n          .setPrintPassGraph(flags.print_pass_graph)\n          .setJscompDevMode(flags.jscomp_dev_mode)\n          .setLoggingLevel(flags.logging_level)\n          .setExterns(flags.externs)\n          .setJs(flags.js)\n          .setJsOutputFile(flags.js_output_file)\n          .setModule(flags.module)\n          .setVariableMapInputFile(flags.variable_map_input_file)\n          .setPropertyMapInputFile(flags.property_map_input_file)\n          .setVariableMapOutputFile(flags.variable_map_output_file)\n          .setCreateNameMapFiles(flags.create_name_map_files)\n          .setPropertyMapOutputFile(flags.property_map_output_file)\n          .setCodingConvention(flags.third_party ?\n               new DefaultCodingConvention() :\n               new ClosureCodingConvention())\n          .setSummaryDetailLevel(flags.summary_detail_level)\n          .setOutputWrapper(flags.output_wrapper)\n          .setModuleWrapper(flags.module_wrapper)\n          .setModuleOutputPathPrefix(flags.module_output_path_prefix)\n          .setCreateSourceMap(flags.create_source_map)\n          .setJscompError(flags.jscomp_error)\n          .setJscompWarning(flags.jscomp_warning)\n          .setJscompOff(flags.jscomp_off)\n          .setDefine(flags.define)\n          .setCharset(flags.charset)\n          .setManageClosureDependencies(flags.manage_closure_dependencies)\n          .setClosureEntryPoints(flags.closure_entry_point)\n          .setOutputManifest(flags.output_manifest)\n          .setAcceptConstKeyword(flags.accept_const_keyword)\n          .setLanguageIn(flags.language_in);\n    }\n  }', 'start_line': 495, 'end_line': 563, 'buggy_lines': [552, 553, 554]}
+================== buggy_method_src ==================
+private void initConfigFromFlags(String[] args, PrintStream err) {
+
+    List<String> processedArgs = processArgs(args);
+
+    CmdLineParser parser = new CmdLineParser(flags);
+    isConfigValid = true;
+    try {
+      parser.parseArgument(processedArgs.toArray(new String[] {}));
+      // For contains --flagfile flag
+      if (!flags.flag_file.equals("")) {
+        processFlagFile(err);
+      }
+    } catch (CmdLineException e) {
+      err.println(e.getMessage());
+      isConfigValid = false;
+    } catch (IOException ioErr) {
+      err.println("ERROR - " + flags.flag_file + " read error.");
+      isConfigValid = false;
+    }
+
+    if (flags.version) {
+      ResourceBundle config = ResourceBundle.getBundle(configResource);
+      err.println(
+          "Closure Compiler (http://code.google.com/closure/compiler)\n" +
+          "Version: " + config.getString("compiler.version") + "\n" +
+          "Built on: " + config.getString("compiler.date"));
+      err.flush();
+    }
+
+    if (!isConfigValid || flags.display_help) {
+      isConfigValid = false;
+      parser.printUsage(err);
+    } else {
+      getCommandLineConfig()
+          .setPrintTree(flags.print_tree)
+          .setComputePhaseOrdering(flags.compute_phase_ordering)
+          .setPrintAst(flags.print_ast)
+          .setPrintPassGraph(flags.print_pass_graph)
+          .setJscompDevMode(flags.jscomp_dev_mode)
+          .setLoggingLevel(flags.logging_level)
+          .setExterns(flags.externs)
+          .setJs(flags.js)
+          .setJsOutputFile(flags.js_output_file)
+          .setModule(flags.module)
+          .setVariableMapInputFile(flags.variable_map_input_file)
+          .setPropertyMapInputFile(flags.property_map_input_file)
+          .setVariableMapOutputFile(flags.variable_map_output_file)
+          .setCreateNameMapFiles(flags.create_name_map_files)
+          .setPropertyMapOutputFile(flags.property_map_output_file)
+          .setCodingConvention(flags.third_party ?
+               new DefaultCodingConvention() :
+               new ClosureCodingConvention())
+          .setSummaryDetailLevel(flags.summary_detail_level)
+          .setOutputWrapper(flags.output_wrapper)
+          .setModuleWrapper(flags.module_wrapper)
+          .setModuleOutputPathPrefix(flags.module_output_path_prefix)
+          .setCreateSourceMap(flags.create_source_map)
+          .setJscompError(flags.jscomp_error)
+          .setJscompWarning(flags.jscomp_warning)
+          .setJscompOff(flags.jscomp_off)
+          .setDefine(flags.define)
+          .setCharset(flags.charset)
+          .setManageClosureDependencies(flags.manage_closure_dependencies)
+          .setClosureEntryPoints(flags.closure_entry_point)
+          .setOutputManifest(flags.output_manifest)
+          .setAcceptConstKeyword(flags.accept_const_keyword)
+          .setLanguageIn(flags.language_in);
+    }
+  }
+================== test_stack ==================
+com.google.javascript.jscomp.CommandLineRunnerTest::testWarningGuardOrdering2
+junit.framework.AssertionFailedError: Expected exactly one warning or error Errors:
+Warnings:
+ expected:<1> but was:<0>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.TestCase.assertEquals(TestCase.java:401)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.test(CommandLineRunnerTest.java:806)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.test(CommandLineRunnerTest.java:798)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.testWarningGuardOrdering2(CommandLineRunnerTest.java:126)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+com.google.javascript.jscomp.CommandLineRunnerTest::testWarningGuardOrdering4
+junit.framework.AssertionFailedError: Expected exactly one warning or error Errors:
+Warnings:
+ expected:<1> but was:<0>
+	at junit.framework.Assert.fail(Assert.java:57)
+	at junit.framework.Assert.failNotEquals(Assert.java:329)
+	at junit.framework.Assert.assertEquals(Assert.java:78)
+	at junit.framework.Assert.assertEquals(Assert.java:234)
+	at junit.framework.TestCase.assertEquals(TestCase.java:401)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.test(CommandLineRunnerTest.java:806)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.test(CommandLineRunnerTest.java:798)
+	at com.google.javascript.jscomp.CommandLineRunnerTest.testWarningGuardOrdering4(CommandLineRunnerTest.java:138)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+test("function f() { this.a = 3; }", CheckGlobalThis.GLOBAL_THIS);
+
+================== buggy_lines_in_method ==================
+[58, 59, 60]
+================== buggy_statements ==================
+['          .setJscompError(flags.jscomp_error)', '          .setJscompWarning(flags.jscomp_warning)', '          .setJscompOff(flags.jscomp_off)']
+================== buggy_method_src_endswith_buggy_statement ==================
+private void initConfigFromFlags(String[] args, PrintStream err) {
+
+    List<String> processedArgs = processArgs(args);
+
+    CmdLineParser parser = new CmdLineParser(flags);
+    isConfigValid = true;
+    try {
+      parser.parseArgument(processedArgs.toArray(new String[] {}));
+      // For contains --flagfile flag
+      if (!flags.flag_file.equals("")) {
+        processFlagFile(err);
+      }
+    } catch (CmdLineException e) {
+      err.println(e.getMessage());
+      isConfigValid = false;
+    } catch (IOException ioErr) {
+      err.println("ERROR - " + flags.flag_file + " read error.");
+      isConfigValid = false;
+    }
+
+    if (flags.version) {
+      ResourceBundle config = ResourceBundle.getBundle(configResource);
+      err.println(
+          "Closure Compiler (http://code.google.com/closure/compiler)\n" +
+          "Version: " + config.getString("compiler.version") + "\n" +
+          "Built on: " + config.getString("compiler.date"));
+      err.flush();
+    }
+
+    if (!isConfigValid || flags.display_help) {
+      isConfigValid = false;
+      parser.printUsage(err);
+    } else {
+      getCommandLineConfig()
+          .setPrintTree(flags.print_tree)
+          .setComputePhaseOrdering(flags.compute_phase_ordering)
+          .setPrintAst(flags.print_ast)
+          .setPrintPassGraph(flags.print_pass_graph)
+          .setJscompDevMode(flags.jscomp_dev_mode)
+          .setLoggingLevel(flags.logging_level)
+          .setExterns(flags.externs)
+          .setJs(flags.js)
+          .setJsOutputFile(flags.js_output_file)
+          .setModule(flags.module)
+          .setVariableMapInputFile(flags.variable_map_input_file)
+          .setPropertyMapInputFile(flags.property_map_input_file)
+          .setVariableMapOutputFile(flags.variable_map_output_file)
+          .setCreateNameMapFiles(flags.create_name_map_files)
+          .setPropertyMapOutputFile(flags.property_map_output_file)
+          .setCodingConvention(flags.third_party ?
+               new DefaultCodingConvention() :
+               new ClosureCodingConvention())
+          .setSummaryDetailLevel(flags.summary_detail_level)
+          .setOutputWrapper(flags.output_wrapper)
+          .setModuleWrapper(flags.module_wrapper)
+          .setModuleOutputPathPrefix(flags.module_output_path_prefix)
+          .setCreateSourceMap(flags.create_source_map)
+          .setJscompError(flags.jscomp_error)
+          .setJscompWarning(flags.jscomp_warning)
+          .setJscompOff(flags.jscomp_off)

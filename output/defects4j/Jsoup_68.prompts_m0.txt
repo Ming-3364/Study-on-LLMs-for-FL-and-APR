@@ -1,0 +1,1212 @@
+
+================== prompt_fl_1 ==================
+
+source code:
+private boolean inSpecificScope(String[] targetNames, String[] baseTypes, String[] extraTypes) {
+        // https://html.spec.whatwg.org/multipage/parsing.html#has-an-element-in-the-specific-scope
+        int bottom = stack.size() -1;
+        if (bottom > MaxScopeSearchDepth) {
+            bottom = MaxScopeSearchDepth;
+        }
+        final int top = bottom > MaxScopeSearchDepth ? bottom - MaxScopeSearchDepth : 0;
+        // don't walk too far up the tree
+
+        for (int pos = bottom; pos >= top; pos--) {
+            final String elName = stack.get(pos).nodeName();
+            if (inSorted(elName, targetNames))
+                return true;
+            if (inSorted(elName, baseTypes))
+                return false;
+            if (extraTypes != null && inSorted(elName, extraTypes))
+                return false;
+        }
+        //Validate.fail("Should not be reachable"); // would end up false because hitting 'html' at root (basetypes)
+        return false;
+    }
+
+There is a bug in the above code, please help me locate it.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_2 ==================
+
+source code:
+private boolean inSpecificScope(String[] targetNames, String[] baseTypes, String[] extraTypes) {
+        // https://html.spec.whatwg.org/multipage/parsing.html#has-an-element-in-the-specific-scope
+        int bottom = stack.size() -1;
+        if (bottom > MaxScopeSearchDepth) {
+            bottom = MaxScopeSearchDepth;
+        }
+        final int top = bottom > MaxScopeSearchDepth ? bottom - MaxScopeSearchDepth : 0;
+        // don't walk too far up the tree
+
+        for (int pos = bottom; pos >= top; pos--) {
+            final String elName = stack.get(pos).nodeName();
+            if (inSorted(elName, targetNames))
+                return true;
+            if (inSorted(elName, baseTypes))
+                return false;
+            if (extraTypes != null && inSorted(elName, extraTypes))
+                return false;
+        }
+        //Validate.fail("Should not be reachable"); // would end up false because hitting 'html' at root (basetypes)
+        return false;
+    }
+
+stack trace:
+org.jsoup.parser.HtmlParserTest::testHandlesDeepSpans
+java.lang.StackOverflowError
+	at org.jsoup.parser.HtmlTreeBuilder.inSpecificScope(HtmlTreeBuilder.java:476)
+	at org.jsoup.parser.HtmlTreeBuilder.inSpecificScope(HtmlTreeBuilder.java:463)
+	at org.jsoup.parser.HtmlTreeBuilder.inScope(HtmlTreeBuilder.java:497)
+	at org.jsoup.parser.HtmlTreeBuilder.inButtonScope(HtmlTreeBuilder.java:507)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:302)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.TreeBuilder.processStartTag(TreeBuilder.java:66)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:707)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_3 ==================
+
+source code:
+private boolean inSpecificScope(String[] targetNames, String[] baseTypes, String[] extraTypes) {
+        // https://html.spec.whatwg.org/multipage/parsing.html#has-an-element-in-the-specific-scope
+        int bottom = stack.size() -1;
+        if (bottom > MaxScopeSearchDepth) {
+            bottom = MaxScopeSearchDepth;
+        }
+        final int top = bottom > MaxScopeSearchDepth ? bottom - MaxScopeSearchDepth : 0;
+        // don't walk too far up the tree
+
+        for (int pos = bottom; pos >= top; pos--) {
+            final String elName = stack.get(pos).nodeName();
+            if (inSorted(elName, targetNames))
+                return true;
+            if (inSorted(elName, baseTypes))
+                return false;
+            if (extraTypes != null && inSorted(elName, extraTypes))
+                return false;
+        }
+        //Validate.fail("Should not be reachable"); // would end up false because hitting 'html' at root (basetypes)
+        return false;
+    }
+
+stack trace:
+org.jsoup.parser.HtmlParserTest::testHandlesDeepSpans
+java.lang.StackOverflowError
+	at org.jsoup.parser.HtmlTreeBuilder.inSpecificScope(HtmlTreeBuilder.java:476)
+	at org.jsoup.parser.HtmlTreeBuilder.inSpecificScope(HtmlTreeBuilder.java:463)
+	at org.jsoup.parser.HtmlTreeBuilder.inScope(HtmlTreeBuilder.java:497)
+	at org.jsoup.parser.HtmlTreeBuilder.inButtonScope(HtmlTreeBuilder.java:507)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:302)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.TreeBuilder.processStartTag(TreeBuilder.java:66)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:707)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+
+
+failure assertion code:
+ingBuilder();
+        for (int i = 0; i < 200; i++) {
+            sb.append("<span>");
+        }
+
+        sb.append("<p>One</p>");
+
+        Document doc = Jsoup.parse(sb.toString());
+        assertEquals(200, doc.select("span").size());
+        assertEquals(1, doc.select("p").size());
+  }
+}
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_4 ==================
+
+source code:
+private boolean inSpecificScope(String[] targetNames, String[] baseTypes, String[] extraTypes) {
+        // https://html.spec.whatwg.org/multipage/parsing.html#has-an-element-in-the-specific-scope
+        int bottom = stack.size() -1;
+        if (bottom > MaxScopeSearchDepth) {
+            bottom = MaxScopeSearchDepth;
+        }
+        final int top = bottom > MaxScopeSearchDepth ? bottom - MaxScopeSearchDepth : 0;
+        // don't walk too far up the tree
+
+        for (int pos = bottom; pos >= top; pos--) {
+            final String elName = stack.get(pos).nodeName();
+            if (inSorted(elName, targetNames))
+                return true;
+            if (inSorted(elName, baseTypes))
+                return false;
+            if (extraTypes != null && inSorted(elName, extraTypes))
+                return false;
+        }
+        //Validate.fail("Should not be reachable"); // would end up false because hitting 'html' at root (basetypes)
+        return false;
+    }
+
+There is a bug in the above code, please help me locate it.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_5 ==================
+
+source code:
+private boolean inSpecificScope(String[] targetNames, String[] baseTypes, String[] extraTypes) {
+        // https://html.spec.whatwg.org/multipage/parsing.html#has-an-element-in-the-specific-scope
+        int bottom = stack.size() -1;
+        if (bottom > MaxScopeSearchDepth) {
+            bottom = MaxScopeSearchDepth;
+        }
+        final int top = bottom > MaxScopeSearchDepth ? bottom - MaxScopeSearchDepth : 0;
+        // don't walk too far up the tree
+
+        for (int pos = bottom; pos >= top; pos--) {
+            final String elName = stack.get(pos).nodeName();
+            if (inSorted(elName, targetNames))
+                return true;
+            if (inSorted(elName, baseTypes))
+                return false;
+            if (extraTypes != null && inSorted(elName, extraTypes))
+                return false;
+        }
+        //Validate.fail("Should not be reachable"); // would end up false because hitting 'html' at root (basetypes)
+        return false;
+    }
+
+stack trace:
+org.jsoup.parser.HtmlParserTest::testHandlesDeepSpans
+java.lang.StackOverflowError
+	at org.jsoup.parser.HtmlTreeBuilder.inSpecificScope(HtmlTreeBuilder.java:476)
+	at org.jsoup.parser.HtmlTreeBuilder.inSpecificScope(HtmlTreeBuilder.java:463)
+	at org.jsoup.parser.HtmlTreeBuilder.inScope(HtmlTreeBuilder.java:497)
+	at org.jsoup.parser.HtmlTreeBuilder.inButtonScope(HtmlTreeBuilder.java:507)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:302)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.TreeBuilder.processStartTag(TreeBuilder.java:66)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:707)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_fl_6 ==================
+
+source code:
+private boolean inSpecificScope(String[] targetNames, String[] baseTypes, String[] extraTypes) {
+        // https://html.spec.whatwg.org/multipage/parsing.html#has-an-element-in-the-specific-scope
+        int bottom = stack.size() -1;
+        if (bottom > MaxScopeSearchDepth) {
+            bottom = MaxScopeSearchDepth;
+        }
+        final int top = bottom > MaxScopeSearchDepth ? bottom - MaxScopeSearchDepth : 0;
+        // don't walk too far up the tree
+
+        for (int pos = bottom; pos >= top; pos--) {
+            final String elName = stack.get(pos).nodeName();
+            if (inSorted(elName, targetNames))
+                return true;
+            if (inSorted(elName, baseTypes))
+                return false;
+            if (extraTypes != null && inSorted(elName, extraTypes))
+                return false;
+        }
+        //Validate.fail("Should not be reachable"); // would end up false because hitting 'html' at root (basetypes)
+        return false;
+    }
+
+stack trace:
+org.jsoup.parser.HtmlParserTest::testHandlesDeepSpans
+java.lang.StackOverflowError
+	at org.jsoup.parser.HtmlTreeBuilder.inSpecificScope(HtmlTreeBuilder.java:476)
+	at org.jsoup.parser.HtmlTreeBuilder.inSpecificScope(HtmlTreeBuilder.java:463)
+	at org.jsoup.parser.HtmlTreeBuilder.inScope(HtmlTreeBuilder.java:497)
+	at org.jsoup.parser.HtmlTreeBuilder.inButtonScope(HtmlTreeBuilder.java:507)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:302)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.TreeBuilder.processStartTag(TreeBuilder.java:66)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:707)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+	at org.jsoup.parser.HtmlTreeBuilderState$7.process(HtmlTreeBuilderState.java:708)
+	at org.jsoup.parser.HtmlTreeBuilder.process(HtmlTreeBuilder.java:137)
+
+
+failure assertion code:
+ingBuilder();
+        for (int i = 0; i < 200; i++) {
+            sb.append("<span>");
+        }
+
+        sb.append("<p>One</p>");
+
+        Document doc = Jsoup.parse(sb.toString());
+        assertEquals(200, doc.select("span").size());
+        assertEquals(1, doc.select("p").size());
+  }
+}
+
+
+There is a bug in the above code, please help me locate it by considering the stack trace information and failure assertion code.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_1 ==================
+
+private boolean inSpecificScope(String[] targetNames, String[] baseTypes, String[] extraTypes) {
+        // https://html.spec.whatwg.org/multipage/parsing.html#has-an-element-in-the-specific-scope
+        int bottom = stack.size() -1;
+        if (bottom > MaxScopeSearchDepth) {
+            bottom = MaxScopeSearchDepth;
+        }
+        final int top = bottom > MaxScopeSearchDepth ? bottom - MaxScopeSearchDepth : 0;
+        // don't walk too far up the tree
+
+        for (int pos = bottom; pos >= top; pos--) {
+            final String elName = stack.get(pos).nodeName();
+            if (inSorted(elName, targetNames))
+                return true;
+            if (inSorted(elName, baseTypes))
+                return false;
+            if (extraTypes != null && inSorted(elName, extraTypes))
+                return false;
+        }
+        //Validate.fail("Should not be reachable"); // would end up false because hitting 'html' at root (basetypes)
+        return false;
+    }
+
+There is a bug in line [3, 4, 5, 6] of the code, please help me fix it.
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_2 ==================
+
+private boolean inSpecificScope(String[] targetNames, String[] baseTypes, String[] extraTypes) {
+        // https://html.spec.whatwg.org/multipage/parsing.html#has-an-element-in-the-specific-scope
+        int bottom = stack.size() -1;
+        if (bottom > MaxScopeSearchDepth) {
+            bottom = MaxScopeSearchDepth;
+        }
+        final int top = bottom > MaxScopeSearchDepth ? bottom - MaxScopeSearchDepth : 0;
+        // don't walk too far up the tree
+
+        for (int pos = bottom; pos >= top; pos--) {
+            final String elName = stack.get(pos).nodeName();
+            if (inSorted(elName, targetNames))
+                return true;
+            if (inSorted(elName, baseTypes))
+                return false;
+            if (extraTypes != null && inSorted(elName, extraTypes))
+                return false;
+        }
+        //Validate.fail("Should not be reachable"); // would end up false because hitting 'html' at root (basetypes)
+        return false;
+    }
+
+There is a bug in ['        int bottom = stack.size() -1;', '        if (bottom > MaxScopeSearchDepth) {', '            bottom = MaxScopeSearchDepth;', '        }'] , please help me fix it. 
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_3 ==================
+
+private boolean inSpecificScope(String[] targetNames, String[] baseTypes, String[] extraTypes) {
+        // https://html.spec.whatwg.org/multipage/parsing.html#has-an-element-in-the-specific-scope
+        int bottom = stack.size() -1;
+        if (bottom > MaxScopeSearchDepth) {
+            bottom = MaxScopeSearchDepth;
+        }
+
+There is a bug in the last statement, please help me fix it.
+
+Return the code **only from the method declaration to the fixed statement**, without completing or adding additional code. Do not modify anything beyond fixing the bug, and do not complete the `if` statement or other unfinished parts. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_4 ==================
+
+private boolean inSpecificScope(String[] targetNames, String[] baseTypes, String[] extraTypes) {
+        // https://html.spec.whatwg.org/multipage/parsing.html#has-an-element-in-the-specific-scope
+        int bottom = stack.size() -1;
+        if (bottom > MaxScopeSearchDepth) {
+            bottom = MaxScopeSearchDepth;
+        }
+        final int top = bottom > MaxScopeSearchDepth ? bottom - MaxScopeSearchDepth : 0;
+        // don't walk too far up the tree
+
+        for (int pos = bottom; pos >= top; pos--) {
+            final String elName = stack.get(pos).nodeName();
+            if (inSorted(elName, targetNames))
+                return true;
+            if (inSorted(elName, baseTypes))
+                return false;
+            if (extraTypes != null && inSorted(elName, extraTypes))
+                return false;
+        }
+        //Validate.fail("Should not be reachable"); // would end up false because hitting 'html' at root (basetypes)
+        return false;
+    }
+
+There is a bug in line [3, 4, 5, 6] of the code, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_5 ==================
+
+private boolean inSpecificScope(String[] targetNames, String[] baseTypes, String[] extraTypes) {
+        // https://html.spec.whatwg.org/multipage/parsing.html#has-an-element-in-the-specific-scope
+        int bottom = stack.size() -1;
+        if (bottom > MaxScopeSearchDepth) {
+            bottom = MaxScopeSearchDepth;
+        }
+        final int top = bottom > MaxScopeSearchDepth ? bottom - MaxScopeSearchDepth : 0;
+        // don't walk too far up the tree
+
+        for (int pos = bottom; pos >= top; pos--) {
+            final String elName = stack.get(pos).nodeName();
+            if (inSorted(elName, targetNames))
+                return true;
+            if (inSorted(elName, baseTypes))
+                return false;
+            if (extraTypes != null && inSorted(elName, extraTypes))
+                return false;
+        }
+        //Validate.fail("Should not be reachable"); // would end up false because hitting 'html' at root (basetypes)
+        return false;
+    }
+
+There is a bug in ['        int bottom = stack.size() -1;', '        if (bottom > MaxScopeSearchDepth) {', '            bottom = MaxScopeSearchDepth;', '        }'] , please help me fix it. 
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_6 ==================
+
+private boolean inSpecificScope(String[] targetNames, String[] baseTypes, String[] extraTypes) {
+        // https://html.spec.whatwg.org/multipage/parsing.html#has-an-element-in-the-specific-scope
+        int bottom = stack.size() -1;
+        if (bottom > MaxScopeSearchDepth) {
+            bottom = MaxScopeSearchDepth;
+        }
+
+There is a bug in the last statement, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.

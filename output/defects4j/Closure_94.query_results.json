@@ -1,0 +1,174 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "19",
+            "qwen-turbo": "23",
+            "ernie-3.5-128k": "**19**",
+            "deepseek-chat": "12",
+            "gpt-4o-mini": "22"
+        },
+        "prompt_fl_2": {
+            "qwen-turbo": "1086",
+            "doubao-pro-4k": "1086",
+            "deepseek-chat": "1",
+            "ernie-3.5-128k": "**1086**",
+            "gpt-4o-mini": "39"
+        },
+        "prompt_fl_3": {
+            "qwen-turbo": "1086",
+            "doubao-pro-4k": "1086",
+            "deepseek-chat": "1",
+            "ernie-3.5-128k": "**1086**",
+            "gpt-4o-mini": "55"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "return isValidDefineValue(val.getFirstChild(), defines);",
+            "ernie-3.5-128k": "case Token.BITNOT:",
+            "doubao-pro-4k": "if (val.isQualifiedName()) {\n          return defines.contains(val.getQualifiedName());\n        }",
+            "deepseek-chat": "```java\ncase Token.BITAND:\ncase Token.BITNOT:\ncase Token.BITOR:\ncase Token.BITXOR:\n```",
+            "gpt-4o-mini": "if (val.isQualifiedName()) {"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "return defines.contains(val.getQualifiedName());",
+            "deepseek-chat": "return isValidDefineValue(val.getFirstChild(), defines);",
+            "ernie-3.5-128k": "return defines.contains(val.getQualifiedName());",
+            "gpt-4o-mini": "return defines.contains(val.getQualifiedName());",
+            "doubao-pro-4k": "isValidDefineValue(val.getFirstChild(), defines);"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "assertTrue(testValidDefineValue(\"1 + 8\"));",
+            "doubao-pro-4k": "assertTrue(testValidDefineValue(\"1 + 8\"));",
+            "ernie-3.5-128k": "return isValidDefineValue(val.getFirstChild(), defines);",
+            "gpt-4o-mini": "assertTrue(isValidDefineValue(\"1 + 8\", defines));",
+            "deepseek-chat": "case Token.BITAND:\ncase Token.BITNOT:\ncase Token.BITOR:\ncase Token.BITXOR:"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "Certainly! The issue on line [10] is that the cases for `Token.BITAND`, `Token.BITNOT`, `Token.BITOR`, and `Token.BITXOR` do not have a `return` statement. This means that the function will fall through to the next case, which is not intended behavior. We need to add `return` statements to handle these cases properly.\n\nHere is the complete corrected method:\n\n```java\nstatic boolean isValidDefineValue(Node val, Set<String> defines) {\n    switch (val.getType()) {\n        case Token.STRING:\n        case Token.NUMBER:\n        case Token.TRUE:\n        case Token.FALSE:\n            return true;\n\n        // Binary operators are only valid if both children are valid.\n        case Token.BITAND:\n        case Token.BITNOT:\n        case Token.BITOR:\n        case Token.BITXOR:\n            return isValidDefineValue(val.getFirstChild(), defines) && isValidDefineValue(val.getLastChild(), defines);\n\n        // Unary operators are valid if the child is valid.\n        case Token.NOT:\n        case Token.NEG:\n            return isValidDefineValue(val.getFirstChild(), defines);\n\n        // Names are valid if and only if they are defines themselves.\n        case Token.NAME:\n        case Token.GETPROP:\n            if (val.isQualifiedName()) {\n                return defines.contains(val.getQualifiedName());\n            }\n            break;\n    }\n    return false;\n}\n```\n\nIn this correction, I added the `return` statements for the binary operator cases to ensure that both children of the binary operation are checked for validity.",
+            "deepseek-chat": "static boolean isValidDefineValue(Node val, Set<String> defines) {\n    switch (val.getType()) {\n      case Token.STRING:\n      case Token.NUMBER:\n      case Token.TRUE:\n      case Token.FALSE:\n        return true;\n\n      // Binary operators are only valid if both children are valid.\n      case Token.BITAND:\n      case Token.BITOR:\n      case Token.BITXOR:\n        return isValidDefineValue(val.getFirstChild(), defines) && \n               isValidDefineValue(val.getSecondChild(), defines);\n\n      // Unary operators are valid if the child is valid.\n      case Token.BITNOT:\n      case Token.NOT:\n      case Token.NEG:\n        return isValidDefineValue(val.getFirstChild(), defines);\n\n      // Names are valid if and only if they are defines themselves.\n      case Token.NAME:\n      case Token.GETPROP:\n        if (val.isQualifiedName()) {\n          return defines.contains(val.getQualifiedName());\n        }\n    }\n    return false;\n}",
+            "gpt-4o-mini": "static boolean isValidDefineValue(Node val, Set<String> defines) {\n    switch (val.getType()) {\n      case Token.STRING:\n      case Token.NUMBER:\n      case Token.TRUE:\n      case Token.FALSE:\n        return true;\n\n      // Binary operators are only valid if both children are valid.\n      case Token.BITAND:\n      case Token.BITNOT:\n      case Token.BITOR:\n      case Token.BITXOR:\n        return isValidDefineValue(val.getFirstChild(), defines) && \n               isValidDefineValue(val.getFirstChild().getNext(), defines);\n\n      // Uniary operators are valid if the child is valid.\n      case Token.NOT:\n      case Token.NEG:\n        return isValidDefineValue(val.getFirstChild(), defines);\n\n      // Names are valid if and only if they are defines themselves.\n      case Token.NAME:\n      case Token.GETPROP:\n        if (val.isQualifiedName()) {\n          return defines.contains(val.getQualifiedName());\n        }\n    }\n    return false;\n  }",
+            "doubao-pro-4k": "static boolean isValidDefineValue(Node val, Set<String> defines) {\n    switch (val.getType()) {\n      case Token.STRING:\n      case Token.NUMBER:\n      case Token.TRUE:\n      case Token.FALSE:\n        return true;\n\n      // Binary operators are only valid if both children are valid.\n      case Token.BITAND:\n      case Token.BITNOT:\n      case Token.BITOR:\n      case Token.BITXOR:\n\n      // Unary operators are valid if the child is valid.\n      case Token.NOT:\n      case Token.NEG:\n        if (val.getFirstChild()!= null) { // Bug fix: Added null check\n          return isValidDefineValue(val.getFirstChild(), defines);\n        }\n        return false;\n\n      // Names are valid if and only if they are defines themselves.\n      case Token.NAME:\n      case Token.GETPROP:\n        if (val.isQualifiedName()) {\n          return defines.contains(val.getQualifiedName());\n        }\n    }\n    return false;\n  }",
+            "ernie-3.5-128k": "static boolean isValidDefineValue(Node val, Set<String> defines) {\n    switch (val.getType()) {\n      case Token.STRING:\n      case Token.NUMBER:\n      case Token.TRUE:\n      case Token.FALSE:\n        return true;\n\n      // Binary operators are only valid if both children are valid.\n      case Token.BITAND:\n      case Token.BITOR:\n      case Token.BITXOR:\n        return isValidDefineValue(val.getFirstChild(), defines) &&\n               isValidDefineValue(val.getLastChild(), defines);\n\n      case Token.BITNOT:\n        // BITNOT is unary, so only the first child needs to be valid.\n        return isValidDefineValue(val.getFirstChild(), defines);\n\n      // Unary operators are valid if the child is valid.\n      case Token.NOT:\n      case Token.NEG:\n        return isValidDefineValue(val.getFirstChild(), defines);\n\n      // Names are valid if and only if they are defines themselves.\n      case Token.NAME:\n      case Token.GETPROP:\n        if (val.isQualifiedName()) {\n          return defines.contains(val.getQualifiedName());\n        }\n    }\n    return false;\n  }"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "Certainly! The issue with the `Token.BITAND` case is that it does not return a value, which would cause a compilation error because the method is expected to return a `boolean`. We need to add a return statement for this case to ensure that both children are valid.\n\nHere is the complete corrected method:\n\n```java\nstatic boolean isValidDefineValue(Node val, Set<String> defines) {\n    switch (val.getType()) {\n      case Token.STRING:\n      case Token.NUMBER:\n      case Token.TRUE:\n      case Token.FALSE:\n        return true;\n\n      // Binary operators are only valid if both children are valid.\n      case Token.BITAND:\n      case Token.BITNOT:\n      case Token.BITOR:\n      case Token.BITXOR:\n        return isValidDefineValue(val.getFirstChild(), defines) && isValidDefineValue(val.getLastChild(), defines);\n\n      // Unary operators are valid if the child is valid.\n      case Token.NOT:\n      case Token.NEG:\n        return isValidDefineValue(val.getFirstChild(), defines);\n\n      // Names are valid if and only if they are defines themselves.\n      case Token.NAME:\n      case Token.GETPROP:\n        if (val.isQualifiedName()) {\n          return defines.contains(val.getQualifiedName());\n        }\n    }\n    return false;\n}\n```\n\nIn this corrected version, the `Token.BITAND` case now includes a return statement that ensures both children of the binary operation are valid by recursively calling `isValidDefineValue` on both `getFirstChild()` and `getLastChild()`.",
+            "deepseek-chat": "static boolean isValidDefineValue(Node val, Set<String> defines) {\n    switch (val.getType()) {\n      case Token.STRING:\n      case Token.NUMBER:\n      case Token.TRUE:\n      case Token.FALSE:\n        return true;\n\n      // Binary operators are only valid if both children are valid.\n      case Token.BITAND:\n      case Token.BITOR:\n      case Token.BITXOR:\n        return isValidDefineValue(val.getFirstChild(), defines) && \n               isValidDefineValue(val.getSecondChild(), defines);\n\n      // Unary operators are valid if the child is valid.\n      case Token.BITNOT:\n      case Token.NOT:\n      case Token.NEG:\n        return isValidDefineValue(val.getFirstChild(), defines);\n\n      // Names are valid if and only if they are defines themselves.\n      case Token.NAME:\n      case Token.GETPROP:\n        if (val.isQualifiedName()) {\n          return defines.contains(val.getQualifiedName());\n        }\n    }\n    return false;\n}",
+            "gpt-4o-mini": "static boolean isValidDefineValue(Node val, Set<String> defines) {\n    switch (val.getType()) {\n      case Token.STRING:\n      case Token.NUMBER:\n      case Token.TRUE:\n      case Token.FALSE:\n        return true;\n\n      // Binary operators are only valid if both children are valid.\n      case Token.BITAND:\n      case Token.BITNOT:\n      case Token.BITOR:\n      case Token.BITXOR:\n        return isValidDefineValue(val.getFirstChild(), defines) && isValidDefineValue(val.getLastChild(), defines);\n\n      // Unary operators are valid if the child is valid.\n      case Token.NOT:\n      case Token.NEG:\n        return isValidDefineValue(val.getFirstChild(), defines);\n\n      // Names are valid if and only if they are defines themselves.\n      case Token.NAME:\n      case Token.GETPROP:\n        if (val.isQualifiedName()) {\n          return defines.contains(val.getQualifiedName());\n        }\n    }\n    return false;\n}",
+            "doubao-pro-4k": "static boolean isValidDefineValue(Node val, Set<String> defines) {\n    switch (val.getType()) {\n      case Token.STRING:\n      case Token.NUMBER:\n      case Token.TRUE:\n      case Token.FALSE:\n        return true;\n\n      // Binary operators are only valid if both children are valid.\n      case Token.BITAND:\n      case Token.BITNOT:\n      case Token.BITOR:\n      case Token.BITXOR:\n        if (isValidDefineValue(val.getFirstChild(), defines) && isValidDefineValue(val.getSecondChild(), defines)) {\n          return true;\n        }\n\n      // Uniary operators are valid if the child is valid.\n      case Token.NOT:\n      case Token.NEG:\n        return isValidDefineValue(val.getFirstChild(), defines);\n\n      // Names are valid if and only if they are defines themselves.\n      case Token.NAME:\n      case Token.GETPROP:\n        if (val.isQualifiedName()) {\n          return defines.contains(val.getQualifiedName());\n        }\n    }\n    return false;\n  }",
+            "ernie-3.5-128k": "Here is the complete corrected method with the fix for the `Token.BITAND` case and ensuring that binary operators check both children for validity:\n\nstatic boolean isValidDefineValue(Node val, Set<String> defines) {\n    switch (val.getType()) {\n      case Token.STRING:\n      case Token.NUMBER:\n      case Token.TRUE:\n      case Token.FALSE:\n        return true;\n\n      // Binary operators are only valid if both children are valid.\n      case Token.BITAND:\n      case Token.BITNOT: // Note: BITNOT is unary, but listed here for completeness\n      case Token.BITOR:\n      case Token.BITXOR:\n        Node leftChild = val.getFirstChild();\n        Node rightChild = leftChild.getNext();\n        return isValidDefineValue(leftChild, defines) && isValidDefineValue(rightChild, defines);\n\n      // Unary operators are valid if the child is valid.\n      case Token.NOT:\n      case Token.NEG:\n        return isValidDefineValue(val.getFirstChild(), defines);\n\n      // Names are valid if and only if they are defines themselves.\n      case Token.NAME:\n      case Token.GETPROP:\n        if (val.isQualifiedName()) {\n          return defines.contains(val.getQualifiedName());\n        }\n    }\n    return false;\n  }\n\nNote: The `Token.BITNOT` case is correctly identified as unary, but I left it in the binary section for clarity and completeness, as it was included in your original snippet. The fix primarily ensures that binary operators (including `Token.BITAND`) correctly check both children."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\nstatic boolean isValidDefineValue(Node val, Set<String> defines) {\n    switch (val.getType()) {\n      case Token.STRING:\n      case Token.NUMBER:\n      case Token.TRUE:\n      case Token.FALSE:\n        return true;\n\n      // Binary operators are only valid if both children are valid.\n      case Token.BITAND:\n```",
+            "deepseek-chat": "static boolean isValidDefineValue(Node val, Set<String> defines) {\n    switch (val.getType()) {\n      case Token.STRING:\n      case Token.NUMBER:\n      case Token.TRUE:\n      case Token.FALSE:\n        return true;\n\n      // Binary operators are only valid if both children are valid.\n      case Token.BITAND:\n        return isValidDefineValue(val.getFirstChild(), defines) && isValidDefineValue(val.getLastChild(), defines);",
+            "doubao-pro-4k": "static boolean isValidDefineValue(Node val, Set<String> defines) {\n    switch (val.getType()) {\n      case Token.STRING:\n      case Token.NUMBER:\n      case Token.TRUE:\n      case Token.FALSE:\n        return true;\n\n      // Binary operators are only valid if both children are valid.\n      case Token.BITAND:\n        if (/* some condition to check children */) {\n            return true;\n        }\n    }\n}",
+            "gpt-4o-mini": "static boolean isValidDefineValue(Node val, Set<String> defines) {\n    switch (val.getType()) {\n      case Token.STRING:\n      case Token.NUMBER:\n      case Token.TRUE:\n      case Token.FALSE:\n        return true;\n\n      // Binary operators are only valid if both children are valid.\n      case Token.BITAND:\n        if (val.hasTwoChildren() && isValidDefineValue(val.getFirstChild(), defines) && isValidDefineValue(val.getSecondChild(), defines)) {\n          return true;\n        }\n        break;",
+            "ernie-3.5-128k": "static boolean isValidDefineValue(Node val, Set<String> defines) {\n    switch (val.getType()) {\n      case Token.STRING:\n      case Token.NUMBER:\n      case Token.TRUE:\n      case Token.FALSE:\n        return true;\n\n      // Binary operators are only valid if both children are valid.\n      case Token.BITAND:\n        return isValidDefineValue(val.getFirstChild(), defines) && isValidDefineValue(val.getLastChild(), defines);"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"return isValidDefineValue(val.getFirstChild(), defines) && isValidDefineValue(val.getSecondChild(), defines);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"return isValidDefineValue(val.getFirstChild(), defines) || isValidDefineValue(val.getSecondChild(), defines);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"return isValidDefineValue(val.getFirstChild(), defines) && isValidDefineValue(val.getLastChild(), defines);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"case Token.GETPROP: return isValidDefineValue(val.getFirstChild(), defines);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"case Token.BITAND:\\ncase Token.BITOR:\\ncase Token.BITXOR:\\n      return isValidDefineValue(val.getFirstChild(), defines) && isValidDefineValue(val.getNext(), defines);\\ncase Token.BITNOT:\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 14,\n        \"fixed_statement\": \"return isValidDefineValue(val.getFirstChild(), defines) && isValidDefineValue(val.getSecondChild(), defines);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 12,\n        \"fixed_statement\": \"case Token.BITAND:\\n        return isValidDefineValue(val.getFirstChild(), defines) && isValidDefineValue(val.getSecondChild(), defines);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"      case Token.BITAND: return isValidDefineValue(val.getFirstChild(), defines) && isValidDefineValue(val.getLastChild(), defines);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"case Token.BITAND:\\n        return isValidDefineValue(val.getFirstChild(), defines) && isValidDefineValue(val.getNextSibling(), defines);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 14,\n        \"fixed_statement\": \"return isValidDefineValue(val.getFirstChild(), defines) && isValidDefineValue(val.getLastChild(), defines);\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"case Token.BITAND: return isValidDefineValue(val.getLeft(), defines) && isValidDefineValue(val.getRight(), defines);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"case Token.BITAND: if (isValidDefineValue(val.getLeft(), defines) && isValidDefineValue(val.getRight(), defines)) return true; else return false;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"case Token.BITAND: return isValidDefineValue(val.getFirstChild(), defines) && isValidDefineValue(val.getLastChild(), defines);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"case Token.BITAND: return isValidDefineValue(val.getFirstChild(), defines) && isValidDefineValue(val.getNextSibling(), defines);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 15,\n        \"fixed_statement\": \"case Token.BITAND: return isValidDefineValue(val.getLeft(), defines) && isValidDefineValue(val.getRight(), defines);\"\n    }\n]"
+        }
+    },
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "7",
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "**5**",
+            "deepseek-chat": "4",
+            "gpt-4o-mini": "9"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "1086",
+            "qwen-turbo": "1086",
+            "deepseek-chat": "1",
+            "ernie-3.5-128k": "1086",
+            "gpt-4o-mini": "26"
+        },
+        "prompt_fl_3": {
+            "qwen-turbo": "1086",
+            "doubao-pro-4k": "1086",
+            "deepseek-chat": "1086",
+            "ernie-3.5-128k": "**1086**",
+            "gpt-4o-mini": "1086"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "if (n.getType() != Token.EMPTY)",
+            "doubao-pro-4k": "if (block.getType()!= Token.BLOCK) {",
+            "ernie-3.5-128k": "if (n.getType() != Token.EMPTY) {",
+            "deepseek-chat": "if (n.getType() != Token.EMPTY) {",
+            "gpt-4o-mini": "if (n.getType() != Token.EMPTY) {"
+        },
+        "prompt_fl_5": {
+            "doubao-pro-4k": "n.getType()!= Token.EMPTY",
+            "qwen-turbo": "if (n.getType() != Token.EMPTY) {\n}",
+            "deepseek-chat": "if (n.getType() != Token.EMPTY) {",
+            "ernie-3.5-128k": "if (n.getType() != Token.EMPTY) {",
+            "gpt-4o-mini": "if (n.getType() != Token.EMPTY) {"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "assertTrue(testValidDefineValue(\"1 + 8\"));",
+            "doubao-pro-4k": "assertTrue(testValidDefineValue(\"1 + 8\"));",
+            "deepseek-chat": "assertTrue(testValidDefineValue(\"1 + 8\"));",
+            "ernie-3.5-128k": "assertTrue(testValidDefineValue(\"1 + 8\"));",
+            "gpt-4o-mini": "assertTrue(testValidDefineValue(\"1 + 8\"));"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "```java\nstatic boolean isEmptyBlock(Node block) {\n    if (block.getType() != Node.Type.BLOCK) {\n      return false;\n    }\n\n    for (Node n = block.getFirstChild(); n != null; n = n.getNext()) {\n      if (n.getType() != Node.Type.EMPTY) {\n        return false;\n      }\n    }\n    return true;\n}\n``` \n\nIn this corrected version, I replaced `Token.BLOCK` with `Node.Type.BLOCK` and `Token.EMPTY` with `Node.Type.EMPTY` assuming that `Node` class has an enum or constants defined as `Type.BLOCK` and `Type.EMPTY`. If the `Node` class does not have these types defined, you would need to replace them with the appropriate values or conditions that check for block and empty node types.",
+            "deepseek-chat": "static boolean isEmptyBlock(Node block) {\n    if (block == null || block.getType() != Token.BLOCK) {\n      return false;\n    }\n\n    for (Node n = block.getFirstChild(); n != null; n = n.getNext()) {\n      if (n.getType() != Token.EMPTY) {\n        return false;\n      }\n    }\n    return true;\n  }",
+            "doubao-pro-4k": "static boolean isEmptyBlock(Node block) {\n    if (block.getType()!= Token.BLOCK) {\n        return false;\n    }\n\n    for (Node n = block.getFirstChild(); n!= null; n = n.getNextSibling()) { // Bug fixed: getNextSibling instead of getNext\n        if (n.getType()!= Token.EMPTY) {\n            return false;\n        }\n    }\n    return true;\n}",
+            "gpt-4o-mini": "static boolean isEmptyBlock(Node block) {\n    if (block.getType() != Token.BLOCK) {\n      return false;\n    }\n\n    // Fix: Ensure that the block has children to check.\n    if (block.getFirstChild() == null) {\n      return true; // Empty block, no children.\n    }\n\n    for (Node n = block.getFirstChild(); n != null; n = n.getNext()) {\n      if (n.getType() != Token.EMPTY) {\n        return false;\n      }\n    }\n    return true;\n}",
+            "ernie-3.5-128k": "static boolean isEmptyBlock(Node block) {\n    if (!(block instanceof BlockNode) || block.getType() != Token.BLOCK) {\n      return false;\n    }\n\n    for (Node n = block.getFirstChild(); n != null; n = n.getNext()) {\n      if (n.getType() != Token.EMPTY) {\n        return false;\n      }\n    }\n    return true;\n  }\n\nNote: The assumption here is that `Node` might be a more generic class, and `BlockNode` is the specific type that should be checked (this depends on the actual implementation of the `Node` class and its subclasses). If `BlockNode` is not defined or if `getType()` is sufficient to determine the type, you can omit the `instanceof` check. However, typically, checking the instance type provides a safer way to ensure that you are dealing with the correct object before accessing its methods or properties. If `getType()` alone is sufficient and accurate, you can revert line 2 to its original form:\n\nstatic boolean isEmptyBlock(Node block) {\n    if (block.getType() != Token.BLOCK) {\n      return false;\n    }\n\n    for (Node n = block.getFirstChild(); n != null; n = n.getNext()) {\n      if (n.getType() != Token.EMPTY) {\n        return false;\n      }\n    }\n    return true;\n  }"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\nstatic boolean isEmptyBlock(Node block) {\n    if (block.getType() != Node.Type.BLOCK) {\n        return false;\n    }\n\n    for (Node n = block.getFirstChild(); n != null; n = n.getNext()) {\n        if (n.getType() != Node.Type.EMPTY) {\n            return false;\n        }\n    }\n    return true;\n}\n```",
+            "deepseek-chat": "static boolean isEmptyBlock(Node block) {\n    if (block == null || block.getType() != Token.BLOCK) {\n      return false;\n    }\n\n    for (Node n = block.getFirstChild(); n != null; n = n.getNext()) {\n      if (n.getType() != Token.EMPTY) {\n        return false;\n      }\n    }\n    return true;\n  }",
+            "doubao-pro-4k": "static boolean isEmptyBlock(Node block) {\n    if (block.getType()!= Token.BLOCK) {\n        return false;\n    }\n\n    for (Node n = block.getFirstChild(); n!= null; n = n.getNext()) {\n        if (n.getType()!= Token.EMPTY) {\n            return false;\n        }\n    }\n    return true;\n}",
+            "gpt-4o-mini": "static boolean isEmptyBlock(Node block) {\n    if (block == null || block.getType() != Token.BLOCK) {\n        return false;\n    }\n\n    for (Node n = block.getFirstChild(); n != null; n = n.getNext()) {\n        if (n.getType() != Token.EMPTY) {\n            return false;\n        }\n    }\n    return true;\n}",
+            "ernie-3.5-128k": "static boolean isEmptyBlock(Node block) {\n    if (!(block instanceof BlockNode) || block.getType() != Token.BLOCK) {\n      return false;\n    }\n\n    for (Node n = block.getFirstChild(); n != null; n = n.getNext()) {\n      if (n.getType() != Token.EMPTY) {\n        return false;\n      }\n    }\n    return true;\n  }\n\nNote: The assumption here is that `Token.BLOCK` is a valid token type and `BlockNode` is the appropriate type to check for the block node. If `Node` does not have an `instanceof` check for `BlockNode`, you may need to adjust this part based on the actual class hierarchy in your codebase. The key fix is to ensure that `block` is not only of type `Token.BLOCK` but also of the appropriate class type if such a check is necessary."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\nstatic boolean isEmptyBlock(Node block) {\n    if (block.getType() != Token.BLOCK) {\n        return false;\n```",
+            "doubao-pro-4k": "static boolean isEmptyBlock(Node block) {\n    if (block.getType()!= Token.BLOCK) {\n        return false;\n    }\n}",
+            "ernie-3.5-128k": "static boolean isEmptyBlock(Node block) {\n    if (block.getType() != Token.BLOCK && block == null) {",
+            "deepseek-chat": "static boolean isEmptyBlock(Node block) {\n    if (block.getType() != Token.BLOCK) {\n        return false;\n    }",
+            "gpt-4o-mini": "static boolean isEmptyBlock(Node block) {\n    if (block.getType() != Token.BLOCK) {\n        return false;\n    }"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (!(block.getType() == Token.BLOCK)) {\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (block.getType() == Token.BLOCK) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (block == null || block.getType() != Token.BLOCK) {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (block == null || block.getType() != Token.BLOCK) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (block == null || block.getType() != Token.BLOCK) {\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (!(block.getType() == Token.BLOCK))\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"if (!(block.getType() == Token.BLOCK)) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"    if (block == null || block.getType() != Token.BLOCK) {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (block == null || block.getType() != Token.BLOCK) {\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"if (block.getType() == Token.BLOCK) {\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return false;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"if (block.getType() == Token.BLOCK) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (block.getType() != Token.BLOCK) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (block.getType() != Token.BLOCK_START || block.getType() != Token.BLOCK_END) {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (block == null || block.getType() != Token.BLOCK) {\"\n    }\n]"
+        }
+    }
+]

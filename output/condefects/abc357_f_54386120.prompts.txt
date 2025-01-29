@@ -1,0 +1,706 @@
+
+================== prompt_fl_1 ==================
+
+source code:
+private void solve(final FastIO io, final String[] args) {
+		io.setAutoFlush(false);
+		io.setAutoOutFlush(false);
+		/*
+		 * author: 31536000
+		 * AtCoder Beginner Contest 357 F問題
+		 * 考察メモ
+		 * 明らかに遅延セグ木に乗せると書いてあるのでそれをやるとして
+		 * ΣABの寄与について考える
+		 * xをAに加えた時、答えにはxΣB追加される
+		 * 逆も同様
+		 * ということは、(ΣA, ΣB, ΣAB, len)を持てば足りるかな
+		 *
+		 * 多項式で持ってると思えば、まぁいつもので
+		 * 和と積なので近半環になることも明らか、じゃ乗るね
+		 */
+		int N = io.nextInt(), Q = io.nextInt();
+		int[] A = io.nextInt(N), B = io.nextInt(N);
+		final ModUtility mod = new ModUtility(new Prime(998_244_353), 1_000_000);
+		class Query {
+			int ax, bx;
+			Query(int ax, int bx) {
+				this.ax = ax;
+				this.bx = bx;
+			}
+			Query(Query l, Query r) {
+				ax = mod.add(l.ax, r.ax);
+				bx = mod.add(l.bx, r.bx);
+			}
+		}
+		class Data {
+			int sumA, sumB, sumAB, len;
+			Data(int i) {
+				sumA = A[i];
+				sumB = B[i];
+				sumAB = mod.multiply(sumA, sumB);
+				len = 1;
+			}
+			Data(Data l, Data r) {
+				sumA = mod.add(l.sumA, r.sumA);
+				sumB = mod.add(l.sumB, r.sumB);
+				sumAB = mod.add(l.sumAB, r.sumAB);
+				len = l.len + r.len;
+			}
+			Data(Query x, Data d) {
+				sumA = mod.add(d.sumA, mod.multiply(x.ax, d.len));
+				sumB = mod.add(d.sumB, mod.multiply(x.bx, d.len));
+				sumAB = mod.add(d.sumAB, mod.add(mod.multiply(x.ax, x.bx), mod.add(mod.multiply(x.ax, d.sumB), mod.multiply(x.bx, d.sumA))));
+				len = d.len;
+			}
+			Data() {
+				sumA = sumB = sumAB = len = 0;
+			}
+			@Override
+			public String toString() {
+				return "(" + sumA + ", " + sumB + ", " + sumAB + ", " + len + ")";
+			}
+		}
+		ACL.LazySegTree<Data, Query> segTree = new ACL.LazySegTree<>(N, Data::new, new Data(), Data::new, Query::new, new Query(0, 0));
+		for (int i = 0;i < N;++ i) segTree.set(i, new Data(i));
+		while(Q --> 0) {
+			int query = io.nextInt(), l = io.nextInt() - 1, r = io.nextInt();
+			if (query == 1) {
+				Query q = new Query(io.nextInt(), 0);
+				segTree.apply(l, r, q);
+			} else if (query == 2) {
+				Query q = new Query(0, io.nextInt());
+				segTree.apply(l, r, q);
+			} else {
+				io.println(segTree.prod(l, r).sumAB);
+			}
+		}
+	}
+
+	/** デバッグ用コードのお供に */
+	private static boolean DEBUG = false;
+	/** 確保するメモリの大きさ(単位: MB) */
+	private static final long MEMORY = 64;
+	private final FastIO io;
+	private final String[] args;
+
+	public static void main(final String[] args) {
+		Thread.setDefaultU
+
+There is a bug in the above code, please help me locate it.
+
+Please output **only one integer**: the line number of the buggy code (The code starts from line 1). Do not provide any explanations or additional content.
+
+================== prompt_fl_4 ==================
+
+source code:
+private void solve(final FastIO io, final String[] args) {
+		io.setAutoFlush(false);
+		io.setAutoOutFlush(false);
+		/*
+		 * author: 31536000
+		 * AtCoder Beginner Contest 357 F問題
+		 * 考察メモ
+		 * 明らかに遅延セグ木に乗せると書いてあるのでそれをやるとして
+		 * ΣABの寄与について考える
+		 * xをAに加えた時、答えにはxΣB追加される
+		 * 逆も同様
+		 * ということは、(ΣA, ΣB, ΣAB, len)を持てば足りるかな
+		 *
+		 * 多項式で持ってると思えば、まぁいつもので
+		 * 和と積なので近半環になることも明らか、じゃ乗るね
+		 */
+		int N = io.nextInt(), Q = io.nextInt();
+		int[] A = io.nextInt(N), B = io.nextInt(N);
+		final ModUtility mod = new ModUtility(new Prime(998_244_353), 1_000_000);
+		class Query {
+			int ax, bx;
+			Query(int ax, int bx) {
+				this.ax = ax;
+				this.bx = bx;
+			}
+			Query(Query l, Query r) {
+				ax = mod.add(l.ax, r.ax);
+				bx = mod.add(l.bx, r.bx);
+			}
+		}
+		class Data {
+			int sumA, sumB, sumAB, len;
+			Data(int i) {
+				sumA = A[i];
+				sumB = B[i];
+				sumAB = mod.multiply(sumA, sumB);
+				len = 1;
+			}
+			Data(Data l, Data r) {
+				sumA = mod.add(l.sumA, r.sumA);
+				sumB = mod.add(l.sumB, r.sumB);
+				sumAB = mod.add(l.sumAB, r.sumAB);
+				len = l.len + r.len;
+			}
+			Data(Query x, Data d) {
+				sumA = mod.add(d.sumA, mod.multiply(x.ax, d.len));
+				sumB = mod.add(d.sumB, mod.multiply(x.bx, d.len));
+				sumAB = mod.add(d.sumAB, mod.add(mod.multiply(x.ax, x.bx), mod.add(mod.multiply(x.ax, d.sumB), mod.multiply(x.bx, d.sumA))));
+				len = d.len;
+			}
+			Data() {
+				sumA = sumB = sumAB = len = 0;
+			}
+			@Override
+			public String toString() {
+				return "(" + sumA + ", " + sumB + ", " + sumAB + ", " + len + ")";
+			}
+		}
+		ACL.LazySegTree<Data, Query> segTree = new ACL.LazySegTree<>(N, Data::new, new Data(), Data::new, Query::new, new Query(0, 0));
+		for (int i = 0;i < N;++ i) segTree.set(i, new Data(i));
+		while(Q --> 0) {
+			int query = io.nextInt(), l = io.nextInt() - 1, r = io.nextInt();
+			if (query == 1) {
+				Query q = new Query(io.nextInt(), 0);
+				segTree.apply(l, r, q);
+			} else if (query == 2) {
+				Query q = new Query(0, io.nextInt());
+				segTree.apply(l, r, q);
+			} else {
+				io.println(segTree.prod(l, r).sumAB);
+			}
+		}
+	}
+
+	/** デバッグ用コードのお供に */
+	private static boolean DEBUG = false;
+	/** 確保するメモリの大きさ(単位: MB) */
+	private static final long MEMORY = 64;
+	private final FastIO io;
+	private final String[] args;
+
+	public static void main(final String[] args) {
+		Thread.setDefaultU
+
+There is a bug in the above code, please help me locate it.
+
+Output **only** the exact buggy statement, with no line numbers, explanations, or additional content. Your response should contain just the buggy code line. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_1 ==================
+
+private void solve(final FastIO io, final String[] args) {
+		io.setAutoFlush(false);
+		io.setAutoOutFlush(false);
+		/*
+		 * author: 31536000
+		 * AtCoder Beginner Contest 357 F問題
+		 * 考察メモ
+		 * 明らかに遅延セグ木に乗せると書いてあるのでそれをやるとして
+		 * ΣABの寄与について考える
+		 * xをAに加えた時、答えにはxΣB追加される
+		 * 逆も同様
+		 * ということは、(ΣA, ΣB, ΣAB, len)を持てば足りるかな
+		 *
+		 * 多項式で持ってると思えば、まぁいつもので
+		 * 和と積なので近半環になることも明らか、じゃ乗るね
+		 */
+		int N = io.nextInt(), Q = io.nextInt();
+		int[] A = io.nextInt(N), B = io.nextInt(N);
+		final ModUtility mod = new ModUtility(new Prime(998_244_353), 1_000_000);
+		class Query {
+			int ax, bx;
+			Query(int ax, int bx) {
+				this.ax = ax;
+				this.bx = bx;
+			}
+			Query(Query l, Query r) {
+				ax = mod.add(l.ax, r.ax);
+				bx = mod.add(l.bx, r.bx);
+			}
+		}
+		class Data {
+			int sumA, sumB, sumAB, len;
+			Data(int i) {
+				sumA = A[i];
+				sumB = B[i];
+				sumAB = mod.multiply(sumA, sumB);
+				len = 1;
+			}
+			Data(Data l, Data r) {
+				sumA = mod.add(l.sumA, r.sumA);
+				sumB = mod.add(l.sumB, r.sumB);
+				sumAB = mod.add(l.sumAB, r.sumAB);
+				len = l.len + r.len;
+			}
+			Data(Query x, Data d) {
+				sumA = mod.add(d.sumA, mod.multiply(x.ax, d.len));
+				sumB = mod.add(d.sumB, mod.multiply(x.bx, d.len));
+				sumAB = mod.add(d.sumAB, mod.add(mod.multiply(x.ax, x.bx), mod.add(mod.multiply(x.ax, d.sumB), mod.multiply(x.bx, d.sumA))));
+				len = d.len;
+			}
+			Data() {
+				sumA = sumB = sumAB = len = 0;
+			}
+			@Override
+			public String toString() {
+				return "(" + sumA + ", " + sumB + ", " + sumAB + ", " + len + ")";
+			}
+		}
+		ACL.LazySegTree<Data, Query> segTree = new ACL.LazySegTree<>(N, Data::new, new Data(), Data::new, Query::new, new Query(0, 0));
+		for (int i = 0;i < N;++ i) segTree.set(i, new Data(i));
+		while(Q --> 0) {
+			int query = io.nextInt(), l = io.nextInt() - 1, r = io.nextInt();
+			if (query == 1) {
+				Query q = new Query(io.nextInt(), 0);
+				segTree.apply(l, r, q);
+			} else if (query == 2) {
+				Query q = new Query(0, io.nextInt());
+				segTree.apply(l, r, q);
+			} else {
+				io.println(segTree.prod(l, r).sumAB);
+			}
+		}
+	}
+
+	/** デバッグ用コードのお供に */
+	private static boolean DEBUG = false;
+	/** 確保するメモリの大きさ(単位: MB) */
+	private static final long MEMORY = 64;
+	private final FastIO io;
+	private final String[] args;
+
+	public static void main(final String[] args) {
+		Thread.setDefaultU
+
+There is a bug in line [48] of the code, please help me fix it.
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_2 ==================
+
+private void solve(final FastIO io, final String[] args) {
+		io.setAutoFlush(false);
+		io.setAutoOutFlush(false);
+		/*
+		 * author: 31536000
+		 * AtCoder Beginner Contest 357 F問題
+		 * 考察メモ
+		 * 明らかに遅延セグ木に乗せると書いてあるのでそれをやるとして
+		 * ΣABの寄与について考える
+		 * xをAに加えた時、答えにはxΣB追加される
+		 * 逆も同様
+		 * ということは、(ΣA, ΣB, ΣAB, len)を持てば足りるかな
+		 *
+		 * 多項式で持ってると思えば、まぁいつもので
+		 * 和と積なので近半環になることも明らか、じゃ乗るね
+		 */
+		int N = io.nextInt(), Q = io.nextInt();
+		int[] A = io.nextInt(N), B = io.nextInt(N);
+		final ModUtility mod = new ModUtility(new Prime(998_244_353), 1_000_000);
+		class Query {
+			int ax, bx;
+			Query(int ax, int bx) {
+				this.ax = ax;
+				this.bx = bx;
+			}
+			Query(Query l, Query r) {
+				ax = mod.add(l.ax, r.ax);
+				bx = mod.add(l.bx, r.bx);
+			}
+		}
+		class Data {
+			int sumA, sumB, sumAB, len;
+			Data(int i) {
+				sumA = A[i];
+				sumB = B[i];
+				sumAB = mod.multiply(sumA, sumB);
+				len = 1;
+			}
+			Data(Data l, Data r) {
+				sumA = mod.add(l.sumA, r.sumA);
+				sumB = mod.add(l.sumB, r.sumB);
+				sumAB = mod.add(l.sumAB, r.sumAB);
+				len = l.len + r.len;
+			}
+			Data(Query x, Data d) {
+				sumA = mod.add(d.sumA, mod.multiply(x.ax, d.len));
+				sumB = mod.add(d.sumB, mod.multiply(x.bx, d.len));
+				sumAB = mod.add(d.sumAB, mod.add(mod.multiply(x.ax, x.bx), mod.add(mod.multiply(x.ax, d.sumB), mod.multiply(x.bx, d.sumA))));
+				len = d.len;
+			}
+			Data() {
+				sumA = sumB = sumAB = len = 0;
+			}
+			@Override
+			public String toString() {
+				return "(" + sumA + ", " + sumB + ", " + sumAB + ", " + len + ")";
+			}
+		}
+		ACL.LazySegTree<Data, Query> segTree = new ACL.LazySegTree<>(N, Data::new, new Data(), Data::new, Query::new, new Query(0, 0));
+		for (int i = 0;i < N;++ i) segTree.set(i, new Data(i));
+		while(Q --> 0) {
+			int query = io.nextInt(), l = io.nextInt() - 1, r = io.nextInt();
+			if (query == 1) {
+				Query q = new Query(io.nextInt(), 0);
+				segTree.apply(l, r, q);
+			} else if (query == 2) {
+				Query q = new Query(0, io.nextInt());
+				segTree.apply(l, r, q);
+			} else {
+				io.println(segTree.prod(l, r).sumAB);
+			}
+		}
+	}
+
+	/** デバッグ用コードのお供に */
+	private static boolean DEBUG = false;
+	/** 確保するメモリの大きさ(単位: MB) */
+	private static final long MEMORY = 64;
+	private final FastIO io;
+	private final String[] args;
+
+	public static void main(final String[] args) {
+		Thread.setDefaultU
+
+There is a bug in ['\t\t\t\tsumAB = mod.add(d.sumAB, mod.add(mod.multiply(x.ax, x.bx), mod.add(mod.multiply(x.ax, d.sumB), mod.multiply(x.bx, d.sumA))));'] , please help me fix it. 
+
+Please return the **complete corrected method**. Do not skip or omit any part of the code. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_3 ==================
+
+private void solve(final FastIO io, final String[] args) {
+		io.setAutoFlush(false);
+		io.setAutoOutFlush(false);
+		/*
+		 * author: 31536000
+		 * AtCoder Beginner Contest 357 F問題
+		 * 考察メモ
+		 * 明らかに遅延セグ木に乗せると書いてあるのでそれをやるとして
+		 * ΣABの寄与について考える
+		 * xをAに加えた時、答えにはxΣB追加される
+		 * 逆も同様
+		 * ということは、(ΣA, ΣB, ΣAB, len)を持てば足りるかな
+		 *
+		 * 多項式で持ってると思えば、まぁいつもので
+		 * 和と積なので近半環になることも明らか、じゃ乗るね
+		 */
+		int N = io.nextInt(), Q = io.nextInt();
+		int[] A = io.nextInt(N), B = io.nextInt(N);
+		final ModUtility mod = new ModUtility(new Prime(998_244_353), 1_000_000);
+		class Query {
+			int ax, bx;
+			Query(int ax, int bx) {
+				this.ax = ax;
+				this.bx = bx;
+			}
+			Query(Query l, Query r) {
+				ax = mod.add(l.ax, r.ax);
+				bx = mod.add(l.bx, r.bx);
+			}
+		}
+		class Data {
+			int sumA, sumB, sumAB, len;
+			Data(int i) {
+				sumA = A[i];
+				sumB = B[i];
+				sumAB = mod.multiply(sumA, sumB);
+				len = 1;
+			}
+			Data(Data l, Data r) {
+				sumA = mod.add(l.sumA, r.sumA);
+				sumB = mod.add(l.sumB, r.sumB);
+				sumAB = mod.add(l.sumAB, r.sumAB);
+				len = l.len + r.len;
+			}
+			Data(Query x, Data d) {
+				sumA = mod.add(d.sumA, mod.multiply(x.ax, d.len));
+				sumB = mod.add(d.sumB, mod.multiply(x.bx, d.len));
+				sumAB = mod.add(d.sumAB, mod.add(mod.multiply(x.ax, x.bx), mod.add(mod.multiply(x.ax, d.sumB), mod.multiply(x.bx, d.sumA))));
+
+There is a bug in the last statement, please help me fix it.
+
+Return the code **only from the method declaration to the fixed statement**, without completing or adding additional code. Do not modify anything beyond fixing the bug, and do not complete the `if` statement or other unfinished parts. Do not include ```java or ``` markers in the response.
+
+================== prompt_apr_4 ==================
+
+private void solve(final FastIO io, final String[] args) {
+		io.setAutoFlush(false);
+		io.setAutoOutFlush(false);
+		/*
+		 * author: 31536000
+		 * AtCoder Beginner Contest 357 F問題
+		 * 考察メモ
+		 * 明らかに遅延セグ木に乗せると書いてあるのでそれをやるとして
+		 * ΣABの寄与について考える
+		 * xをAに加えた時、答えにはxΣB追加される
+		 * 逆も同様
+		 * ということは、(ΣA, ΣB, ΣAB, len)を持てば足りるかな
+		 *
+		 * 多項式で持ってると思えば、まぁいつもので
+		 * 和と積なので近半環になることも明らか、じゃ乗るね
+		 */
+		int N = io.nextInt(), Q = io.nextInt();
+		int[] A = io.nextInt(N), B = io.nextInt(N);
+		final ModUtility mod = new ModUtility(new Prime(998_244_353), 1_000_000);
+		class Query {
+			int ax, bx;
+			Query(int ax, int bx) {
+				this.ax = ax;
+				this.bx = bx;
+			}
+			Query(Query l, Query r) {
+				ax = mod.add(l.ax, r.ax);
+				bx = mod.add(l.bx, r.bx);
+			}
+		}
+		class Data {
+			int sumA, sumB, sumAB, len;
+			Data(int i) {
+				sumA = A[i];
+				sumB = B[i];
+				sumAB = mod.multiply(sumA, sumB);
+				len = 1;
+			}
+			Data(Data l, Data r) {
+				sumA = mod.add(l.sumA, r.sumA);
+				sumB = mod.add(l.sumB, r.sumB);
+				sumAB = mod.add(l.sumAB, r.sumAB);
+				len = l.len + r.len;
+			}
+			Data(Query x, Data d) {
+				sumA = mod.add(d.sumA, mod.multiply(x.ax, d.len));
+				sumB = mod.add(d.sumB, mod.multiply(x.bx, d.len));
+				sumAB = mod.add(d.sumAB, mod.add(mod.multiply(x.ax, x.bx), mod.add(mod.multiply(x.ax, d.sumB), mod.multiply(x.bx, d.sumA))));
+				len = d.len;
+			}
+			Data() {
+				sumA = sumB = sumAB = len = 0;
+			}
+			@Override
+			public String toString() {
+				return "(" + sumA + ", " + sumB + ", " + sumAB + ", " + len + ")";
+			}
+		}
+		ACL.LazySegTree<Data, Query> segTree = new ACL.LazySegTree<>(N, Data::new, new Data(), Data::new, Query::new, new Query(0, 0));
+		for (int i = 0;i < N;++ i) segTree.set(i, new Data(i));
+		while(Q --> 0) {
+			int query = io.nextInt(), l = io.nextInt() - 1, r = io.nextInt();
+			if (query == 1) {
+				Query q = new Query(io.nextInt(), 0);
+				segTree.apply(l, r, q);
+			} else if (query == 2) {
+				Query q = new Query(0, io.nextInt());
+				segTree.apply(l, r, q);
+			} else {
+				io.println(segTree.prod(l, r).sumAB);
+			}
+		}
+	}
+
+	/** デバッグ用コードのお供に */
+	private static boolean DEBUG = false;
+	/** 確保するメモリの大きさ(単位: MB) */
+	private static final long MEMORY = 64;
+	private final FastIO io;
+	private final String[] args;
+
+	public static void main(final String[] args) {
+		Thread.setDefaultU
+
+There is a bug in line [48] of the code, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_5 ==================
+
+private void solve(final FastIO io, final String[] args) {
+		io.setAutoFlush(false);
+		io.setAutoOutFlush(false);
+		/*
+		 * author: 31536000
+		 * AtCoder Beginner Contest 357 F問題
+		 * 考察メモ
+		 * 明らかに遅延セグ木に乗せると書いてあるのでそれをやるとして
+		 * ΣABの寄与について考える
+		 * xをAに加えた時、答えにはxΣB追加される
+		 * 逆も同様
+		 * ということは、(ΣA, ΣB, ΣAB, len)を持てば足りるかな
+		 *
+		 * 多項式で持ってると思えば、まぁいつもので
+		 * 和と積なので近半環になることも明らか、じゃ乗るね
+		 */
+		int N = io.nextInt(), Q = io.nextInt();
+		int[] A = io.nextInt(N), B = io.nextInt(N);
+		final ModUtility mod = new ModUtility(new Prime(998_244_353), 1_000_000);
+		class Query {
+			int ax, bx;
+			Query(int ax, int bx) {
+				this.ax = ax;
+				this.bx = bx;
+			}
+			Query(Query l, Query r) {
+				ax = mod.add(l.ax, r.ax);
+				bx = mod.add(l.bx, r.bx);
+			}
+		}
+		class Data {
+			int sumA, sumB, sumAB, len;
+			Data(int i) {
+				sumA = A[i];
+				sumB = B[i];
+				sumAB = mod.multiply(sumA, sumB);
+				len = 1;
+			}
+			Data(Data l, Data r) {
+				sumA = mod.add(l.sumA, r.sumA);
+				sumB = mod.add(l.sumB, r.sumB);
+				sumAB = mod.add(l.sumAB, r.sumAB);
+				len = l.len + r.len;
+			}
+			Data(Query x, Data d) {
+				sumA = mod.add(d.sumA, mod.multiply(x.ax, d.len));
+				sumB = mod.add(d.sumB, mod.multiply(x.bx, d.len));
+				sumAB = mod.add(d.sumAB, mod.add(mod.multiply(x.ax, x.bx), mod.add(mod.multiply(x.ax, d.sumB), mod.multiply(x.bx, d.sumA))));
+				len = d.len;
+			}
+			Data() {
+				sumA = sumB = sumAB = len = 0;
+			}
+			@Override
+			public String toString() {
+				return "(" + sumA + ", " + sumB + ", " + sumAB + ", " + len + ")";
+			}
+		}
+		ACL.LazySegTree<Data, Query> segTree = new ACL.LazySegTree<>(N, Data::new, new Data(), Data::new, Query::new, new Query(0, 0));
+		for (int i = 0;i < N;++ i) segTree.set(i, new Data(i));
+		while(Q --> 0) {
+			int query = io.nextInt(), l = io.nextInt() - 1, r = io.nextInt();
+			if (query == 1) {
+				Query q = new Query(io.nextInt(), 0);
+				segTree.apply(l, r, q);
+			} else if (query == 2) {
+				Query q = new Query(0, io.nextInt());
+				segTree.apply(l, r, q);
+			} else {
+				io.println(segTree.prod(l, r).sumAB);
+			}
+		}
+	}
+
+	/** デバッグ用コードのお供に */
+	private static boolean DEBUG = false;
+	/** 確保するメモリの大きさ(単位: MB) */
+	private static final long MEMORY = 64;
+	private final FastIO io;
+	private final String[] args;
+
+	public static void main(final String[] args) {
+		Thread.setDefaultU
+
+There is a bug in ['\t\t\t\tsumAB = mod.add(d.sumAB, mod.add(mod.multiply(x.ax, x.bx), mod.add(mod.multiply(x.ax, d.sumB), mod.multiply(x.bx, d.sumA))));'] , please help me fix it. 
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.
+
+================== prompt_apr_6 ==================
+
+private void solve(final FastIO io, final String[] args) {
+		io.setAutoFlush(false);
+		io.setAutoOutFlush(false);
+		/*
+		 * author: 31536000
+		 * AtCoder Beginner Contest 357 F問題
+		 * 考察メモ
+		 * 明らかに遅延セグ木に乗せると書いてあるのでそれをやるとして
+		 * ΣABの寄与について考える
+		 * xをAに加えた時、答えにはxΣB追加される
+		 * 逆も同様
+		 * ということは、(ΣA, ΣB, ΣAB, len)を持てば足りるかな
+		 *
+		 * 多項式で持ってると思えば、まぁいつもので
+		 * 和と積なので近半環になることも明らか、じゃ乗るね
+		 */
+		int N = io.nextInt(), Q = io.nextInt();
+		int[] A = io.nextInt(N), B = io.nextInt(N);
+		final ModUtility mod = new ModUtility(new Prime(998_244_353), 1_000_000);
+		class Query {
+			int ax, bx;
+			Query(int ax, int bx) {
+				this.ax = ax;
+				this.bx = bx;
+			}
+			Query(Query l, Query r) {
+				ax = mod.add(l.ax, r.ax);
+				bx = mod.add(l.bx, r.bx);
+			}
+		}
+		class Data {
+			int sumA, sumB, sumAB, len;
+			Data(int i) {
+				sumA = A[i];
+				sumB = B[i];
+				sumAB = mod.multiply(sumA, sumB);
+				len = 1;
+			}
+			Data(Data l, Data r) {
+				sumA = mod.add(l.sumA, r.sumA);
+				sumB = mod.add(l.sumB, r.sumB);
+				sumAB = mod.add(l.sumAB, r.sumAB);
+				len = l.len + r.len;
+			}
+			Data(Query x, Data d) {
+				sumA = mod.add(d.sumA, mod.multiply(x.ax, d.len));
+				sumB = mod.add(d.sumB, mod.multiply(x.bx, d.len));
+				sumAB = mod.add(d.sumAB, mod.add(mod.multiply(x.ax, x.bx), mod.add(mod.multiply(x.ax, d.sumB), mod.multiply(x.bx, d.sumA))));
+
+There is a bug in the last statement, please help me fix it.
+
+Please return the results in a strict JSON format as described below. Please follow these instructions carefully:
+1. Your output must include each repaired line's number (`line_number`) and the corresponding fixed code statement (`fixed_statement`).
+2. The output format must be a valid JSON array, where each element represents one repaired line, with the following structure:
+   - `"line_number"`: The line number of the buggy code that was repaired (integer).
+   - `"fixed_statement"`: The repaired statement for that specific line (string).
+
+3. The result must strictly follow this format:
+[
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    },
+    {
+        "line_number": int,
+        "fixed_statement": "string"
+    }
+]
+4. The repaired statement in "fixed_statement" must replace the corresponding line in the buggy code.
+5. You must NOT include any additional explanation or description in your response. Only return the JSON array. Do not include ```json or ``` markers in the response.

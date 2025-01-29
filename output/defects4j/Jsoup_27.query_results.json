@@ -1,0 +1,88 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "3",
+            "qwen-turbo": "3",
+            "ernie-3.5-128k": "7",
+            "deepseek-chat": "4",
+            "gpt-4o-mini": "9"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "7",
+            "qwen-turbo": "15",
+            "deepseek-chat": "4",
+            "ernie-3.5-128k": "**9**",
+            "gpt-4o-mini": "7"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "6",
+            "qwen-turbo": "15",
+            "ernie-3.5-128k": "**9**",
+            "deepseek-chat": "4",
+            "gpt-4o-mini": "6"
+        },
+        "prompt_fl_4": {
+            "doubao-pro-4k": "if (contentType == null) return null;",
+            "qwen-turbo": "String charset = m.group(1).trim();",
+            "ernie-3.5-128k": "Matcher m = charsetPattern.matcher(contentType);",
+            "deepseek-chat": "`String charset = m.group(1).trim();`",
+            "gpt-4o-mini": "charset = charset.toUpperCase(Locale.ENGLISH);"
+        },
+        "prompt_fl_5": {
+            "doubao-pro-4k": "return null;",
+            "qwen-turbo": "String charset = m.group(1).trim();",
+            "deepseek-chat": "charset = charset.toUpperCase(Locale.ENGLISH);",
+            "ernie-3.5-128k": "String charset = m.group(1).trim().toUpperCase(Locale.ENGLISH);",
+            "gpt-4o-mini": "charset = charset.toUpperCase(Locale.ENGLISH);"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "assertEquals(\"utf-8\", DataUtil.getCharsetFromContentType(\"text/html;charset=utf-8 \"));",
+            "deepseek-chat": "charset = charset.toUpperCase(Locale.ENGLISH);",
+            "ernie-3.5-128k": "String charset = m.group(1).trim().toUpperCase(Locale.ENGLISH);",
+            "doubao-pro-4k": "assertEquals(\"utf-8\", DataUtil.getCharsetFromContentType(\"text/html;charset=utf-8 \"));",
+            "gpt-4o-mini": "charset = charset.toUpperCase(Locale.ENGLISH);"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "Certainly, here is the complete corrected method. The issue on line 7 might be related to handling the case where no match is found and `m.group(1)` could throw a `NullPointerException`. To avoid this, we should check if a group was actually found before accessing it.\n\n```java\nimport java.util.Locale;\nimport java.util.regex.Matcher;\nimport java.util.regex.Pattern;\n\npublic class ContentTypeUtil {\n\n    private static final Pattern charsetPattern = Pattern.compile(\"charset=\\\\s*([^\\\\s;]+)\", Pattern.CASE_INSENSITIVE);\n\n    static String getCharsetFromContentType(String contentType) {\n        if (contentType == null) return null;\n        Matcher m = charsetPattern.matcher(contentType);\n        if (m.find()) {\n            String charset = m.group(1).trim();\n            charset = charset.toUpperCase(Locale.ENGLISH);\n            return charset;\n        }\n        return null;\n    }\n}\n```\n\nIn this version, the regex pattern `charset=\\\\s*([^\\\\s;]+)` is used to capture the charset value more robustly. The `find` method checks if there is a match, and the code only accesses `m.group(1)` if a match is found, thus avoiding potential `NullPointerException`.",
+            "deepseek-chat": "static String getCharsetFromContentType(String contentType) {\n    if (contentType == null) return null;\n    Matcher m = charsetPattern.matcher(contentType);\n    if (m.find()) {\n        String charset = m.group(1).trim();\n        if (charset != null) {\n            charset = charset.toUpperCase(Locale.ENGLISH);\n            return charset;\n        }\n    }\n    return null;\n}",
+            "gpt-4o-mini": "static String getCharsetFromContentType(String contentType) {\n    if (contentType == null) return null;\n    Matcher m = charsetPattern.matcher(contentType);\n    if (m.find()) {\n        String charset = m.group(1).trim();\n        if (charset.length() > 0) {\n            charset = charset.toUpperCase(Locale.ENGLISH);\n            return charset;\n        }\n    }\n    return null;\n}",
+            "doubao-pro-4k": "static String getCharsetFromContentType(String contentType) {\n    if (contentType == null) return null;\n    Matcher m = charsetPattern.matcher(contentType);\n    if (m.find()) {\n        String charset = m.group(1).trim();\n        charset = charset.toUpperCase(Locale.ENGLISH);\n        return charset;\n    }\n    return null;\n}",
+            "ernie-3.5-128k": "Certainly! Here's the corrected method with the issue resolved. The main issue in line 7 is that `charsetPattern` should be defined before it can be used. I'll add the necessary pattern definition for matching the charset in a `Content-Type` header.\n\n```java\nimport java.util.Locale;\nimport java.util.regex.Matcher;\nimport java.util.regex.Pattern;\n\npublic class ContentTypeUtils {\n\n    // Define the regex pattern to match charset in Content-Type header\n    private static final Pattern charsetPattern = Pattern.compile(\"charset=([^;]+)\");\n\n    public static String getCharsetFromContentType(String contentType) {\n        if (contentType == null) return null;\n        Matcher m = charsetPattern.matcher(contentType);\n        if (m.find()) {\n            String charset = m.group(1).trim();\n            charset = charset.toUpperCase(Locale.ENGLISH);\n            return charset;\n        }\n        return null;\n    }\n}\n```\n\nIn this corrected method, I've added the `charsetPattern` which uses a regular expression to match the `charset` parameter in the `Content-Type` string. This pattern looks for `charset=` followed by any characters that are not a semicolon (`;`), capturing those characters into a group."
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\nstatic String getCharsetFromContentType(String contentType) {\n    if (contentType == null) return null;\n    Matcher m = charsetPattern.matcher(contentType);\n    if (m.find()) {\n        String charset = m.group(1).trim();\n        charset = charset.toUpperCase(Locale.ENGLISH);\n        return charset;\n    }\n    return null;\n}\n```\n\nThe provided code does not contain an apparent bug at the line `'            return charset;'`. The code appears to correctly return the `charset` after trimming and converting it to upper case. If you are experiencing issues, they may be related to something else such as the definition of `charsetPattern`. Ensure that `charsetPattern` is correctly defined as a regex pattern to match the charset parameter in the content type string. For example:\n\n```java\nprivate static final Pattern charsetPattern = Pattern.compile(\"charset=\\\\s*([^\\\\s;]+)\", Pattern.CASE_INSENSITIVE);\n```\n\nIf there's a specific issue or error message, please provide more details for further assistance.",
+            "deepseek-chat": "static String getCharsetFromContentType(String contentType) {\n    if (contentType == null) return null;\n    Matcher m = charsetPattern.matcher(contentType);\n    if (m.find()) {\n        String charset = m.group(1).trim();\n        charset = charset.toUpperCase(Locale.ENGLISH);\n        if (charset.isEmpty()) {\n            return null;\n        }\n        return charset;\n    }\n    return null;\n}",
+            "doubao-pro-4k": "static String getCharsetFromContentType(String contentType) {\n    if (contentType == null) return null;\n    Matcher m = charsetPattern.matcher(contentType);\n    if (m.find()) {\n        String charset = m.group(1).trim();\n        charset = charset.toUpperCase(Locale.ENGLISH);\n        return charset;\n    }\n    return null;\n}",
+            "gpt-4o-mini": "static String getCharsetFromContentType(String contentType) {\n        if (contentType == null) return null;\n        Matcher m = charsetPattern.matcher(contentType);\n        if (m.find()) {\n            String charset = m.group(1).trim();\n            charset = charset.toUpperCase(Locale.ENGLISH);\n            if (charset.isEmpty()) {\n                return null;\n            }\n            return charset;\n        }\n        return null;\n    }",
+            "ernie-3.5-128k": "Here is the complete corrected method. I've made sure to include the necessary `charsetPattern` definition and import statements, and corrected the logic where needed:\n\nimport java.util.Locale;\nimport java.util.regex.Matcher;\nimport java.util.regex.Pattern;\n\npublic class ContentTypeUtils {\n\n    // Define the regex pattern to find the charset in the content type\n    private static final Pattern charsetPattern = Pattern.compile(\"charset=([^;]+)\");\n\n    public static String getCharsetFromContentType(String contentType) {\n        if (contentType == null) return null;\n        Matcher m = charsetPattern.matcher(contentType);\n        if (m.find()) {\n            String charset = m.group(1).trim();\n            charset = charset.toUpperCase(Locale.ENGLISH);\n            return charset;\n        }\n        return null;\n    }\n}\n\nIn this corrected version, the `charsetPattern` is defined as a static final variable to match the `charset=...` part of the `contentType` string. The method then correctly processes the input, finds the charset if it exists, trims and converts it to uppercase, and returns it. If no charset is found, it returns null."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\nstatic String getCharsetFromContentType(String contentType) {\n    if (contentType == null) return null;\n    Matcher m = charsetPattern.matcher(contentType);\n    if (m.find()) {\n        String charset = m.group(1).trim();\n        charset = charset.toUpperCase(Locale.ENGLISH);\n        return charset;\n```",
+            "doubao-pro-4k": "static String getCharsetFromContentType(String contentType) {\n        if (contentType == null) return null;\n        Matcher m = charsetPattern.matcher(contentType);\n        if (m.find()) {\n            String charset = m.group(1).trim();\n            charset = charset.toUpperCase();\n            return charset;\n        }\n}",
+            "deepseek-chat": "static String getCharsetFromContentType(String contentType) {\n    if (contentType == null) return null;\n    Matcher m = charsetPattern.matcher(contentType);\n    if (m.find()) {\n        String charset = m.group(1).trim();\n        charset = charset.toUpperCase(Locale.ENGLISH);\n        return charset;\n    }\n    return null;",
+            "ernie-3.5-128k": "static String getCharsetFromContentType(String contentType) {\n        if (contentType == null) return null;\n        Matcher m = charsetPattern.matcher(contentType);\n        if (m.find()) {\n            String charset = m.group(1).trim();\n            charset = charset.toUpperCase(Locale.ENGLISH);\n            return (charset.isEmpty() ? \"UTF-8\" : charset);\n}",
+            "gpt-4o-mini": "static String getCharsetFromContentType(String contentType) {\n    if (contentType == null) return null;\n    Matcher m = charsetPattern.matcher(contentType);\n    if (m.find()) {\n        String charset = m.group(1).trim();\n        charset = charset.toUpperCase(Locale.US);\n        return charset;"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"String charset = m.group(1).trim();\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"String charset = m.group(1).replaceAll(\\\"^\\\"|\\\"$\\\", \\\"\\\").replaceAll(\\\" +\\\", \\\"\\\");\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"            charset = charset.toUpperCase(Locale.ROOT);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"String charset = m.group(1).trim();\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"charset = m.group(1)!= null? m.group(1).trim() : null; charset = charset!= null? charset.toUpperCase(Locale.ENGLISH) : null;\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return charset;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"return charset!= null &&!charset.isEmpty()? charset : null;\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return charset;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"            return charset.toUpperCase(Locale.ENGLISH);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"return charset != null ? charset : \\\"UTF-8\\\";\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"return charset;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 10,\n        \"fixed_statement\": \"return charset == null? null : charset;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"return charset;\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"return charset.isEmpty() ? \\\"UTF-8\\\" : charset;\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 9,\n        \"fixed_statement\": \"charset = charset.replaceAll(\\\"[^\\\\x00-\\\\x7F]\\\", \\\"\\\").toUpperCase(Locale.ENGLISH);\"\n    }\n]"
+        }
+    }
+]

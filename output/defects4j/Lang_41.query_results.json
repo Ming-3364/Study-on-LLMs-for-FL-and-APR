@@ -1,0 +1,174 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "12",
+            "ernie-3.5-128k": "**11**",
+            "qwen-turbo": "12",
+            "deepseek-chat": "10",
+            "gpt-4o-mini": "9"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "14",
+            "qwen-turbo": "9",
+            "ernie-3.5-128k": "**30**",
+            "deepseek-chat": "7",
+            "gpt-4o-mini": "16"
+        },
+        "prompt_fl_3": {
+            "qwen-turbo": "9",
+            "doubao-pro-4k": "14",
+            "ernie-3.5-128k": "**42**",
+            "deepseek-chat": "10",
+            "gpt-4o-mini": "15"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "String out = className.substring(lastDotIdx + 1);",
+            "ernie-3.5-128k": "String out = className.substring(lastDotIdx + 1);",
+            "deepseek-chat": "```java\nString out = className.substring(lastDotIdx + 1);\n```",
+            "gpt-4o-mini": "int innerIdx = className.indexOf(INNER_CLASS_SEPARATOR_CHAR, lastDotIdx == -1 ? 0 : lastDotIdx + 1);",
+            "doubao-pro-4k": "if (className == null) {"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "return className.substring(lastDotIdx + 1);",
+            "doubao-pro-4k": "out = out.replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);",
+            "deepseek-chat": "String out = className.substring(lastDotIdx + 1);",
+            "ernie-3.5-128k": "String out = className.substring(lastDotIdx + 1);",
+            "gpt-4o-mini": "out = className.substring(lastDotIdx + 1);"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "String out = className.substring(lastDotIdx + 1);",
+            "doubao-pro-4k": "assertEquals(\"String[]\", ClassUtils.getShortClassName(String[].class));",
+            "ernie-3.5-128k": "String out = className.substring(lastDotIdx + 1);",
+            "deepseek-chat": "String out = className.substring(lastDotIdx + 1);",
+            "gpt-4o-mini": "out = className.substring(lastDotIdx + 1);"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "Certainly! The issue on line [21] seems to be related to how the substring is being handled after extracting the class name. Specifically, the `lastDotIdx` might be `-1` if no package separator is found, which would cause an `IndexOutOfBoundsException`. To handle this correctly, we should ensure that `lastDotIdx` is checked properly before using it.\n\nHere's the corrected method:\n\n```java\npublic static String getShortClassName(String className) {\n    if (className == null) {\n        return StringUtils.EMPTY;\n    }\n    if (className.length() == 0) {\n        return StringUtils.EMPTY;\n    }\n\n    // Handle array encoding\n    // Strip Object type encoding\n\n    int lastDotIdx = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n    int innerIdx = className.indexOf(\n            INNER_CLASS_SEPARATOR_CHAR, lastDotIdx == -1 ? 0 : lastDotIdx + 1);\n    String out;\n    if (lastDotIdx == -1) {\n        out = className; // If no package separator is found, use the full class name\n    } else {\n        out = className.substring(lastDotIdx + 1);\n    }\n    if (innerIdx != -1) {\n        out = out.replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);\n    }\n    return out;\n}\n```\n\nThis ensures that if there is no package separator, the entire class name is used instead of trying to access an invalid index.",
+            "gpt-4o-mini": "public static String getShortClassName(String className) {\n    if (className == null) {\n        return StringUtils.EMPTY;\n    }\n    if (className.length() == 0) {\n        return StringUtils.EMPTY;\n    }\n\n    // Handle array encoding\n    // Strip Object type encoding\n\n    int lastDotIdx = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n    int innerIdx = className.indexOf(\n            INNER_CLASS_SEPARATOR_CHAR, lastDotIdx == -1 ? 0 : lastDotIdx + 1);\n    String out = className.substring(lastDotIdx + 1);\n\n    // Fix the bug: Check for inner class separator before replacing.\n    if (innerIdx != -1) {\n        out = out.replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);\n    }\n\n    // Handle array encoding (Fix for potential bug in handling array types)\n    if (out.contains(\"[\")) {\n        int arrayDimensionCount = 0;\n        while (out.charAt(arrayDimensionCount) == '[') {\n            arrayDimensionCount++;\n        }\n        String baseClassName = out.substring(arrayDimensionCount);\n        StringBuilder sb = new StringBuilder(baseClassName);\n        for (int i = 0; i < arrayDimensionCount; i++) {\n            sb.append(\"[]\");\n        }\n        out = sb.toString();\n    }\n\n    return out;\n}",
+            "deepseek-chat": "public static String getShortClassName(String className) {\n    if (className == null) {\n        return StringUtils.EMPTY;\n    }\n    if (className.length() == 0) {\n        return StringUtils.EMPTY;\n    }\n\n    // Handle array encoding\n    // Strip Object type encoding\n\n    int lastDotIdx = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n    int innerIdx = className.indexOf(\n            INNER_CLASS_SEPARATOR_CHAR, lastDotIdx == -1 ? 0 : lastDotIdx + 1);\n    String out = className.substring(lastDotIdx + 1);\n    if (innerIdx != -1) {\n        out = out.replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);\n    }\n    return out;\n}\n\nThe bug in line [21] is that the `innerIdx` is not being used correctly to handle inner class names. The corrected method should check if `innerIdx` is greater than `lastDotIdx` before replacing the inner class separator. Here is the corrected method:\n\npublic static String getShortClassName(String className) {\n    if (className == null) {\n        return StringUtils.EMPTY;\n    }\n    if (className.length() == 0) {\n        return StringUtils.EMPTY;\n    }\n\n    // Handle array encoding\n    // Strip Object type encoding\n\n    int lastDotIdx = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n    int innerIdx = className.indexOf(\n            INNER_CLASS_SEPARATOR_CHAR, lastDotIdx == -1 ? 0 : lastDotIdx + 1);\n    String out = className.substring(lastDotIdx + 1);\n    if (innerIdx != -1 && innerIdx > lastDotIdx) {\n        out = out.replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);\n    }\n    return out;\n}",
+            "doubao-pro-4k": "public static String getShortClassName(String className) {\n        if (className == null) {\n            return StringUtils.EMPTY;\n        }\n        if (className.length() == 0) {\n            return StringUtils.EMPTY;\n        }\n\n\n        // Handle array encoding\n            // Strip Object type encoding\n\n\n        int lastDotIdx = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n        int innerIdx = className.indexOf(\n                INNER_CLASS_SEPARATOR_CHAR, lastDotIdx == -1? 0 : lastDotIdx + 1);\n        String out;\n        if (lastDotIdx!= -1) {\n            out = className.substring(lastDotIdx + 1);\n        } else {\n            out = className;\n        }\n        if (innerIdx!= -1) {\n            out = out.replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);\n        }\n        return out;\n    }",
+            "ernie-3.5-128k": "public static String getShortClassName(String className) {\n        if (className == null) {\n            return StringUtils.EMPTY;\n        }\n        if (className.length() == 0) {\n            return StringUtils.EMPTY;\n        }\n\n        // Constants for separators\n        final char PACKAGE_SEPARATOR_CHAR = '.';\n        final char INNER_CLASS_SEPARATOR_CHAR = '$';\n\n        // Handle array encoding\n        // Note: The original code does not handle array encoding, but this comment might suggest a need.\n        // For simplicity, we'll leave it as is unless specified otherwise.\n        // Strip Object type encoding (e.g., \"[L\" for arrays of objects, \"[I\" for int arrays, etc.)\n        // Note: This is also not handled in the original code.\n\n        int lastDotIdx = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n        int innerIdx = className.indexOf(\n                INNER_CLASS_SEPARATOR_CHAR, lastDotIdx == -1 ? 0 : lastDotIdx + 1);\n        String out = className.substring(lastDotIdx + 1);\n        if (innerIdx != -1) {\n            out = out.substring(0, innerIdx) + PACKAGE_SEPARATOR_CHAR + out.substring(innerIdx + 1).replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);\n        } else {\n            // If there is no inner class separator, but there might be a trailing '$' (e.g., OuterClass$), we should remove it\n            out = out.replaceFirst(\"\\\\$\" + PACKAGE_SEPARATOR_CHAR + \"*\", \"\");\n        }\n        // Remove trailing PACKAGE_SEPARATOR_CHAR if it exists (e.g., for top-level classes without inner classes)\n        if (out.endsWith(String.valueOf(PACKAGE_SEPARATOR_CHAR))) {\n            out = out.substring(0, out.length() - 1);\n        }\n        return out;\n    }"
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\npublic static String getShortClassName(String className) {\n    if (className == null) {\n        return StringUtils.EMPTY;\n    }\n    if (className.length() == 0) {\n        return StringUtils.EMPTY;\n    }\n\n    // Handle array encoding\n    // Strip Object type encoding\n\n    int lastDotIdx = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n    int innerIdx = className.indexOf(\n            INNER_CLASS_SEPARATOR_CHAR, lastDotIdx == -1 ? 0 : lastDotIdx + 1);\n    String out = className.substring(lastDotIdx + 1);\n    if (innerIdx != -1) {\n        out = out.replace(INNER_CLASS_SEPARATOR_CHAR, INNER_CLASS_SEPARATOR);\n    }\n    return out;\n}\n```\n\nIn this corrected version, I replaced `PACKAGE_SEPARATOR_CHAR` with `INNER_CLASS_SEPARATOR` in the `replace` method call to ensure that the correct character is used for replacing the inner class separator. This should resolve the issue.",
+            "deepseek-chat": "public static String getShortClassName(String className) {\n    if (className == null) {\n        return StringUtils.EMPTY;\n    }\n    if (className.length() == 0) {\n        return StringUtils.EMPTY;\n    }\n\n    // Handle array encoding\n    // Strip Object type encoding\n\n    int lastDotIdx = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n    int innerIdx = className.indexOf(\n            INNER_CLASS_SEPARATOR_CHAR, lastDotIdx == -1 ? 0 : lastDotIdx + 1);\n    String out = className.substring(lastDotIdx + 1);\n    if (innerIdx != -1) {\n        out = out.replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);\n    }\n\n    // Handle array type names\n    if (out.endsWith(\"[]\")) {\n        out = out.substring(0, out.length() - 2);\n    }\n\n    return out;\n}",
+            "gpt-4o-mini": "public static String getShortClassName(String className) {\n    if (className == null) {\n        return StringUtils.EMPTY;\n    }\n    if (className.length() == 0) {\n        return StringUtils.EMPTY;\n    }\n\n    // Handle array encoding\n    // Strip Object type encoding\n    if (className.contains(\"[\") && className.contains(\"]\")) {\n        int arrayDim = 0;\n        while (className.charAt(arrayDim) == '[') {\n            arrayDim++;\n        }\n        className = className.substring(arrayDim);\n        if (className.equals(\"L\")) {\n            return StringUtils.EMPTY;\n        }\n    }\n\n    int lastDotIdx = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n    int innerIdx = className.indexOf(\n            INNER_CLASS_SEPARATOR_CHAR, lastDotIdx == -1 ? 0 : lastDotIdx + 1);\n    String out = className.substring(lastDotIdx + 1);\n    if (innerIdx != -1) {\n        out = out.replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);\n    }\n    \n    // If it's an array class name, add the array dimensions back\n    if (className.contains(\"[\")) {\n        StringBuilder arrayPrefix = new StringBuilder();\n        while (className.startsWith(\"[\")) {\n            arrayPrefix.append(\"[]\");\n            className = className.substring(2); // Remove the array part\n        }\n        out = arrayPrefix + out;\n    }\n\n    return out;\n}",
+            "doubao-pro-4k": "public static String getShortClassName(String className) {\n        if (className == null) {\n            return StringUtils.EMPTY;\n        }\n        if (className.length() == 0) {\n            return StringUtils.EMPTY;\n        }\n\n\n        // Handle array encoding\n            // Strip Object type encoding\n\n\n        int lastDotIdx = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n        int innerIdx = className.indexOf(\n                INNER_CLASS_SEPARATOR_CHAR, lastDotIdx == -1? 0 : lastDotIdx + 1);\n        String out = className.substring(lastDotIdx + 1);\n        if (innerIdx!= -1) {\n            out = out.replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);\n        }\n        return out;\n    }",
+            "ernie-3.5-128k": "Sure, here is the corrected method. I've added constants for `PACKAGE_SEPARATOR_CHAR` and `INNER_CLASS_SEPARATOR_CHAR` and handled array encoding and stripping object type encoding comments as placeholders since the actual implementation details for those were not provided.\n\npublic static String getShortClassName(String className) {\n    if (className == null) {\n        return StringUtils.EMPTY;\n    }\n    if (className.length() == 0) {\n        return StringUtils.EMPTY;\n    }\n\n    final char PACKAGE_SEPARATOR_CHAR = '.';\n    final char INNER_CLASS_SEPARATOR_CHAR = '$';\n\n    // Handle array encoding (placeholder for actual implementation)\n    // For example, remove '[]' from the className if present\n    if (className.endsWith(\"[]\")) {\n        className = className.substring(0, className.length() - 2);\n    }\n\n    // Strip Object type encoding (placeholder for actual implementation)\n    // For example, remove 'L' from the start and ';' from the end if present\n    if (className.startsWith(\"L\") && className.endsWith(\";\")) {\n        className = className.substring(1, className.length() - 1);\n    }\n\n    int lastDotIdx = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n    int innerIdx = className.indexOf(\n            INNER_CLASS_SEPARATOR_CHAR, lastDotIdx == -1 ? 0 : lastDotIdx + 1);\n    String out = className.substring(lastDotIdx + 1);\n    if (innerIdx != -1) {\n        out = out.replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);\n    }\n    return out;\n}"
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\npublic static String getShortClassName(String className) {\n    if (className == null) {\n        return StringUtils.EMPTY;\n    }\n    if (className.length() == 0) {\n        return StringUtils.EMPTY;\n    }\n\n    // Handle array encoding\n    // Strip Object type encoding\n\n    int lastDotIdx = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n    int innerIdx = className.indexOf(\n            INNER_CLASS_SEPARATOR_CHAR, lastDotIdx == -1 ? 0 : lastDotIdx + 1);\n    String out = className.substring(lastDotIdx + 1);\n    if (innerIdx != -1) {\n        out = out.replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);\n    }\n    return out.substring(0, Math.min(out.length(), out.lastIndexOf(PACKAGE_SEPARATOR_CHAR)));\n}\n```",
+            "deepseek-chat": "```java\npublic static String getShortClassName(String className) {\n    if (className == null) {\n        return StringUtils.EMPTY;\n    }\n    if (className.length() == 0) {\n        return StringUtils.EMPTY;\n    }\n\n    // Handle array encoding\n    // Strip Object type encoding\n\n    int lastDotIdx = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n    int innerIdx = className.indexOf(\n            INNER_CLASS_SEPARATOR_CHAR, lastDotIdx == -1 ? 0 : lastDotIdx + 1);\n    String out = className.substring(lastDotIdx + 1);\n    if (innerIdx != -1) {\n        out = out.substring(0, innerIdx - (lastDotIdx + 1)) + PACKAGE_SEPARATOR_CHAR + out.substring(innerIdx - (lastDotIdx + 1) + 1);\n    }\n    return out;\n```",
+            "gpt-4o-mini": "public static String getShortClassName(String className) {\n        if (className == null) {\n            return StringUtils.EMPTY;\n        }\n        if (className.length() == 0) {\n            return StringUtils.EMPTY;\n        }\n\n\n        // Handle array encoding\n            // Strip Object type encoding\n\n\n        int lastDotIdx = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n        int innerIdx = className.indexOf(\n                INNER_CLASS_SEPARATOR_CHAR, lastDotIdx == -1 ? 0 : lastDotIdx + 1);\n        String out = className.substring(lastDotIdx + 1);\n        if (innerIdx != -1) {\n            out = out.replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);\n        }\n        return out;",
+            "ernie-3.5-128k": "public static String getShortClassName(String className) {\n        if (className == null) {\n            return StringUtils.EMPTY;\n        }\n        if (className.length() == 0) {\n            return StringUtils.EMPTY;\n        }\n\n\n        // Handle array encoding\n            // Strip Object type encoding\n\n\n        int lastDotIdx = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n        int innerIdx = className.indexOf(\n                INNER_CLASS_SEPARATOR_CHAR, lastDotIdx == -1 ? 0 : lastDotIdx + 1);\n        if (lastDotIdx != -1) {\n            String out = className.substring(lastDotIdx + 1);\n            if (innerIdx != -1) {\n                out = out.replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);\n            }\n            return out;\n        }\n        return className;",
+            "doubao-pro-4k": "public static String getShortClassName(String className) {\n    if (className == null) {\n        return StringUtils.EMPTY;\n    }\n    if (className.length() == 0) {\n        return StringUtils.EMPTY;\n    }\n\n    // Handle array encoding\n    // Strip Object type encoding\n\n    int lastDotIdx = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n    int innerIdx = className.indexOf(\n            INNER_CLASS_SEPARATOR_CHAR, lastDotIdx == -1? 0 : lastDotIdx + 1);\n    String out = className.substring(lastDotIdx + 1);\n    if (innerIdx!= -1) {\n        out = out.replaceAll(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);\n    }\n    return out;\n}"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 21,\n        \"fixed_statement\": \"String out = className.substring(lastDotIdx + 1).replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 21,\n        \"fixed_statement\": \"out = className.substring(lastDotIdx + 1, innerIdx == -1 ? className.length() : innerIdx);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 21,\n        \"fixed_statement\": \"String out = (lastDotIdx == -1) ? className : className.substring(lastDotIdx + 1);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 21,\n        \"fixed_statement\": \"out = className.substring(lastDotIdx + 1, innerIdx == -1? className.length() : innerIdx);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 21,\n        \"fixed_statement\": \"out = out.replace(INNER_CLASS_SEPARATOR_CHAR, '$');\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 22,\n        \"fixed_statement\": \"return out.substring(out.lastIndexOf(PACKAGE_SEPARATOR_CHAR) + 1);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 16,\n        \"fixed_statement\": \"return out.trim();\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 15,\n        \"fixed_statement\": \"return out == null ? StringUtils.EMPTY : out;\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 27,\n        \"fixed_statement\": \"if (out == null || out.isEmpty()) { return StringUtils.EMPTY; }\"\n    },\n    {\n        \"line_number\": 28,\n        \"fixed_statement\": \"return out;\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"final char PACKAGE_SEPARATOR_CHAR = '.'; // Assuming '.' is used as the package separator\"\n    },\n    {\n        \"line_number\": 8,\n        \"fixed_statement\": \"final char INNER_CLASS_SEPARATOR_CHAR = '$'; // Assuming '$' is used as the inner class separator\"\n    },\n    {\n        \"line_number\": 15,\n        \"fixed_statement\": \"String out = (lastDotIdx == -1) ? className.replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR) : className.substring(lastDotIdx + 1).replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 21,\n        \"fixed_statement\": \"return out.substring(out.lastIndexOf(PACKAGE_SEPARATOR_CHAR) + 1);\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 17,\n        \"fixed_statement\": \"out = out.replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 14,\n        \"fixed_statement\": \"return out.replaceAll(INNER_CLASS_SEPARATOR_CHAR + \\\"?\\\" + PACKAGE_SEPARATOR_CHAR + \\\"?\\\", PACKAGE_SEPARATOR_CHAR);\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 21,\n        \"fixed_statement\": \"out = out.replace(INNER_CLASS_SEPARATOR_CHAR, '$');\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 23,\n        \"fixed_statement\": \"out = out.replace(INNER_CLASS_SEPARATOR_CHAR, '.');\"\n    }\n]"
+        }
+    },
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "5",
+            "qwen-turbo": "3",
+            "ernie-3.5-128k": "**6**",
+            "deepseek-chat": "5",
+            "gpt-4o-mini": "6"
+        },
+        "prompt_fl_2": {
+            "qwen-turbo": "146",
+            "doubao-pro-4k": "10",
+            "ernie-3.5-128k": "**10**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "25"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "13",
+            "qwen-turbo": "146",
+            "ernie-3.5-128k": "**3**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "13"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "return StringUtils.EMPTY;",
+            "doubao-pro-4k": "if (className == null) {",
+            "ernie-3.5-128k": "int i = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);",
+            "deepseek-chat": "```java\nint i = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n```",
+            "gpt-4o-mini": "if (className == null) {"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "return className.substring(0, i);",
+            "deepseek-chat": "return className.substring(0, i);",
+            "ernie-3.5-128k": "int i = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);",
+            "doubao-pro-4k": "int i = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);",
+            "gpt-4o-mini": "int i = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "assertEquals(\"String[]\", ClassUtils.getShortClassName(String[].class));",
+            "deepseek-chat": "int i = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);",
+            "doubao-pro-4k": "assertEquals(\"String[]\", ClassUtils.getShortClassName(String[].class));",
+            "gpt-4o-mini": "return StringUtils.EMPTY;",
+            "ernie-3.5-128k": "return className.substring(0, i);"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "```java\npublic static String getPackageName(String className) {\n    if (className == null) {\n        return \"\";\n    }\n\n    // Strip array encoding\n    className = className.replaceAll(\"\\\\[\\\\]\", \"\");\n\n    // Strip Object type encoding\n    className = className.replace(\"L\", \"\").replace(\";\", \"\");\n\n    int i = className.lastIndexOf('.');\n    if (i == -1) {\n        return \"\";\n    }\n    return className.substring(0, i);\n}\n```",
+            "deepseek-chat": "public static String getPackageName(String className) {\n    if (className == null || className.isEmpty()) {\n        return StringUtils.EMPTY;\n    }\n\n    // Strip array encoding\n    className = className.replace(\"[]\", \"\");\n    // Strip Object type encoding\n    className = className.replace(\"L\", \"\");\n\n    int i = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n    if (i == -1) {\n        return StringUtils.EMPTY;\n    }\n    return className.substring(0, i);\n}",
+            "doubao-pro-4k": "public static String getPackageName(String className) {\n        if (className == null) {\n            return StringUtils.EMPTY;\n        }\n\n        // Strip array encoding\n        // Strip Object type encoding\n\n        int i = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n        if (i == -1) {\n            return StringUtils.EMPTY;\n        }\n        return className.substring(0, i);\n    }",
+            "gpt-4o-mini": "public static String getPackageName(String className) {\n    if (className == null || className.isEmpty()) {\n        return StringUtils.EMPTY;\n    }\n\n    // Strip array encoding\n    while (className.endsWith(\"[]\")) {\n        className = className.substring(0, className.length() - 2);\n    }\n\n    // Strip Object type encoding\n    if (className.startsWith(\"java.lang.\")) {\n        className = className.substring(\"java.lang.\".length());\n    }\n\n    int i = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n    if (i == -1) {\n        return StringUtils.EMPTY;\n    }\n    return className.substring(0, i);\n}",
+            "ernie-3.5-128k": "public static String getPackageName(String className) {\n        if (className == null) {\n            return \"\";  // Assuming StringUtils.EMPTY is meant to be an empty string, using \"\" directly\n        }\n\n        // Strip array encoding\n        // For example, replace \"[Ljava/lang/String;\" with \"Ljava/lang/String;\"\n        className = className.replaceFirst(\"^\\\\[\", \"\");\n\n        // Strip Object type encoding\n        // For example, replace \"L\" at the start and \";\" at the end with \"\"\n        if (className.startsWith(\"L\") && className.endsWith(\";\")) {\n            className = className.substring(1, className.length() - 1);\n        }\n\n        int i = className.lastIndexOf('.');\n        if (i == -1) {\n            return \"\";\n        }\n        return className.substring(0, i);\n    }\n\nNote: I have assumed `PACKAGE_SEPARATOR_CHAR` should be '.' (dot) since Java package names are separated by dots. I have also assumed `StringUtils.EMPTY` is intended to be an empty string, and replaced it with `\"\"`. Additionally, I've added code to strip array and object type encodings from the class name, based on the comments in the original code."
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "Certainly, here is the corrected method:\n\n```java\npublic static String getPackageName(String className) {\n    if (className == null) {\n        return \"\";\n    }\n\n    // Strip array encoding\n    // Strip Object type encoding\n\n    int i = className.lastIndexOf('.');\n    if (i == -1) {\n        return \"\";\n    }\n    return className.substring(0, i);\n}\n```\n\nIn this correction, I replaced `StringUtils.EMPTY` with an empty string `\"\"` and changed the PACKAGE_SEPARATOR_CHAR to a period `'.'` assuming that the package separator is a dot.",
+            "deepseek-chat": "public static String getPackageName(String className) {\n    if (className == null || className.isEmpty()) {\n        return StringUtils.EMPTY;\n    }\n\n    // Strip array encoding\n    // Strip Object type encoding\n\n    int i = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n    if (i == -1) {\n        return StringUtils.EMPTY;\n    }\n    return className.substring(0, i);\n}",
+            "gpt-4o-mini": "public static String getPackageName(String className) {\n    if (className == null || className.isEmpty()) {\n        return StringUtils.EMPTY;\n    }\n\n    // Strip array encoding\n    // Strip Object type encoding\n\n    int i = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n    if (i == -1) {\n        return StringUtils.EMPTY;\n    }\n    return className.substring(0, i);\n}",
+            "doubao-pro-4k": "public static String getPackageName(String className) {\n        if (className == null || className.isEmpty()) {\n            return StringUtils.EMPTY;\n        }\n\n        // Strip array encoding\n        // Strip Object type encoding\n\n        int i = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);\n        if (i == -1) {\n            return StringUtils.EMPTY;\n        }\n        return className.substring(0, i);\n    }",
+            "ernie-3.5-128k": "public static String getPackageName(String className) {\n        if (className == null) {\n            return \"\"; // Use an empty string instead of StringUtils.EMPTY to avoid dependency on StringUtils\n        }\n\n        // Strip array encoding\n        // Note: The following logic is not implemented in the provided code snippet,\n        // but typically you would remove '[]' characters from the end of the className.\n        // Example: \"java.lang.String[]\" -> \"java.lang.String\"\n        // className = className.replaceAll(\"\\\\[\\\\]$\", \"\");\n\n        // Strip Object type encoding\n        // Note: The following logic is not implemented in the provided code snippet,\n        // but typically you would handle 'L' and ';' characters for object types.\n        // Example: \"Ljava/lang/String;\" -> \"java/lang/String\"\n        // if (className.startsWith(\"L\") && className.endsWith(\";\")) {\n        //     className = className.substring(1, className.length() - 1);\n        // }\n\n        int i = className.lastIndexOf('.'); // PACKAGE_SEPARATOR_CHAR should be '.' for Java\n        if (i == -1) {\n            return \"\";\n        }\n        return className.substring(0, i);\n    }"
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\npublic static String getPackageName(String className) {\n    if (className == null) {\n        return null;\n```",
+            "ernie-3.5-128k": "public static String getPackageName(String className) {\n        if (className == null) {\n            return null;",
+            "doubao-pro-4k": "public static String getPackageName(String className) {\n    if (className == null) {\n        throw new IllegalArgumentException(\"className cannot be null\");\n    }\n}",
+            "deepseek-chat": "public static String getPackageName(String className) {\n    if (className == null) {\n        return null;\n    }",
+            "gpt-4o-mini": "public static String getPackageName(String className) {\n        if (className == null || className.isEmpty()) {"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (className == null || className.isEmpty()) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (className == null || className.isEmpty()) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (className == null || className.isEmpty()) {\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (className == null || className.isEmpty()) {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (className.isEmpty()) {\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (className == null || className.isEmpty()) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"        if (StringUtils.isEmpty(className)) {\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"if (className == null || className.isEmpty()) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"if (className == null || className.isEmpty()) {\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (className == null || className.isEmpty()) {\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (className == null || className.isEmpty()) {\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"if (className == null) {\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (className == null || className.isEmpty()) {\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (className == null) {\"\n    },\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"    return null;\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"if (className == null || className.isEmpty()) {\"\n    }\n]"
+        }
+    }
+]

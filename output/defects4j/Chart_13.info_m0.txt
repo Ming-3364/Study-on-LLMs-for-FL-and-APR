@@ -1,0 +1,161 @@
+
+================== buggy_file ==================
+source/org/jfree/chart/block/BorderArrangement.java
+================== buggy_method ==================
+{'method_name': 'arrangeFF', 'method_body': 'protected Size2D arrangeFF(BlockContainer container, Graphics2D g2,\n                               RectangleConstraint constraint) {\n        double[] w = new double[5];\n        double[] h = new double[5];\n        w[0] = constraint.getWidth();\n        if (this.topBlock != null) {\n            RectangleConstraint c1 = new RectangleConstraint(w[0], null,\n                    LengthConstraintType.FIXED, 0.0,\n                    new Range(0.0, constraint.getHeight()),\n                    LengthConstraintType.RANGE);\n            Size2D size = this.topBlock.arrange(g2, c1);\n            h[0] = size.height;\n        }\n        w[1] = w[0];\n        if (this.bottomBlock != null) {\n            RectangleConstraint c2 = new RectangleConstraint(w[0], null,\n                    LengthConstraintType.FIXED, 0.0, new Range(0.0,\n                    constraint.getHeight() - h[0]), LengthConstraintType.RANGE);\n            Size2D size = this.bottomBlock.arrange(g2, c2);\n            h[1] = size.height;\n        }\n        h[2] = constraint.getHeight() - h[1] - h[0];\n        if (this.leftBlock != null) {\n            RectangleConstraint c3 = new RectangleConstraint(0.0,\n                    new Range(0.0, constraint.getWidth()),\n                    LengthConstraintType.RANGE, h[2], null,\n                    LengthConstraintType.FIXED);\n            Size2D size = this.leftBlock.arrange(g2, c3);\n            w[2] = size.width;\n        }\n        h[3] = h[2];\n        if (this.rightBlock != null) {\n            RectangleConstraint c4 = new RectangleConstraint(0.0,\n                    new Range(0.0, constraint.getWidth() - w[2]),\n                    LengthConstraintType.RANGE, h[2], null,\n                    LengthConstraintType.FIXED);\n            Size2D size = this.rightBlock.arrange(g2, c4);\n            w[3] = size.width;\n        }\n        h[4] = h[2];\n        w[4] = constraint.getWidth() - w[3] - w[2];\n        RectangleConstraint c5 = new RectangleConstraint(w[4], h[4]);\n        if (this.centerBlock != null) {\n            this.centerBlock.arrange(g2, c5);\n        }\n\n        if (this.topBlock != null) {\n            this.topBlock.setBounds(new Rectangle2D.Double(0.0, 0.0, w[0],\n                    h[0]));\n        }\n        if (this.bottomBlock != null) {\n            this.bottomBlock.setBounds(new Rectangle2D.Double(0.0, h[0] + h[2],\n                    w[1], h[1]));\n        }\n        if (this.leftBlock != null) {\n            this.leftBlock.setBounds(new Rectangle2D.Double(0.0, h[0], w[2],\n                    h[2]));\n        }\n        if (this.rightBlock != null) {\n            this.rightBlock.setBounds(new Rectangle2D.Double(w[2] + w[4], h[0],\n                    w[3], h[3]));\n        }\n        if (this.centerBlock != null) {\n            this.centerBlock.setBounds(new Rectangle2D.Double(w[2], h[0], w[4],\n                    h[4]));\n        }\n        return new Size2D(constraint.getWidth(), constraint.getHeight());\n    }', 'start_line': 422, 'end_line': 489, 'buggy_lines': [455]}
+================== buggy_method_src ==================
+protected Size2D arrangeFF(BlockContainer container, Graphics2D g2,
+                               RectangleConstraint constraint) {
+        double[] w = new double[5];
+        double[] h = new double[5];
+        w[0] = constraint.getWidth();
+        if (this.topBlock != null) {
+            RectangleConstraint c1 = new RectangleConstraint(w[0], null,
+                    LengthConstraintType.FIXED, 0.0,
+                    new Range(0.0, constraint.getHeight()),
+                    LengthConstraintType.RANGE);
+            Size2D size = this.topBlock.arrange(g2, c1);
+            h[0] = size.height;
+        }
+        w[1] = w[0];
+        if (this.bottomBlock != null) {
+            RectangleConstraint c2 = new RectangleConstraint(w[0], null,
+                    LengthConstraintType.FIXED, 0.0, new Range(0.0,
+                    constraint.getHeight() - h[0]), LengthConstraintType.RANGE);
+            Size2D size = this.bottomBlock.arrange(g2, c2);
+            h[1] = size.height;
+        }
+        h[2] = constraint.getHeight() - h[1] - h[0];
+        if (this.leftBlock != null) {
+            RectangleConstraint c3 = new RectangleConstraint(0.0,
+                    new Range(0.0, constraint.getWidth()),
+                    LengthConstraintType.RANGE, h[2], null,
+                    LengthConstraintType.FIXED);
+            Size2D size = this.leftBlock.arrange(g2, c3);
+            w[2] = size.width;
+        }
+        h[3] = h[2];
+        if (this.rightBlock != null) {
+            RectangleConstraint c4 = new RectangleConstraint(0.0,
+                    new Range(0.0, constraint.getWidth() - w[2]),
+                    LengthConstraintType.RANGE, h[2], null,
+                    LengthConstraintType.FIXED);
+            Size2D size = this.rightBlock.arrange(g2, c4);
+            w[3] = size.width;
+        }
+        h[4] = h[2];
+        w[4] = constraint.getWidth() - w[3] - w[2];
+        RectangleConstraint c5 = new RectangleConstraint(w[4], h[4]);
+        if (this.centerBlock != null) {
+            this.centerBlock.arrange(g2, c5);
+        }
+
+        if (this.topBlock != null) {
+            this.topBlock.setBounds(new Rectangle2D.Double(0.0, 0.0, w[0],
+                    h[0]));
+        }
+        if (this.bottomBlock != null) {
+            this.bottomBlock.setBounds(new Rectangle2D.Double(0.0, h[0] + h[2],
+                    w[1], h[1]));
+        }
+        if (this.leftBlock != null) {
+            this.leftBlock.setBounds(new Rectangle2D.Double(0.0, h[0], w[2],
+                    h[2]));
+        }
+        if (this.rightBlock != null) {
+            this.rightBlock.setBounds(new Rectangle2D.Double(w[2] + w[4], h[0],
+                    w[3], h[3]));
+        }
+        if (this.centerBlock != null) {
+            this.centerBlock.setBounds(new Rectangle2D.Double(w[2], h[0], w[4],
+                    h[4]));
+        }
+        return new Size2D(constraint.getWidth(), constraint.getHeight());
+    }
+================== test_stack ==================
+org.jfree.chart.block.junit.BorderArrangementTests::testSizingWithWidthConstraint
+java.lang.IllegalArgumentException: Range(double, double): require lower (0.0) <= upper (-2.3000000000000007).
+	at org.jfree.data.Range.<init>(Range.java:87)
+	at org.jfree.chart.block.BorderArrangement.arrangeFF(BorderArrangement.java:454)
+	at org.jfree.chart.block.BorderArrangement.arrange(BorderArrangement.java:152)
+	at org.jfree.chart.block.BorderArrangement.arrangeFN(BorderArrangement.java:323)
+	at org.jfree.chart.block.BorderArrangement.arrange(BorderArrangement.java:149)
+	at org.jfree.chart.block.BlockContainer.arrange(BlockContainer.java:182)
+	at org.jfree.chart.block.junit.BorderArrangementTests.testSizingWithWidthConstraint(BorderArrangementTests.java:560)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+size = container.arrange(g2, constraint);
+
+================== buggy_lines_in_method ==================
+[34]
+================== buggy_statements ==================
+['                    new Range(0.0, constraint.getWidth() - w[2]),']
+================== buggy_method_src_endswith_buggy_statement ==================
+protected Size2D arrangeFF(BlockContainer container, Graphics2D g2,
+                               RectangleConstraint constraint) {
+        double[] w = new double[5];
+        double[] h = new double[5];
+        w[0] = constraint.getWidth();
+        if (this.topBlock != null) {
+            RectangleConstraint c1 = new RectangleConstraint(w[0], null,
+                    LengthConstraintType.FIXED, 0.0,
+                    new Range(0.0, constraint.getHeight()),
+                    LengthConstraintType.RANGE);
+            Size2D size = this.topBlock.arrange(g2, c1);
+            h[0] = size.height;
+        }
+        w[1] = w[0];
+        if (this.bottomBlock != null) {
+            RectangleConstraint c2 = new RectangleConstraint(w[0], null,
+                    LengthConstraintType.FIXED, 0.0, new Range(0.0,
+                    constraint.getHeight() - h[0]), LengthConstraintType.RANGE);
+            Size2D size = this.bottomBlock.arrange(g2, c2);
+            h[1] = size.height;
+        }
+        h[2] = constraint.getHeight() - h[1] - h[0];
+        if (this.leftBlock != null) {
+            RectangleConstraint c3 = new RectangleConstraint(0.0,
+                    new Range(0.0, constraint.getWidth()),
+                    LengthConstraintType.RANGE, h[2], null,
+                    LengthConstraintType.FIXED);
+            Size2D size = this.leftBlock.arrange(g2, c3);
+            w[2] = size.width;
+        }
+        h[3] = h[2];
+        if (this.rightBlock != null) {
+            RectangleConstraint c4 = new RectangleConstraint(0.0,
+                    new Range(0.0, constraint.getWidth() - w[2]),

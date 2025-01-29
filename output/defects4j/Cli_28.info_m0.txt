@@ -1,0 +1,141 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/cli/Parser.java
+================== buggy_method ==================
+{'method_name': 'processProperties', 'method_body': 'protected void processProperties(Properties properties)\n    {\n        if (properties == null)\n        {\n            return;\n        }\n\n        for (Enumeration e = properties.propertyNames(); e.hasMoreElements();)\n        {\n            String option = e.nextElement().toString();\n\n            if (!cmd.hasOption(option))\n            {\n                Option opt = getOptions().getOption(option);\n\n                // get the value from the properties instance\n                String value = properties.getProperty(option);\n\n                if (opt.hasArg())\n                {\n                    if (opt.getValues() == null || opt.getValues().length == 0)\n                    {\n                        try\n                        {\n                            opt.addValueForProcessing(value);\n                        }\n                        catch (RuntimeException exp)\n                        {\n                            // if we cannot add the value don\'t worry about it\n                        }\n                    }\n                }\n                else if (!("yes".equalsIgnoreCase(value)\n                        || "true".equalsIgnoreCase(value)\n                        || "1".equalsIgnoreCase(value)))\n                {\n                    // if the value is not yes, true or 1 then don\'t add the\n                    // option to the CommandLine\n                    break;\n                }\n\n                cmd.addOption(opt);\n            }\n        }\n    }', 'start_line': 252, 'end_line': 296, 'buggy_lines': [290]}
+================== buggy_method_src ==================
+protected void processProperties(Properties properties)
+    {
+        if (properties == null)
+        {
+            return;
+        }
+
+        for (Enumeration e = properties.propertyNames(); e.hasMoreElements();)
+        {
+            String option = e.nextElement().toString();
+
+            if (!cmd.hasOption(option))
+            {
+                Option opt = getOptions().getOption(option);
+
+                // get the value from the properties instance
+                String value = properties.getProperty(option);
+
+                if (opt.hasArg())
+                {
+                    if (opt.getValues() == null || opt.getValues().length == 0)
+                    {
+                        try
+                        {
+                            opt.addValueForProcessing(value);
+                        }
+                        catch (RuntimeException exp)
+                        {
+                            // if we cannot add the value don't worry about it
+                        }
+                    }
+                }
+                else if (!("yes".equalsIgnoreCase(value)
+                        || "true".equalsIgnoreCase(value)
+                        || "1".equalsIgnoreCase(value)))
+                {
+                    // if the value is not yes, true or 1 then don't add the
+                    // option to the CommandLine
+                    break;
+                }
+
+                cmd.addOption(opt);
+            }
+        }
+    }
+================== test_stack ==================
+org.apache.commons.cli.ValueTest::testPropertyOptionFlags
+junit.framework.AssertionFailedError
+	at junit.framework.Assert.fail(Assert.java:55)
+	at junit.framework.Assert.assertTrue(Assert.java:22)
+	at junit.framework.Assert.assertTrue(Assert.java:31)
+	at junit.framework.TestCase.assertTrue(TestCase.java:201)
+	at org.apache.commons.cli.ValueTest.testPropertyOptionFlags(ValueTest.java:215)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertTrue( cmd.hasOption("e") ); // this option accepts as argument
+
+================== buggy_lines_in_method ==================
+[39]
+================== buggy_statements ==================
+['                    break;']
+================== buggy_method_src_endswith_buggy_statement ==================
+protected void processProperties(Properties properties)
+    {
+        if (properties == null)
+        {
+            return;
+        }
+
+        for (Enumeration e = properties.propertyNames(); e.hasMoreElements();)
+        {
+            String option = e.nextElement().toString();
+
+            if (!cmd.hasOption(option))
+            {
+                Option opt = getOptions().getOption(option);
+
+                // get the value from the properties instance
+                String value = properties.getProperty(option);
+
+                if (opt.hasArg())
+                {
+                    if (opt.getValues() == null || opt.getValues().length == 0)
+                    {
+                        try
+                        {
+                            opt.addValueForProcessing(value);
+                        }
+                        catch (RuntimeException exp)
+                        {
+                            // if we cannot add the value don't worry about it
+                        }
+                    }
+                }
+                else if (!("yes".equalsIgnoreCase(value)
+                        || "true".equalsIgnoreCase(value)
+                        || "1".equalsIgnoreCase(value)))
+                {
+                    // if the value is not yes, true or 1 then don't add the
+                    // option to the CommandLine
+                    break;

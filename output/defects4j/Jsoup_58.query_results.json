@@ -1,0 +1,174 @@
+[
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "3",
+            "qwen-turbo": "2",
+            "ernie-3.5-128k": "**5**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "3"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "160",
+            "deepseek-chat": "160",
+            "ernie-3.5-128k": "**1**",
+            "gpt-4o-mini": "160"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "1",
+            "qwen-turbo": "160",
+            "deepseek-chat": "1",
+            "ernie-3.5-128k": "**160**",
+            "gpt-4o-mini": "160"
+        },
+        "prompt_fl_4": {
+            "qwen-turbo": "new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml, \"\"))",
+            "doubao-pro-4k": "new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml, \"\"));",
+            "ernie-3.5-128k": "return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml, \"\"));",
+            "deepseek-chat": "return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml, \"\"));",
+            "gpt-4o-mini": "return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml, \"\"));"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "assertFalse(Cleaner.isValid(\"<script>alert('XSS')</script>\", Whitelist.simpleText()), \"Script tag should not be allowed\");",
+            "doubao-pro-4k": "new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml, \"\"));",
+            "deepseek-chat": "return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml, \"\"));",
+            "ernie-3.5-128k": "public static boolean isValid(String bodyHtml, Whitelist whitelist) {\n    return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml, \"\"));\n}",
+            "gpt-4o-mini": "return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml, \"\"));"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "assertFalse(Jsoup.isValid(nok4, Whitelist.basic()));",
+            "doubao-pro-4k": "assertFalse(Jsoup.isValid(nok4, Whitelist.basic()));",
+            "ernie-3.5-128k": "assertFalse(isValid(bodyHtml, Whitelist.basic()));",
+            "deepseek-chat": "assertFalse(Jsoup.isValid(nok4, Whitelist.basic()));",
+            "gpt-4o-mini": "assertFalse(Jsoup.isValid(nok4, Whitelist.basic()));"
+        },
+        "prompt_apr_1": {
+            "doubao-pro-4k": "public static boolean isValid(String bodyHtml, Whitelist whitelist) {\n    return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml));\n}",
+            "ernie-3.5-128k": "public static boolean isValid(String bodyHtml, Whitelist whitelist) {\n    return new Cleaner(whitelist).clean(parseBodyFragment(bodyHtml, \"\")).equals(parseBodyFragment(bodyHtml, \"\"));\n}",
+            "qwen-turbo": "Certainly! The issue in your code is that the `parseBodyFragment` method is called without specifying the base URI, which can cause problems. The correct method signature for parsing HTML fragments requires both the body HTML and the base URI to be provided.\n\nHere's the complete corrected method:\n\n```java\npublic static boolean isValid(String bodyHtml, Whitelist whitelist) {\n    return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml, \"http://www.example.com/\"));\n}\n```\n\nIn this correction, I've provided a dummy base URI (`\"http://www.example.com/\"`). You should replace `\"http://www.example.com/\"` with an appropriate base URI that fits your use case. If you have a specific base URI to use, you should substitute it there.",
+            "gpt-4o-mini": "public static boolean isValid(String bodyHtml, Whitelist whitelist) {\n    return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml, \"\"));\n}",
+            "deepseek-chat": "public static boolean isValid(String bodyHtml, Whitelist whitelist) {\n    return new HtmlCleaner(whitelist).isValidBodyHtml(parseBodyFragment(bodyHtml, \"\"));\n}\n\nThe bug in the original code was that the `Cleaner` class was being used, which is not the correct class for this operation. The correct class to use is `HtmlCleaner`, and the method to check if the HTML is valid is `isValidBodyHtml`. The corrected method now uses `HtmlCleaner` and `isValidBodyHtml` to properly validate the HTML against the provided `Whitelist`."
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "```java\npublic static boolean isValid(String bodyHtml, Whitelist whitelist) {\n    return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml, true));\n}\n```",
+            "doubao-pro-4k": "public static boolean isValid(String bodyHtml, Whitelist whitelist) {\n    return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml));\n}",
+            "gpt-4o-mini": "public static boolean isValid(String bodyHtml, Whitelist whitelist) {\n    if (bodyHtml == null || whitelist == null) {\n        throw new IllegalArgumentException(\"bodyHtml and whitelist cannot be null\");\n    }\n    return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml, \"\"));\n}",
+            "deepseek-chat": "The bug in the code is likely due to the fact that `parseBodyFragment` is not properly handling the input `bodyHtml` and the empty string `\"\"` as the base URI. The `parseBodyFragment` method typically requires a valid base URI to resolve relative URLs in the HTML. If the base URI is not provided correctly, it may lead to issues in parsing the HTML fragment.\n\nHere is the corrected method:\n\npublic static boolean isValid(String bodyHtml, Whitelist whitelist) {\n    Document document = Jsoup.parseBodyFragment(bodyHtml, \"\");\n    return new Cleaner(whitelist).isValid(document);\n}\n\nIn this corrected version, `Jsoup.parseBodyFragment(bodyHtml, \"\")` is used to parse the HTML fragment into a `Document` object, which is then passed to the `Cleaner` to check if it is valid according to the provided `Whitelist`. This ensures that the HTML fragment is properly parsed and validated.",
+            "ernie-3.5-128k": "Certainly! To properly address the issue in the provided method, we need to ensure that `parseBodyFragment` is correctly defined and imported, assuming it's a method that parses HTML and returns a suitable object for `Cleaner.isValid` to process. Typically, in the context of HTML cleaning with JSoup, `parseBodyFragment` might not be a standard method, and you might be looking to use `Jsoup.parseBodyFragment` from the `org.jsoup` library.\n\nHere's the corrected method, assuming you're using JSoup and want to validate the cleaned HTML against a whitelist:\n\nFirst, ensure you have the necessary imports:\n\n```java\nimport org.jsoup.Jsoup;\nimport org.jsoup.safety.Cleaner;\nimport org.jsoup.safety.Whitelist;\nimport org.jsoup.nodes.Document;\n```\n\nNow, here's the complete corrected method:\n\n```java\npublic static boolean isValid(String bodyHtml, Whitelist whitelist) {\n    Document document = Jsoup.parseBodyFragment(bodyHtml, \"\");\n    return new Cleaner(whitelist).clean(document).equals(document);\n}\n```\n\nExplanation:\n1. `Jsoup.parseBodyFragment(bodyHtml, \"\")` parses the HTML fragment into a `Document` object.\n2. `new Cleaner(whitelist).clean(document)` cleans the `Document` using the provided `Whitelist`.\n3. `.equals(document)` checks if the cleaned document is equal to the original parsed document, which is a way to validate if the HTML fragment conforms to the whitelist without modifications that would alter its structure or content (this might not cover all validation scenarios, but it's a common approach).\n\nAlternatively, if you specifically want to check if the cleaned HTML fragment is valid according to the whitelist without necessarily comparing it back to the original (which might be subjective based on your requirements), you can adjust the logic accordingly. However, the above method is a straightforward way to ensure that the HTML fragment conforms to the whitelist without unexpected changes."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\npublic static boolean isValid(String bodyHtml, Whitelist whitelist) {\n    return new Cleaner(whitelist).isSafe(parseBodyFragment(bodyHtml, \"\"));\n}\n```",
+            "doubao-pro-4k": "public static boolean isValid(String bodyHtml, Whitelist whitelist) {\n        return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml));\n}",
+            "ernie-3.5-128k": "public static boolean isValid(String bodyHtml, Whitelist whitelist) {\n        return new Cleaner(whitelist).clean(parseBodyFragment(bodyHtml, \"\")) != null;",
+            "deepseek-chat": "```java\npublic static boolean isValid(String bodyHtml, Whitelist whitelist) {\n    return new Cleaner(whitelist).isValidBodyHtml(parseBodyFragment(bodyHtml, \"\"));\n```",
+            "gpt-4o-mini": "public static boolean isValid(String bodyHtml, Whitelist whitelist) {\n    return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml, null));"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return new Cleaner(whitelist).isValid(new HtmlParser().parseBodyFragment(bodyHtml, \\\"\\\"));\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml));\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return new HtmlCleaner(whitelist).isValid(parseBodyFragment(bodyHtml, \\\"\\\"));\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return new Cleaner(whitelist).clean(parseBodyFragment(bodyHtml, \\\"\\\")).equals(parseBodyFragment(bodyHtml, \\\"\\\"));\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml));\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml, whitelist));\"\n    }\n]",
+            "doubao-pro-4k": "[\n{\n\"line_number\": 3,\n\"fixed_statement\": \"return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml, null));\"\n}\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"return new Cleaner(whitelist).clean(parseBodyFragment(bodyHtml, \\\"\\\")).isEmpty() == false;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"        return new Cleaner(whitelist).isValidBodyHtml(parseBodyFragment(bodyHtml, \\\"\\\"));\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml));\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"return new Cleaner(whitelist).isValid(new Document(parseBodyFragment(bodyHtml, \\\"\\\")));\\n\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 3,\n        \"fixed_statement\": \"return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml));\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return new Cleaner(whitelist).isValidBodyHtml(parseBodyFragment(bodyHtml, \\\"\\\"));\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 2,\n        \"fixed_statement\": \"return new Cleaner(whitelist).isValid(parseBodyFragment(bodyHtml));\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 1,\n        \"fixed_statement\": \"public static boolean isValid(String bodyHtml, Whitelist whitelist) {\\n        try {\\n            return new Cleaner(whitelist).isValid(Jsoup.parseBodyFragment(bodyHtml, \\\"\\\"));\\n        } catch (Exception e) {\\n            e.printStackTrace();\\n            return false;\\n        }\\n    }\"\n    }\n]"
+        }
+    },
+    {
+        "prompt_fl_1": {
+            "doubao-pro-4k": "6",
+            "qwen-turbo": "4",
+            "ernie-3.5-128k": "**6**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "6"
+        },
+        "prompt_fl_2": {
+            "doubao-pro-4k": "10",
+            "qwen-turbo": "160",
+            "deepseek-chat": "1",
+            "ernie-3.5-128k": "**10**",
+            "gpt-4o-mini": "160"
+        },
+        "prompt_fl_3": {
+            "doubao-pro-4k": "160",
+            "qwen-turbo": "160",
+            "ernie-3.5-128k": "**3**",
+            "deepseek-chat": "1",
+            "gpt-4o-mini": "160"
+        },
+        "prompt_fl_4": {
+            "doubao-pro-4k": "Document clean = Document.createShell(dirtyDocument.baseUri());",
+            "qwen-turbo": "numDiscarded == 0",
+            "ernie-3.5-128k": "Validate.notNull(dirtyDocument);",
+            "deepseek-chat": "```java\nint numDiscarded = copySafeNodes(dirtyDocument.body(), clean.body());\n```",
+            "gpt-4o-mini": "Document clean = Document.createShell(dirtyDocument.baseUri());"
+        },
+        "prompt_fl_5": {
+            "qwen-turbo": "Document clean = Document.createShell(dirtyDocument.baseUri());",
+            "doubao-pro-4k": "copySafeNodes(dirtyDocument.body(), clean.body());",
+            "ernie-3.5-128k": "public boolean isValid(Document dirtyDocument) {",
+            "deepseek-chat": "return numDiscarded == 0;",
+            "gpt-4o-mini": "return numDiscarded == 0;"
+        },
+        "prompt_fl_6": {
+            "qwen-turbo": "assertFalse(Jsoup.isValid(nok4, Whitelist.basic()));",
+            "doubao-pro-4k": "assertFalse(Jsoup.isValid(nok4, Whitelist.basic()));",
+            "deepseek-chat": "return numDiscarded == 0;",
+            "ernie-3.5-128k": "Jsoup.isValid(nok4, Whitelist.basic())",
+            "gpt-4o-mini": "assertFalse(Jsoup.isValid(nok4, Whitelist.basic()));"
+        },
+        "prompt_apr_1": {
+            "qwen-turbo": "Certainly, here is the complete corrected method. The issue seems to be related to the `copySafeNodes` method which should return a boolean indicating if all nodes were successfully copied without discarding any unsafe nodes. Assuming that `copySafeNodes` returns a boolean, the corrected line would check this condition:\n\n```java\npublic boolean isValid(Document dirtyDocument) {\n    Validate.notNull(dirtyDocument);\n\n    Document clean = Document.createShell(dirtyDocument.baseUri());\n    boolean isAllNodesCopiedSuccessfully = copySafeNodes(dirtyDocument.body(), clean.body());\n    return isAllNodesCopiedSuccessfully;\n}\n```\n\nIf `copySafeNodes` indeed returns an integer representing the number of discarded nodes as initially assumed, then the original logic was correct and no change is needed for that specific line. However, based on the typical usage, the assumption here is that it should return a boolean. If that's not the case, please clarify the expected behavior of `copySafeNodes`.",
+            "doubao-pro-4k": "public boolean isValid(Document dirtyDocument) {\n    Validate.notNull(dirtyDocument);\n\n    Document clean = Document.createShell(dirtyDocument.baseUri());\n    int numDiscarded = copySafeNodes(dirtyDocument, clean.body()); // Bug fixed: changed dirtyDocument.body() to dirtyDocument\n    return numDiscarded == 0;\n}",
+            "gpt-4o-mini": "public boolean isValid(Document dirtyDocument) {\n    Validate.notNull(dirtyDocument);\n\n    Document clean = Document.createShell(dirtyDocument.baseUri());\n    int numDiscarded = copySafeNodes(dirtyDocument.body(), clean.body());\n    return numDiscarded == 0;\n}",
+            "deepseek-chat": "The bug in the code is that the method does not handle the case where `copySafeNodes` might return a negative value, which could indicate an error. To fix this, we should ensure that the method returns `false` if `numDiscarded` is negative, indicating that some nodes were discarded or an error occurred during the copying process.\n\nHere is the complete corrected method:\n\npublic boolean isValid(Document dirtyDocument) {\n    Validate.notNull(dirtyDocument);\n\n    Document clean = Document.createShell(dirtyDocument.baseUri());\n    int numDiscarded = copySafeNodes(dirtyDocument.body(), clean.body());\n    return numDiscarded >= 0 && numDiscarded == 0;\n}\n\nIn this corrected version, the method checks if `numDiscarded` is greater than or equal to 0 before comparing it to 0. This ensures that the method only returns `true` if no nodes were discarded and no errors occurred during the copying process.",
+            "ernie-3.5-128k": "Certainly! Line 6 seems to be the return statement, and the logic is checking if `numDiscarded` is equal to 0 to determine if the document is valid. However, without context on what `copySafeNodes` does and what \"valid\" means in this context, we can only assume based on the given code.\n\nAssuming `copySafeNodes` returns the number of nodes that were not copied (or discarded) due to some validation rules, the method seems to be implying that if no nodes are discarded, the document is valid. If this is the intended behavior, the method itself looks syntactically correct. However, there might be an issue with the assumption or context in which this method is used.\n\nSince you mentioned there's a bug, let's consider a possible scenario: perhaps `copySafeNodes` should handle exceptions or edge cases where it might not be able to copy nodes properly, and these cases should be considered invalid. If `copySafeNodes` throws an exception when it encounters invalid nodes, the method should handle that.\n\nHere\u2019s a corrected version of the method with added exception handling, assuming that any exception during the copying process should result in the document being considered invalid:\n\npublic boolean isValid(Document dirtyDocument) {\n    Validate.notNull(dirtyDocument, \"Document cannot be null\");\n\n    Document clean = Document.createShell(dirtyDocument.baseUri());\n    try {\n        int numDiscarded = copySafeNodes(dirtyDocument.body(), clean.body());\n        return numDiscarded == 0;\n    } catch (Exception e) {\n        // If any exception occurs during the copying process, consider the document invalid\n        return false;\n    }\n}\n\nNote:\n1. Added a more meaningful error message to `Validate.notNull`.\n2. Wrapped the copying logic in a try-catch block to handle any exceptions that might occur during the `copySafeNodes` process.\n\nIf the actual issue lies elsewhere in the `copySafeNodes` method or in the understanding of what \"valid\" means, further investigation into those details would be necessary."
+        },
+        "prompt_apr_2": {
+            "qwen-turbo": "Certainly, here is the complete corrected method:\n\n```java\npublic boolean isValid(Document dirtyDocument) {\n    Validate.notNull(dirtyDocument);\n\n    Document clean = Document.createShell(dirtyDocument.baseUri());\n    int numDiscarded = copySafeNodes(dirtyDocument.body(), clean.body());\n    return numDiscarded < dirtyDocument.body().children().size();\n}\n```\n\nThis change ensures that the method correctly identifies when nodes have been discarded by comparing the number of discarded nodes to the total number of children in the body of the original document.",
+            "deepseek-chat": "public boolean isValid(Document dirtyDocument) {\n    Validate.notNull(dirtyDocument);\n\n    Document clean = Document.createShell(dirtyDocument.baseUri());\n    int numDiscarded = copySafeNodes(dirtyDocument.body(), clean.body());\n    return numDiscarded <= 0;\n}",
+            "doubao-pro-4k": "public boolean isValid(Document dirtyDocument) {\n    Validate.notNull(dirtyDocument);\n\n    Document clean = Document.createShell(dirtyDocument.baseUri());\n    int numDiscarded = copySafeNodes(dirtyDocument.body(), clean.body());\n    return numDiscarded <= 0; // Bug fixed: changed to numDiscarded <= 0 instead of == 0\n}",
+            "gpt-4o-mini": "public boolean isValid(Document dirtyDocument) {\n    Validate.notNull(dirtyDocument);\n\n    Document clean = Document.createShell(dirtyDocument.baseUri());\n    int numDiscarded = copySafeNodes(dirtyDocument.body(), clean.body());\n\n    // Fix: ensure that numDiscarded should be compared to a reasonable threshold, not just 0.\n    // It's likely that we want to allow some discarded nodes, so we compare it with a non-zero threshold.\n    return numDiscarded <= acceptableDiscardedThreshold();\n}\n\nprivate int acceptableDiscardedThreshold() {\n    // Return an appropriate threshold value depending on your requirements\n    return 10;  // Example threshold: You can adjust this based on what is considered acceptable\n}",
+            "ernie-3.5-128k": "Sure, to properly address the potential bug in the method, we need to understand what the `copySafeNodes` method is doing and what the significance of `numDiscarded` is. Based on the context, it seems that `copySafeNodes` copies nodes from the `dirtyDocument` to the `clean` document and `numDiscarded` indicates the number of nodes that were not copied due to some validation issue.\n\nThe current logic checks if `numDiscarded` is exactly 0 to determine if the document is valid. However, the definition of \"valid\" might need to be clarified. If `numDiscarded > 0` means there were some issues but the document might still be considered valid in a broader sense (depending on the business logic), then the check might need to be adjusted.\n\nHere's a corrected version assuming that the document is considered invalid if any nodes are discarded:\n\npublic boolean isValid(Document dirtyDocument) {\n    Validate.notNull(dirtyDocument);\n\n    Document clean = Document.createShell(dirtyDocument.baseUri());\n    int numDiscarded = copySafeNodes(dirtyDocument.body(), clean.body());\n\n    // Depending on the context, you might want to log the discarded nodes or handle them differently\n    // For now, we'll assume the document is invalid if any nodes are discarded\n    return numDiscarded == 0;\n}\n\nIf the business logic dictates that the presence of discarded nodes does not necessarily invalidate the document (which is unusual but possible), you might want to adjust the return statement accordingly. However, without further context, the above code stands as a reasonable fix assuming that no discarded nodes mean a valid document.\n\nIf you have specific conditions under which a document should be considered valid despite some nodes being discarded, you would need to implement those conditions within the method."
+        },
+        "prompt_apr_3": {
+            "qwen-turbo": "```java\npublic boolean isValid(Document dirtyDocument) {\n    Validate.notNull(dirtyDocument);\n\n    Document clean = Document.createShell(dirtyDocument.baseUri());\n    int numDiscarded = copySafeNodes(dirtyDocument.body(), clean.body());\n    return numDiscarded == 0;\n}\n```",
+            "doubao-pro-4k": "public boolean isValid(Document dirtyDocument) {\n    Validate.notNull(dirtyDocument);\n\n    Document clean = Document.createShell(dirtyDocument.baseUri());\n    int numDiscarded = copySafeNodes(dirtyDocument.body(), clean.body());\n    return numDiscarded <= 0;\n}",
+            "gpt-4o-mini": "public boolean isValid(Document dirtyDocument) {\n    Validate.notNull(dirtyDocument);\n\n    Document clean = Document.createShell(dirtyDocument.baseUri());\n    int numDiscarded = copySafeNodes(dirtyDocument.body(), clean.body());\n    return numDiscarded == 0 && clean.body().children().isEmpty();\n}",
+            "deepseek-chat": "```java\npublic boolean isValid(Document dirtyDocument) {\n    Validate.notNull(dirtyDocument);\n\n    Document clean = Document.createShell(dirtyDocument.baseUri());\n    int numDiscarded = copySafeNodes(dirtyDocument.body(), clean.body());\n    return numDiscarded == 0;\n}\n```",
+            "ernie-3.5-128k": "public boolean isValid(Document dirtyDocument) {\n        Validate.notNull(dirtyDocument);\n\n        Document clean = Document.createShell(dirtyDocument.baseUri());\n        int numDiscarded = copySafeNodes(dirtyDocument.body(), clean.body());\n        return numDiscarded == 0 && clean.body().childNodes().length > 0;"
+        },
+        "prompt_apr_4": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return numDiscarded == 0;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return numDiscarded <= 0;\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return numDiscarded == dirtyDocument.body().childNodes().size();\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"int numDiscarded = copySafeNodes(dirtyDocument.body(), clean.body(), false);\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"int numDiscarded = copySafeNodes(dirtyDocument.body(), clean.body());\"\n    }\n]"
+        },
+        "prompt_apr_5": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"return numDiscarded > 0;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"return numDiscarded <= 0;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"return numDiscarded <= 0;\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"return numDiscarded == dirtyDocument.body().childNodes().length();\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 7,\n        \"fixed_statement\": \"return numDiscarded == 0 || numDiscarded == dirtyDocument.body().childNodeSize();\"\n    }\n]"
+        },
+        "prompt_apr_6": {
+            "qwen-turbo": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"return numDiscarded < 1;\"\n    }\n]",
+            "doubao-pro-4k": "[\n    {\n        \"line_number\": 5,\n        \"fixed_statement\": \"return numDiscarded <= 0;\"\n    }\n]",
+            "deepseek-chat": "[\n    {\n        \"line_number\": 4,\n        \"fixed_statement\": \"return numDiscarded <= 0;\"\n    }\n]",
+            "ernie-3.5-128k": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return numDiscarded == dirtyDocument.body().childNodes().size();\"\n    }\n]",
+            "gpt-4o-mini": "[\n    {\n        \"line_number\": 6,\n        \"fixed_statement\": \"return numDiscarded == 0 && clean.body() != null;\"\n    }\n]"
+        }
+    }
+]

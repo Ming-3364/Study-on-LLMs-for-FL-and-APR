@@ -1,0 +1,132 @@
+
+================== buggy_file ==================
+src/main/java/org/apache/commons/lang3/LocaleUtils.java
+================== buggy_method ==================
+{'method_name': 'toLocale', 'method_body': 'public static Locale toLocale(final String str) {\n        if (str == null) {\n            return null;\n        }\n        final int len = str.length();\n        if (len < 2) {\n            throw new IllegalArgumentException("Invalid locale format: " + str);\n        }\n        final char ch0 = str.charAt(0);\n            final char ch1 = str.charAt(1);\n            if (!Character.isLowerCase(ch0) || !Character.isLowerCase(ch1)) {\n                throw new IllegalArgumentException("Invalid locale format: " + str);\n            }\n            if (len == 2) {\n                return new Locale(str);\n            }\n            if (len < 5) {\n                throw new IllegalArgumentException("Invalid locale format: " + str);\n            }\n            if (str.charAt(2) != \'_\') {\n                throw new IllegalArgumentException("Invalid locale format: " + str);\n            }\n            final char ch3 = str.charAt(3);\n            if (ch3 == \'_\') {\n                return new Locale(str.substring(0, 2), "", str.substring(4));\n            }\n            final char ch4 = str.charAt(4);\n            if (!Character.isUpperCase(ch3) || !Character.isUpperCase(ch4)) {\n                throw new IllegalArgumentException("Invalid locale format: " + str);\n            }\n            if (len == 5) {\n                return new Locale(str.substring(0, 2), str.substring(3, 5));\n            }\n            if (len < 7) {\n                throw new IllegalArgumentException("Invalid locale format: " + str);\n            }\n            if (str.charAt(5) != \'_\') {\n                throw new IllegalArgumentException("Invalid locale format: " + str);\n            }\n            return new Locale(str.substring(0, 2), str.substring(3, 5), str.substring(6));\n    }', 'start_line': 88, 'end_line': 128, 'buggy_lines': [116]}
+================== buggy_method_src ==================
+public static Locale toLocale(final String str) {
+        if (str == null) {
+            return null;
+        }
+        final int len = str.length();
+        if (len < 2) {
+            throw new IllegalArgumentException("Invalid locale format: " + str);
+        }
+        final char ch0 = str.charAt(0);
+            final char ch1 = str.charAt(1);
+            if (!Character.isLowerCase(ch0) || !Character.isLowerCase(ch1)) {
+                throw new IllegalArgumentException("Invalid locale format: " + str);
+            }
+            if (len == 2) {
+                return new Locale(str);
+            }
+            if (len < 5) {
+                throw new IllegalArgumentException("Invalid locale format: " + str);
+            }
+            if (str.charAt(2) != '_') {
+                throw new IllegalArgumentException("Invalid locale format: " + str);
+            }
+            final char ch3 = str.charAt(3);
+            if (ch3 == '_') {
+                return new Locale(str.substring(0, 2), "", str.substring(4));
+            }
+            final char ch4 = str.charAt(4);
+            if (!Character.isUpperCase(ch3) || !Character.isUpperCase(ch4)) {
+                throw new IllegalArgumentException("Invalid locale format: " + str);
+            }
+            if (len == 5) {
+                return new Locale(str.substring(0, 2), str.substring(3, 5));
+            }
+            if (len < 7) {
+                throw new IllegalArgumentException("Invalid locale format: " + str);
+            }
+            if (str.charAt(5) != '_') {
+                throw new IllegalArgumentException("Invalid locale format: " + str);
+            }
+            return new Locale(str.substring(0, 2), str.substring(3, 5), str.substring(6));
+    }
+================== test_stack ==================
+org.apache.commons.lang3.LocaleUtilsTest::testLang865
+java.lang.IllegalArgumentException: Invalid locale format: _GB
+	at org.apache.commons.lang3.LocaleUtils.toLocale(LocaleUtils.java:99)
+	at org.apache.commons.lang3.LocaleUtilsTest.assertValidToLocale(LocaleUtilsTest.java:119)
+	at org.apache.commons.lang3.LocaleUtilsTest.testLang865(LocaleUtilsTest.java:505)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at junit.framework.JUnit4TestAdapter.run(JUnit4TestAdapter.java:38)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+	at org.apache.tools.ant.Task.perform(Task.java:348)
+	at org.apache.tools.ant.Target.execute(Target.java:392)
+	at org.apache.tools.ant.Target.performTasks(Target.java:413)
+	at org.apache.tools.ant.Project.executeSortedTargets(Project.java:1399)
+	at org.apache.tools.ant.Project.executeTarget(Project.java:1368)
+	at org.apache.tools.ant.helper.DefaultExecutor.executeTargets(DefaultExecutor.java:41)
+	at org.apache.tools.ant.Project.executeTargets(Project.java:1251)
+	at org.apache.tools.ant.Main.runBuild(Main.java:811)
+	at org.apache.tools.ant.Main.startAnt(Main.java:217)
+	at org.apache.tools.ant.launch.Launcher.run(Launcher.java:280)
+	at org.apache.tools.ant.launch.Launcher.main(Launcher.java:109)
+
+================== test_assert ==================
+assertValidToLocale("_GB", "", "GB", "");
+
+================== buggy_lines_in_method ==================
+[29]
+================== buggy_statements ==================
+['                throw new IllegalArgumentException("Invalid locale format: " + str);']
+================== buggy_method_src_endswith_buggy_statement ==================
+public static Locale toLocale(final String str) {
+        if (str == null) {
+            return null;
+        }
+        final int len = str.length();
+        if (len < 2) {
+            throw new IllegalArgumentException("Invalid locale format: " + str);
+        }
+        final char ch0 = str.charAt(0);
+            final char ch1 = str.charAt(1);
+            if (!Character.isLowerCase(ch0) || !Character.isLowerCase(ch1)) {
+                throw new IllegalArgumentException("Invalid locale format: " + str);
+            }
+            if (len == 2) {
+                return new Locale(str);
+            }
+            if (len < 5) {
+                throw new IllegalArgumentException("Invalid locale format: " + str);
+            }
+            if (str.charAt(2) != '_') {
+                throw new IllegalArgumentException("Invalid locale format: " + str);
+            }
+            final char ch3 = str.charAt(3);
+            if (ch3 == '_') {
+                return new Locale(str.substring(0, 2), "", str.substring(4));
+            }
+            final char ch4 = str.charAt(4);
+            if (!Character.isUpperCase(ch3) || !Character.isUpperCase(ch4)) {
+                throw new IllegalArgumentException("Invalid locale format: " + str);

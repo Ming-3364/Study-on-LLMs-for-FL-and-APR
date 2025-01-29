@@ -1,0 +1,84 @@
+
+================== buggy_file ==================
+src/java/org/apache/commons/lang/text/ExtendedMessageFormat.java
+================== buggy_method ==================
+{'method_name': 'appendQuotedString', 'method_body': 'private StringBuffer appendQuotedString(String pattern, ParsePosition pos,\n            StringBuffer appendTo, boolean escapingOn) {\n        int start = pos.getIndex();\n        char[] c = pattern.toCharArray();\n        if (escapingOn && c[start] == QUOTE) {\n            return appendTo == null ? null : appendTo.append(QUOTE);\n        }\n        int lastHold = start;\n        for (int i = pos.getIndex(); i < pattern.length(); i++) {\n            if (escapingOn && pattern.substring(i).startsWith(ESCAPED_QUOTE)) {\n                appendTo.append(c, lastHold, pos.getIndex() - lastHold).append(\n                        QUOTE);\n                pos.setIndex(i + ESCAPED_QUOTE.length());\n                lastHold = pos.getIndex();\n                continue;\n            }\n            switch (c[pos.getIndex()]) {\n            case QUOTE:\n                next(pos);\n                return appendTo == null ? null : appendTo.append(c, lastHold,\n                        pos.getIndex() - lastHold);\n            default:\n                next(pos);\n            }\n        }\n        throw new IllegalArgumentException(\n                "Unterminated quoted string at position " + start);\n    }', 'start_line': 417, 'end_line': 444, 'buggy_lines': [422]}
+================== buggy_method_src ==================
+private StringBuffer appendQuotedString(String pattern, ParsePosition pos,
+            StringBuffer appendTo, boolean escapingOn) {
+        int start = pos.getIndex();
+        char[] c = pattern.toCharArray();
+        if (escapingOn && c[start] == QUOTE) {
+            return appendTo == null ? null : appendTo.append(QUOTE);
+        }
+        int lastHold = start;
+        for (int i = pos.getIndex(); i < pattern.length(); i++) {
+            if (escapingOn && pattern.substring(i).startsWith(ESCAPED_QUOTE)) {
+                appendTo.append(c, lastHold, pos.getIndex() - lastHold).append(
+                        QUOTE);
+                pos.setIndex(i + ESCAPED_QUOTE.length());
+                lastHold = pos.getIndex();
+                continue;
+            }
+            switch (c[pos.getIndex()]) {
+            case QUOTE:
+                next(pos);
+                return appendTo == null ? null : appendTo.append(c, lastHold,
+                        pos.getIndex() - lastHold);
+            default:
+                next(pos);
+            }
+        }
+        throw new IllegalArgumentException(
+                "Unterminated quoted string at position " + start);
+    }
+================== test_stack ==================
+org.apache.commons.lang.text.ExtendedMessageFormatTest::testEscapedQuote_LANG_477
+java.lang.OutOfMemoryError: Java heap space
+	at java.util.Arrays.copyOf(Arrays.java:3332)
+	at java.lang.AbstractStringBuilder.ensureCapacityInternal(AbstractStringBuilder.java:124)
+	at java.lang.AbstractStringBuilder.append(AbstractStringBuilder.java:649)
+	at java.lang.StringBuffer.append(StringBuffer.java:381)
+	at org.apache.commons.lang.text.ExtendedMessageFormat.appendQuotedString(ExtendedMessageFormat.java:422)
+	at org.apache.commons.lang.text.ExtendedMessageFormat.applyPattern(ExtendedMessageFormat.java:158)
+	at org.apache.commons.lang.text.ExtendedMessageFormat.<init>(ExtendedMessageFormat.java:127)
+	at org.apache.commons.lang.text.ExtendedMessageFormat.<init>(ExtendedMessageFormat.java:112)
+	at org.apache.commons.lang.text.ExtendedMessageFormatTest.testEscapedQuote_LANG_477(ExtendedMessageFormatTest.java:100)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at junit.framework.TestCase.runTest(TestCase.java:176)
+	at junit.framework.TestCase.runBare(TestCase.java:141)
+	at junit.framework.TestResult$1.protect(TestResult.java:122)
+	at junit.framework.TestResult.runProtected(TestResult.java:142)
+	at junit.framework.TestResult.run(TestResult.java:125)
+	at junit.framework.TestCase.run(TestCase.java:129)
+	at junit.framework.TestSuite.runTest(TestSuite.java:255)
+	at junit.framework.TestSuite.run(TestSuite.java:250)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run(JUnitTestRunner.java:520)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM(JUnitTask.java:1484)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:872)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue(JUnitTask.java:1972)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1(JUnitTask.java:824)
+	at org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute(JUnitTask.java:2277)
+	at org.apache.tools.ant.UnknownElement.execute(UnknownElement.java:291)
+	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.tools.ant.dispatch.DispatchUtils.execute(DispatchUtils.java:106)
+
+================== test_assert ==================
+ExtendedMessageFormat emf = new ExtendedMessageFormat(pattern, registry);
+
+================== buggy_lines_in_method ==================
+[6]
+================== buggy_statements ==================
+['            return appendTo == null ? null : appendTo.append(QUOTE);']
+================== buggy_method_src_endswith_buggy_statement ==================
+private StringBuffer appendQuotedString(String pattern, ParsePosition pos,
+            StringBuffer appendTo, boolean escapingOn) {
+        int start = pos.getIndex();
+        char[] c = pattern.toCharArray();
+        if (escapingOn && c[start] == QUOTE) {
+            return appendTo == null ? null : appendTo.append(QUOTE);
